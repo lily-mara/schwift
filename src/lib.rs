@@ -78,7 +78,7 @@ impl Variable {
         }
     }
 
-    pub fn subtract(&self, value: Value) ->Op<Value> {
+    pub fn subtract(&self, value: Value) -> Op<Value> {
         match self.value {
             Value::Int(i) => {
                 if let Value::Int(j) = value {
@@ -96,10 +96,9 @@ impl Variable {
             },
             _ => panic!("unimplemented"),
         }
-
     }
 
-    pub fn multipy(&self, value: Value) ->Op<Value> {
+    pub fn multipy(&self, value: Value) -> Op<Value> {
         match self.value {
             Value::Int(i) => {
                 if let Value::Int(j) = value {
@@ -117,8 +116,6 @@ impl Variable {
             },
             _ => panic!("unimplemented"),
         }
-
-
     }
 
     pub fn divide(&self, value: Value) -> Op<Value> {
