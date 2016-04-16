@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Value {
 	Str(String),
 	Int(i32),
@@ -10,6 +10,12 @@ pub enum Value {
 pub struct Variable {
     value: Value,
     constant: bool,
+}
+
+#[derive(Debug)]
+pub enum Op<T> {
+    Ok(T),
+    TypeError(Value, Value),
 }
 
 impl Variable {
@@ -37,22 +43,50 @@ impl Variable {
     }
 
     pub fn assign(&mut self, value: Value) {
-
+        if self.constant {
+            panic!("Tried to assign to a constant value");
+        }
+        self.value = value;
     }
 
-    pub fn add(&self, value: Value) -> Value {
-
+    pub fn add(&self, value: Value) -> Op<Value> {
+        match &self.value {
+            &Value::Int(i) => {
+                if let Value::Int(j) = value {
+                    Op::Ok(Value::Int(i + j))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            &Value::Float(i) => {
+                if let Value::Float(j) = value {
+                    Op::Ok(Value::Float(i + j))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            &Value::Str(ref i) => {
+                if let Value::Str(j) = value {
+                    let mut new_buf = i.clone();
+                    new_buf.push_str(&j);
+                    Op::Ok(Value::Str(new_buf))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            _ => panic!("unimplemented"),
+        }
     }
 
-    pub fn subtract(&self, value: Value) -> Value {
+    //pub fn subtract(&self, value: Value) -> Value {
 
-    }
+    //}
 
-    pub fn multipy(&self, value: Value) -> Value {
+    //pub fn multipy(&self, value: Value) -> Value {
 
-    }
+    //}
 
-    pub fn divide(&self, value: Value) -> Value {
+    //pub fn divide(&self, value: Value) -> Value {
 
-    }
+    //}
 }
