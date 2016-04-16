@@ -28,12 +28,12 @@ impl Variable {
     }
 
     pub fn print(&self) {
-        match &self.value {
-            &Value::Int(i) => print!("{}", i),
-            &Value::Float(i) => print!("{}", i),
-            &Value::Bool(i) => print!("{}", i),
-            &Value::Str(ref i) => print!("{}", i),
-            &Value::List(ref i) => print!("{:?}", i),
+        match self.value {
+            Value::Int(i) => print!("{}", i),
+            Value::Float(i) => print!("{}", i),
+            Value::Bool(i) => print!("{}", i),
+            Value::Str(ref i) => print!("{}", i),
+            Value::List(ref i) => print!("{:?}", i),
         }
     }
 
@@ -50,22 +50,22 @@ impl Variable {
     }
 
     pub fn add(&self, value: Value) -> Op<Value> {
-        match &self.value {
-            &Value::Int(i) => {
+        match self.value {
+            Value::Int(i) => {
                 if let Value::Int(j) = value {
                     Op::Ok(Value::Int(i + j))
                 } else {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            &Value::Float(i) => {
+            Value::Float(i) => {
                 if let Value::Float(j) = value {
                     Op::Ok(Value::Float(i + j))
                 } else {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            &Value::Str(ref i) => {
+            Value::Str(ref i) => {
                 if let Value::Str(j) = value {
                     let mut new_buf = i.clone();
                     new_buf.push_str(&j);
@@ -78,13 +78,30 @@ impl Variable {
         }
     }
 
-    //pub fn subtract(&self, value: Value) -> Value {
+    pub fn subtract(&self, value: Value) ->Op<Value> {
+        match self.value {
+            Value::Int(i) => {
+                if let Value::Int(j) = value {
+                    Op::Ok(Value::Int(i - j))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            Value::Float(i) => {
+                if let Value::Float(j) = value {
+                    Op::Ok(Value::Float(i - j))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            _ => panic!("unimplemented"),
+        }
 
-    //}
+    }
 
-    //pub fn multipy(&self, value: Value) -> Value {
+    pub fn multipy(&self, value: Value) -> Value {
 
-    //}
+    }
 
     //pub fn divide(&self, value: Value) -> Value {
 
