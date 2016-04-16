@@ -99,7 +99,25 @@ impl Variable {
 
     }
 
-    pub fn multipy(&self, value: Value) -> Value {
+    pub fn multipy(&self, value: Value) ->Op<Value> {
+        match self.value {
+            Value::Int(i) => {
+                if let Value::Int(j) = value {
+                    Op::Ok(Value::Int(i * j))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            Value::Float(i) => {
+                if let Value::Float(j) = value {
+                    Op::Ok(Value::Float(i * j))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            _ => panic!("unimplemented"),
+        }
+
 
     }
 
