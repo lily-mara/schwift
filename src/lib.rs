@@ -18,6 +18,11 @@ pub enum Op<T> {
     TypeError(Value, Value),
 }
 
+const QUOTES: [&'static str; 2] = [
+    "foo",
+    "bar",
+];
+
 impl Variable {
     pub fn new_variable(value: Value) -> Variable {
         Variable{ value: value, constant: false }
