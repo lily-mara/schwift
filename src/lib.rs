@@ -98,7 +98,7 @@ impl Variable {
         }
     }
 
-    pub fn multipy(&self, value: Value) -> Op<Value> {
+    pub fn multiply(&self, value: Value) -> Op<Value> {
         match self.value {
             Value::Int(i) => {
                 if let Value::Int(j) = value {
@@ -114,6 +114,17 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
+            Value::Str(ref i) => {
+                if let Value::Int(j) = value {
+                    let mut new_buf = i.clone();
+                    for _ in 0..j {
+                        new_buf.push_str(&i);
+                    }
+                    Op::Ok(Value::Str(new_buf))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            }
             _ => panic!("unimplemented"),
         }
     }
