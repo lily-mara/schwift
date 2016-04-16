@@ -1,0 +1,6 @@
+[package]
+name = "schwift"
+version = "0.1.0"
+authors = ["vhundal50 <vhundal50@yahoo.com>"]
+
+[dependencies]
