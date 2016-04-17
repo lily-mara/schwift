@@ -73,11 +73,15 @@ statement -> Statement
 printing -> Statement
     = "show me what you got" whitespace e:expression { Statement::Print(e) }
 
+#[pub]
 expression -> Expression
-    = variable_expression / value_expression / operator_expression
+    = operator_expression / variable_expression / value_expression
+
+expression1 -> Expression
+    = variable_expression / value_expression
 
 operator_expression -> Expression
-    = e1:expression o:operator e2:expression { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
+    = e1:expression1 optional_whitespace o:operator optional_whitespace e2:expression { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
 
 value_expression -> Expression
     = v:value { Expression::Value(v) }
