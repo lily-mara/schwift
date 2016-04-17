@@ -731,8 +731,32 @@ fn parse_line<'input>(input: &'input str, state: &mut ParseState<'input>,
                                         Matched(pos, _) => {
                                             {
                                                 let seq_res =
-                                                    parse_newline(input,
-                                                                  state, pos);
+                                                    {
+                                                        let mut repeat_pos =
+                                                            pos;
+                                                        loop  {
+                                                            let pos =
+                                                                repeat_pos;
+                                                            let step_res =
+                                                                parse_newline(input,
+                                                                              state,
+                                                                              pos);
+                                                            match step_res {
+                                                                Matched(newpos,
+                                                                        value)
+                                                                => {
+                                                                    repeat_pos
+                                                                        =
+                                                                        newpos;
+                                                                }
+                                                                Failed => {
+                                                                    break ;
+                                                                }
+                                                            }
+                                                        }
+                                                        Matched(repeat_pos,
+                                                                ())
+                                                    };
                                                 match seq_res {
                                                     Matched(pos, _) => {
                                                         {
@@ -757,6 +781,27 @@ fn parse_line<'input>(input: &'input str, state: &mut ParseState<'input>,
                 Failed => Failed,
             }
         }
+    }
+}
+fn parse_file<'input>(input: &'input str, state: &mut ParseState<'input>,
+                      pos: usize) -> RuleResult<Vec<Statement>> {
+    {
+        let mut repeat_pos = pos;
+        let mut repeat_value = vec!();
+        loop  {
+            let pos = repeat_pos;
+            let step_res = parse_line(input, state, pos);
+            match step_res {
+                Matched(newpos, value) => {
+                    repeat_pos = newpos;
+                    repeat_value.push(value);
+                }
+                Failed => { break ; }
+            }
+        }
+        if repeat_value.len() >= 1usize {
+            Matched(repeat_pos, repeat_value)
+        } else { Failed }
     }
 }
 fn parse_optional_whitespace<'input>(input: &'input str,
@@ -938,69 +983,9 @@ fn parse_variable_expression<'input>(input: &'input str,
         }
     }
 }
-pub fn value<'input>(input: &'input str) -> ParseResult<Value> {
+pub fn file<'input>(input: &'input str) -> ParseResult<Vec<Statement>> {
     let mut state = ParseState::new();
-    match parse_value(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn identifier<'input>(input: &'input str) -> ParseResult<String> {
-    let mut state = ParseState::new();
-    match parse_identifier(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn assignment<'input>(input: &'input str) -> ParseResult<Statement> {
-    let mut state = ParseState::new();
-    match parse_assignment(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn deletion<'input>(input: &'input str) -> ParseResult<Statement> {
-    let mut state = ParseState::new();
-    match parse_deletion(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn line<'input>(input: &'input str) -> ParseResult<Statement> {
-    let mut state = ParseState::new();
-    match parse_line(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn expression<'input>(input: &'input str) -> ParseResult<Expression> {
-    let mut state = ParseState::new();
-    match parse_expression(input, &mut state, 0) {
+    match parse_file(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }

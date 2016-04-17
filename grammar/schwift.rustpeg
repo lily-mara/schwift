@@ -18,11 +18,9 @@ falsehood -> Value
 boolean -> Value
     = truth / falsehood
 
-#[pub]
 value -> Value
     = float / int / string / boolean
 
-#[pub]
 identifier -> String
     = [a-zA-Z] [a-zA-Z0-9_]* { match_str.to_string() }
 
@@ -47,17 +45,18 @@ operator -> Operator
 whitespace
     = [ \t]+
 
-#[pub]
 assignment -> Statement
     = i:identifier whitespace "squanch" whitespace e:expression { Statement::Assignment(i, e) }
 
-#[pub]
 deletion -> Statement
     = "squanch" whitespace i:identifier { Statement::Delete(i) }
 
-#[pub]
 line -> Statement
-    = optional_whitespace s:statement optional_whitespace newline { s }
+    = optional_whitespace s:statement optional_whitespace newline* { s }
+
+#[pub]
+file -> Vec<Statement>
+    = line+
 
 optional_whitespace
     = [ \t]*
@@ -71,7 +70,6 @@ statement -> Statement
 printing -> Statement
     = "show me what you got" whitespace e:expression { Statement::Print(e) }
 
-#[pub]
 expression -> Expression
     = variable_expression / value_expression / operator_expression
 
