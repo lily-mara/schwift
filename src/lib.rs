@@ -165,8 +165,8 @@ impl State {
     pub fn run(&mut self, statements: Vec<Statement>) {
         for statement in statements {
             match statement {
-                Statement::ListNew(S) => {
-                    self.symbols.insert(S, Variable::new_variable(Value::List(Vec::new())));
+                Statement::ListNew(s) => {
+                    self.symbols.insert(s, Variable::new_variable(Value::List(Vec::new())));
                 },
                 Statement::ListAppend(ref s, ref e) => {
                     if self.symbols.contains_key(s) {
@@ -313,7 +313,10 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            _ => panic!("unimplemented"),
+            _ => {
+                logic_error("Tried to add incompatable types");
+                unreachable!();
+            },
         }
     }
 
@@ -333,7 +336,10 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            _ => panic!("unimplemented"),
+            _ => {
+                logic_error("Tried to subtract incompatable types");
+                unreachable!();
+            },
         }
     }
 
@@ -364,7 +370,10 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             }
-            _ => panic!("unimplemented"),
+            _ => {
+                logic_error("Tried to multiply incompatable types");
+                unreachable!();
+            },
         }
     }
 
@@ -384,7 +393,10 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            _ => panic!("unimplemented"),
+            _ => {
+                logic_error("Tried to divide incompatable types");
+                unreachable!();
+            },
         }
     }
 
@@ -454,7 +466,10 @@ impl Value {
                     }
                 }
             },
-            _ => panic!("foo")
+            _ => {
+                logic_error("Tried to compare incompatable types");
+                unreachable!();
+            },
         }
     }
 
