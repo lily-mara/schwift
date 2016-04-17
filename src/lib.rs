@@ -112,7 +112,7 @@ impl State {
                                 panic!("You don't have that many kernels on your cob, idiot.")
                             }
                         } else {
-                            panic!("You can only index with a int");
+                            panic!("You can only index with an int");
                         }
                     } else {
                         panic!("Type error, you are trying index something other than a cob.")
@@ -157,15 +157,20 @@ impl State {
                     }
 
                 },
-                Statement::ListAssign(ref s, ref i, ref e) => {
+                Statement::ListAssign(ref s, ref index_expression, ref assign_expression) => {
                     if self.symbols.contains_key(s) {
-                        let val = self.expression_to_variable(e.clone()).value;
+                        let val = self.expression_to_variable(assign_expression.clone()).value;
+                        let x = self.expression_to_variable(index_expression.clone()).value;
                         if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
-                            let x = *i as usize;
-                            if x < l.len() {
-                                l[x] = val;
+                            if let Value::Int(i) = x {
+                                let index = i as usize;
+                                if index < l.len() {
+                                    l[index] = val;
+                                } else {
+                                    panic!("You don't have that many kernels on your cob, idiot.")
+                                }
                             } else {
-                                panic!("You don't have that many kernels on your cob, idiot.")
+                                panic!("You can only index with an int");
                             }
                         } else {
                             panic!("Type error, you are trying index something other than a cob.")
