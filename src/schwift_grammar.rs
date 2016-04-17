@@ -510,7 +510,7 @@ fn parse_times<'input>(input: &'input str, state: &mut ParseState<'input>,
                 Matched(pos, _) => {
                     {
                         let match_str = &input[start_pos..pos];
-                        Matched(pos, { Operator::Multipy })
+                        Matched(pos, { Operator::Multiply })
                     }
                 }
                 Failed => Failed,

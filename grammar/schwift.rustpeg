@@ -34,7 +34,7 @@ minus -> Operator
     = "-" { Operator::Subtract }
 
 times -> Operator
-    = "*" { Operator::Multipy }
+    = "*" { Operator::Multiply }
 
 divide -> Operator
     = "/" { Operator::Divide }
