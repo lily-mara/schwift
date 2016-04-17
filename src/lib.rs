@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub mod schwift_grammar;
 
 #[derive(Debug,Clone)]
@@ -12,6 +14,10 @@ pub enum Value {
 pub struct Variable {
     value: Value,
     constant: bool,
+}
+
+pub struct State {
+    symbols: HashMap<String, Variable>
 }
 
 #[derive(Debug)]
@@ -40,10 +46,38 @@ pub enum Statement {
     Delete(String),
 }
 
-const QUOTES: [&'static str; 2] = [
-    "foo",
-    "bar",
+pub const QUOTES: [&'static str; 8] = [
+    "Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
+    "That's planning for failure Morty, even dumber than regular planning. -Rick",
+    "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty and white. -S̶n̶u̶f̶f̶l̶e̶s̶ Snowbal",
+    "Existence is pain to an interpreter. -Meeseeks",
+    "In bird culture this is considered a dick move -Bird Person",
+    "There is no god, gotta rip that band aid off now. You\'ll thank me later. -Rick",
+    "Your program is a piece of shit and I can proove it mathmatically. -Rick",
+    "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing program. -Rick",
 ];
+
+enum Operator {
+    Add,
+    Subtract,
+    Multipy,
+    Divide,
+    Equality,
+}
+
+enum Expression {
+    Variable(String),
+    OperatorExpression(Box<Expression>, Operator, Box<Expression>),
+    Value(Value),
+}
+
+#[derive(Debug)]
+pub enum Statement {
+    Assignment(String, Value),
+    Delete(String),
+}
+
+//Read more at: http://transcripts.foreverdreaming.org/viewtopic.php?f=364&t=19383]
 
 impl Variable {
     pub fn new_variable(value: Value) -> Variable {
