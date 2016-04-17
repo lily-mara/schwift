@@ -96,7 +96,7 @@ printing -> Statement
 
 #[pub]
 expression -> Expression
-    = operator_expression / variable_expression / value_expression / list_index
+    = list_index / operator_expression / variable_expression / value_expression
 
 expression1 -> Expression
     = variable_expression / value_expression
