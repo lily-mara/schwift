@@ -181,6 +181,28 @@ impl State {
                     }
 
                 },
+                Statement::ListDelete(ref s, ref index_expression) => {
+                    if self.symbols.contains_key(s) {
+                        let x = self.expression_to_variable(index_expression.clone()).value;
+                        if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
+                            if let Value::Int(i) = x {
+                                let index = i as usize;
+                                if index < l.len() {
+                                    l.remove(index);
+                                } else {
+                                    panic!("You don't have that many kernels on your cob, idiot.")
+                                }
+                            } else {
+                                panic!("You can only index with an int");
+                            }
+                        } else {
+                            panic!("Type error, you are trying index something other than a cob.")
+                        }
+                    } else {
+                        panic!("OOOweeee you squanched it, that cob doesn't exist.")
+                    }
+
+                },
                 Statement::Assignment(i, j) => self.assign(i, j),
                 Statement::Delete(i) => self.delete(i),
                 Statement::Print(i) => self.print(i),
