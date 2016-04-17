@@ -18,9 +18,10 @@ pub enum Op<T> {
     TypeError(Value, Value),
 }
 
-const QUOTES: [&'static str; 2] = [
-    "foo",
-    "bar",
+pub const QUOTES: [&'static str; 3] = [
+    "Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
+    "That's planning for failure Morty, even dumber than regular planning. -Rick",
+    "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty and white. -S̶n̶u̶f̶f̶l̶e̶s̶ Snowball",
 ];
 
 impl Variable {
