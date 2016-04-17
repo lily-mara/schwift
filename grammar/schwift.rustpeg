@@ -72,6 +72,9 @@ assignment -> Statement
 deletion -> Statement
     = "squanch" whitespace i:identifier { Statement::Delete(i) }
 
+list_deletion -> Statement
+    = "squanch" whitespace i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { Statement::ListDelete(i, e) }
+
 line -> Statement
     = optional_whitespace s:statement optional_whitespace newline* { s }
 

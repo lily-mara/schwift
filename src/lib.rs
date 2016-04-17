@@ -54,6 +54,7 @@ pub enum Statement {
     ListNew(String),
     ListAppend(String, Expression),
     ListAssign(String, Expression, Expression),
+    ListDelete(String, Expression),
 }
 
 pub const QUOTES: [&'static str; 8] = [
