@@ -1570,6 +1570,46 @@ fn parse_newline<'input>(input: &'input str, state: &mut ParseState<'input>,
 fn parse_statement<'input>(input: &'input str, state: &mut ParseState<'input>,
                            pos: usize) -> RuleResult<Statement> {
     {
+        let start_pos = pos;
+        {
+            let seq_res =
+                {
+                    let mut repeat_pos = pos;
+                    loop  {
+                        let pos = repeat_pos;
+                        let step_res =
+                            parse_optional_whitespace(input, state, pos);
+                        match step_res {
+                            Matched(newpos, value) => { repeat_pos = newpos; }
+                            Failed => { break ; }
+                        }
+                    }
+                    Matched(repeat_pos, ())
+                };
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let seq_res = parse_statements(input, state, pos);
+                        match seq_res {
+                            Matched(pos, s) => {
+                                {
+                                    let match_str = &input[start_pos..pos];
+                                    Matched(pos, { s })
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_statements<'input>(input: &'input str,
+                            state: &mut ParseState<'input>, pos: usize)
+ -> RuleResult<Statement> {
+    {
         let choice_res = parse_list_statements(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
