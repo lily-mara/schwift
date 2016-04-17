@@ -44,6 +44,8 @@ pub enum Operator {
     LessThanEqual,
     ShiftLeft,
     ShiftRight,
+    And,
+    Or,
 }
 
 #[derive(Debug,Clone)]
