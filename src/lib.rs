@@ -219,7 +219,7 @@ impl State {
     pub fn run(&mut self, statements: Vec<Statement>) {
         for statement in statements {
             match statement {
-                Statement::Input => {},
+                Statement::Input(ref s) => {},
                 Statement::ListNew(s) => {
                     self.symbols.insert(s, Variable::new_variable(Value::List(Vec::new())));
                 },
