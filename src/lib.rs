@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug,Clone)]
 pub enum Value {
 	Str(String),
@@ -26,11 +28,11 @@ pub const QUOTES: [&'static str; 8] = [
     "Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
     "That's planning for failure Morty, even dumber than regular planning. -Rick",
     "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty and white. -S̶n̶u̶f̶f̶l̶e̶s̶ Snowbal",
-    "Existence is pain to a interpreter. -Meeseeks",
+    "Existence is pain to an interpreter. -Meeseeks",
     "In bird culture this is considered a dick move -Bird Person",
     "There is no god, gotta rip that band aid off now. You\'ll thank me later. -Rick",
-    "You are a piece of shit and I can proove it mathmatically -Rick",
-    "It hits hard, then it slowly fades, leaving you stranded in a failing marriage. -Rick",
+    "Your program is a piece of shit and I can proove it mathmatically. -Rick",
+    "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing program. -Rick",
 ];
 //Read more at: http://transcripts.foreverdreaming.org/viewtopic.php?f=364&t=19383]
 
