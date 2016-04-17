@@ -76,7 +76,7 @@ if_else -> Statement
     = "if" whitespace e:expression whitespace i_bod:block optional_whitespace "else" whitespace e_bod:block { Statement::If(e, i_bod, Option::Some(e_bod)) }
 
 block -> Vec<Statement>
-    = ":<" optional_whitespace newline s:statement* ">:" { s }
+    = ":<" optional_whitespace newline s:statement ** newline ">:" { s }
 
 assignment -> Statement
     = i:identifier whitespace "squanch" whitespace e:expression { Statement::Assignment(i, e) }

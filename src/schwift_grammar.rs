@@ -1141,6 +1141,28 @@ fn parse_block<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                         loop  {
                                                             let pos =
                                                                 repeat_pos;
+                                                            let pos =
+                                                                if repeat_value.len()
+                                                                       > 0 {
+                                                                    let sep_res =
+                                                                        parse_newline(input,
+                                                                                      state,
+                                                                                      pos);
+                                                                    match sep_res
+                                                                        {
+                                                                        Matched(newpos,
+                                                                                _)
+                                                                        => {
+                                                                            newpos
+                                                                        }
+                                                                        Failed
+                                                                        =>
+                                                                        break
+                                                                            ,
+                                                                    }
+                                                                } else {
+                                                                    pos
+                                                                };
                                                             let step_res =
                                                                 parse_statement(input,
                                                                                 state,
