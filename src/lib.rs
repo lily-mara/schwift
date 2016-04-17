@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::prelude::*;
 
 pub mod schwift_grammar;
 
@@ -11,6 +13,7 @@ pub enum Value {
 	List(Vec<Value>),
 }
 
+#[derive(Clone)]
 pub struct Variable {
     value: Value,
     constant: bool,
@@ -64,10 +67,10 @@ pub const QUOTES: [&'static str; 8] = [
 ];
 
 impl <T>Op<T> {
-    fn unwrap(&self) -> T {
+    fn unwrap(self) -> T {
         match self {
-            &Op::Ok(x) => x,
-            &Op::TypeError(x, y) => panic!("Cannot combine {:?} and {:?}", x, y)
+            Op::Ok(x) => x,
+            Op::TypeError(x, y) => panic!("Cannot combine {:?} and {:?}", x, y)
         }
     }
 }
@@ -77,7 +80,9 @@ impl State {
         match exp {
             Expression::Variable(ref s) => {
                 if self.symbols.contains_key(s) {
-                    *self.symbols.get(s).unwrap().clone()
+                    let y = &(self.symbols);
+                    let x = y.get(s).unwrap();
+                    x.clone()
                 } else {
                     panic!("Tried to use variable {} before assignment", s)
                 }
@@ -98,7 +103,8 @@ impl State {
     }
 
     fn assign(&mut self, str: String, exp: Expression) {
-        self.symbols.insert(str, self.expression_to_variable(exp));
+        let v = self.expression_to_variable(exp);
+        self.symbols.insert(str, v);
     }
 
     fn delete(&mut self, str: String) {
@@ -226,7 +232,7 @@ impl Variable {
             Value::Str(ref i) => {
                 if let Value::Int(j) = value {
                     let mut new_buf = i.clone();
-                    for _ in 0..j {
+                    for _ in 0..(j - 1) {
                         new_buf.push_str(&i);
                     }
                     Op::Ok(Value::Str(new_buf))
@@ -257,4 +263,22 @@ impl Variable {
             _ => panic!("unimplemented"),
         }
     }
+}
+
+pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, schwift_grammar::ParseError> {
+    let mut f = match File::open(filename){
+        Result::Ok(i) => i,
+        Result::Err(_) => panic!("failed to open file"),
+    };
+    let mut s = String::new();
+    match f.read_to_string(&mut s) {
+        Result::Ok(_) => {},
+        Result::Err(_) => panic!("failed to read file"),
+    };
+    schwift_grammar::file(&s)
+}
+
+pub fn run_program(filename: &str) {
+    let mut s = State::new();
+    s.run(parse_file(filename).unwrap());
 }
