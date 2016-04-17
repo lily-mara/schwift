@@ -89,7 +89,7 @@ statement -> Statement
     = deletion / assignment / printing
 
 list_assign -> Statement
-    = i:identifier optional_whitespace "[" optional_whitespace v:int optional_whitespace"]" optional_whitespace "squanch" a:value { Statement::ListAssign(i, v, a) }
+    = i:identifier optional_whitespace "[" optional_whitespace v:int optional_whitespace"]" optional_whitespace "squanch" e:expression { Statement::ListAssign(i, v, e) }
 
 printing -> Statement
     = "show me what you got" whitespace e:expression { Statement::Print(e) }

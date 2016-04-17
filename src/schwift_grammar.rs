@@ -1214,13 +1214,13 @@ fn parse_list_assign<'input>(input: &'input str,
                                                                                                                 {
                                                                                                                     {
                                                                                                                         let seq_res =
-                                                                                                                            parse_value(input,
-                                                                                                                                        state,
-                                                                                                                                        pos);
+                                                                                                                            parse_expression(input,
+                                                                                                                                             state,
+                                                                                                                                             pos);
                                                                                                                         match seq_res
                                                                                                                             {
                                                                                                                             Matched(pos,
-                                                                                                                                    a)
+                                                                                                                                    e)
                                                                                                                             =>
                                                                                                                             {
                                                                                                                                 {
@@ -1230,7 +1230,7 @@ fn parse_list_assign<'input>(input: &'input str,
                                                                                                                                             {
                                                                                                                                                 Statement::ListAssign(i,
                                                                                                                                                                       v,
-                                                                                                                                                                      a)
+                                                                                                                                                                      e)
                                                                                                                                             })
                                                                                                                                 }
                                                                                                                             }
