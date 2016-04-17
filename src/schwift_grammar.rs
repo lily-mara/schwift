@@ -633,12 +633,12 @@ fn parse_assignment<'input>(input: &'input str,
                                                     Matched(pos, _) => {
                                                         {
                                                             let seq_res =
-                                                                parse_value(input,
-                                                                            state,
-                                                                            pos);
+                                                                parse_expression(input,
+                                                                                 state,
+                                                                                 pos);
                                                             match seq_res {
                                                                 Matched(pos,
-                                                                        v) =>
+                                                                        e) =>
                                                                 {
                                                                     {
                                                                         let match_str =
@@ -646,7 +646,7 @@ fn parse_assignment<'input>(input: &'input str,
                                                                         Matched(pos,
                                                                                 {
                                                                                     Statement::Assignment(i,
-                                                                                                          v)
+                                                                                                          e)
                                                                                 })
                                                                     }
                                                                 }
@@ -711,13 +711,133 @@ fn parse_deletion<'input>(input: &'input str, state: &mut ParseState<'input>,
         }
     }
 }
+fn parse_line<'input>(input: &'input str, state: &mut ParseState<'input>,
+                      pos: usize) -> RuleResult<Statement> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = parse_optional_whitespace(input, state, pos);
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let seq_res = parse_statement(input, state, pos);
+                        match seq_res {
+                            Matched(pos, s) => {
+                                {
+                                    let seq_res =
+                                        parse_optional_whitespace(input,
+                                                                  state, pos);
+                                    match seq_res {
+                                        Matched(pos, _) => {
+                                            {
+                                                let seq_res =
+                                                    parse_newline(input,
+                                                                  state, pos);
+                                                match seq_res {
+                                                    Matched(pos, _) => {
+                                                        {
+                                                            let match_str =
+                                                                &input[start_pos..pos];
+                                                            Matched(pos,
+                                                                    { s })
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_optional_whitespace<'input>(input: &'input str,
+                                     state: &mut ParseState<'input>,
+                                     pos: usize) -> RuleResult<()> {
+    {
+        let mut repeat_pos = pos;
+        loop  {
+            let pos = repeat_pos;
+            let step_res =
+                if input.len() > pos {
+                    let (ch, next) = char_range_at(input, pos);
+                    match ch {
+                        ' ' | '\t' => Matched(next, ()),
+                        _ => state.mark_failure(pos, "[ \t]"),
+                    }
+                } else { state.mark_failure(pos, "[ \t]") };
+            match step_res {
+                Matched(newpos, value) => { repeat_pos = newpos; }
+                Failed => { break ; }
+            }
+        }
+        Matched(repeat_pos, ())
+    }
+}
+fn parse_newline<'input>(input: &'input str, state: &mut ParseState<'input>,
+                         pos: usize) -> RuleResult<()> {
+    slice_eq(input, state, pos, "\n")
+}
 fn parse_statement<'input>(input: &'input str, state: &mut ParseState<'input>,
                            pos: usize) -> RuleResult<Statement> {
     {
         let choice_res = parse_deletion(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
-            Failed => parse_assignment(input, state, pos),
+            Failed => {
+                let choice_res = parse_assignment(input, state, pos);
+                match choice_res {
+                    Matched(pos, value) => Matched(pos, value),
+                    Failed => parse_printing(input, state, pos),
+                }
+            }
+        }
+    }
+}
+fn parse_printing<'input>(input: &'input str, state: &mut ParseState<'input>,
+                          pos: usize) -> RuleResult<Statement> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "show me what you got");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let seq_res = parse_whitespace(input, state, pos);
+                        match seq_res {
+                            Matched(pos, _) => {
+                                {
+                                    let seq_res =
+                                        parse_expression(input, state, pos);
+                                    match seq_res {
+                                        Matched(pos, e) => {
+                                            {
+                                                let match_str =
+                                                    &input[start_pos..pos];
+                                                Matched(pos,
+                                                        {
+                                                            Statement::Print(e)
+                                                        })
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                }
+                Failed => Failed,
+            }
         }
     }
 }
@@ -725,10 +845,16 @@ fn parse_expression<'input>(input: &'input str,
                             state: &mut ParseState<'input>, pos: usize)
  -> RuleResult<Expression> {
     {
-        let choice_res = parse_operator_expression(input, state, pos);
+        let choice_res = parse_variable_expression(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
-            Failed => parse_value_expression(input, state, pos),
+            Failed => {
+                let choice_res = parse_value_expression(input, state, pos);
+                match choice_res {
+                    Matched(pos, value) => Matched(pos, value),
+                    Failed => parse_operator_expression(input, state, pos),
+                }
+            }
         }
     }
 }
@@ -793,6 +919,25 @@ fn parse_value_expression<'input>(input: &'input str,
         }
     }
 }
+fn parse_variable_expression<'input>(input: &'input str,
+                                     state: &mut ParseState<'input>,
+                                     pos: usize) -> RuleResult<Expression> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = parse_identifier(input, state, pos);
+            match seq_res {
+                Matched(pos, i) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Expression::Variable(i) })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
 pub fn value<'input>(input: &'input str) -> ParseResult<Value> {
     let mut state = ParseState::new();
     match parse_value(input, &mut state, 0) {
@@ -841,9 +986,21 @@ pub fn deletion<'input>(input: &'input str) -> ParseResult<Statement> {
                    offset: state.max_err_pos,
                    expected: state.expected,})
 }
-pub fn statement<'input>(input: &'input str) -> ParseResult<Statement> {
+pub fn line<'input>(input: &'input str) -> ParseResult<Statement> {
     let mut state = ParseState::new();
-    match parse_statement(input, &mut state, 0) {
+    match parse_line(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn expression<'input>(input: &'input str) -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_expression(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }

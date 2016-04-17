@@ -1,0 +1,85 @@
+use super::{ Value, Variable, Operator, Statement, Expression };
+
+string -> Value
+    = "\"" [^"]* "\"" { Value::Str(match_str[1..(pos - 1)].to_string()) }
+
+int -> Value
+    = [0-9]+ { Value::Int(match_str.parse::<i32>().unwrap()) }
+
+float -> Value
+    = [0-9]+ "." [0-9]+ { Value::Float(match_str.parse::<f32>().unwrap()) }
+
+truth -> Value
+    = "rick" { Value::Bool(true) }
+
+falsehood -> Value
+    = "morty" { Value::Bool(false) }
+
+boolean -> Value
+    = truth / falsehood
+
+#[pub]
+value -> Value
+    = float / int / string / boolean
+
+#[pub]
+identifier -> String
+    = [a-zA-Z] [a-zA-Z0-9_]* { match_str.to_string() }
+
+plus -> Operator
+    = "+" { Operator::Add }
+
+minus -> Operator
+    = "-" { Operator::Subtract }
+
+times -> Operator
+    = "*" { Operator::Multipy }
+
+divide -> Operator
+    = "/" { Operator::Divide }
+
+equality -> Operator
+    = "==" { Operator::Equality }
+
+operator -> Operator
+    = plus / minus / times / divide / equality
+
+whitespace
+    = [ \t]+
+
+#[pub]
+assignment -> Statement
+    = i:identifier whitespace "squanch" whitespace e:expression { Statement::Assignment(i, e) }
+
+#[pub]
+deletion -> Statement
+    = "squanch" whitespace i:identifier { Statement::Delete(i) }
+
+#[pub]
+line -> Statement
+    = optional_whitespace s:statement optional_whitespace newline { s }
+
+optional_whitespace
+    = [ \t]*
+
+newline
+    = "\n"
+
+statement -> Statement
+    = deletion / assignment / printing
+
+printing -> Statement
+    = "show me what you got" whitespace e:expression { Statement::Print(e) }
+
+#[pub]
+expression -> Expression
+    = variable_expression / value_expression / operator_expression
+
+operator_expression -> Expression
+    = e1:expression o:operator e2:expression { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
+
+value_expression -> Expression
+    = v:value { Expression::Value(v) }
+
+variable_expression -> Expression
+    = i:identifier { Expression::Variable(i) }
