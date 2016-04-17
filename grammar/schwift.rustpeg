@@ -34,7 +34,7 @@ list_append -> Statement
     = i:identifier whitespace "assimilate" whitespace e:expression { Statement::ListAppend(i, e) }
 
 list_statements -> Statement
-    = list_instantiation / list_append / list_assign
+    = list_instantiation / list_append / list_assign / list_deletion
 
 list_index -> Expression
     = i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { Expression::ListIndex(i, Box::new(e)) }

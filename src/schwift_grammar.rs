@@ -552,7 +552,13 @@ fn parse_list_statements<'input>(input: &'input str,
                 let choice_res = parse_list_append(input, state, pos);
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
-                    Failed => parse_list_assign(input, state, pos),
+                    Failed => {
+                        let choice_res = parse_list_assign(input, state, pos);
+                        match choice_res {
+                            Matched(pos, value) => Matched(pos, value),
+                            Failed => parse_list_deletion(input, state, pos),
+                        }
+                    }
                 }
             }
         }
