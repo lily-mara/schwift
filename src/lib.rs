@@ -12,6 +12,10 @@ pub struct Variable {
     constant: bool,
 }
 
+pub struct State {
+    symbols: HashMap<String, Variable>
+}
+
 #[derive(Debug)]
 pub enum Op<T> {
     Ok(T),
