@@ -42,6 +42,8 @@ pub enum Operator {
     LessThan,
     GreaterThanEqual,
     LessThanEqual,
+    ShiftLeft,
+    ShiftRight,
 }
 
 #[derive(Debug,Clone)]
@@ -118,6 +120,8 @@ impl State {
                     Operator::GreaterThan => x.greater_than(y.value).unwrap(),
                     Operator::LessThanEqual => x.less_than_equal(y.value).unwrap(),
                     Operator::GreaterThanEqual => x.greater_than_equal(y.value).unwrap(),
+                    Operator::ShiftLeft => x.shift_left(y.value).unwrap(),
+                    Operator::ShiftRight => x.shift_right(y.value).unwrap(),
                 })
             }
             Expression::Value(v) => Variable::new_variable(v),
@@ -411,6 +415,38 @@ impl Variable {
             },
             _ => {
                 logic_error("Tried to divide incompatable types");
+                unreachable!();
+            },
+        }
+    }
+
+    pub fn shift_left(&self, value: Value) -> Op<Value> {
+        match self.value {
+            Value::Int(i) => {
+                if let Value::Int(j) = value {
+                    Op::Ok(Value::Int(i << j))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            _ => {
+                logic_error("Only ints can be bit-shifted.");
+                unreachable!();
+            },
+        }
+    }
+
+    pub fn shift_right(&self, value: Value) -> Op<Value> {
+        match self.value {
+            Value::Int(i) => {
+                if let Value::Int(j) = value {
+                    Op::Ok(Value::Int(i >> j))
+                } else {
+                    Op::TypeError(self.value.clone(), value.clone())
+                }
+            },
+            _ => {
+                logic_error("Only ints can be bit-shifted.");
                 unreachable!();
             },
         }

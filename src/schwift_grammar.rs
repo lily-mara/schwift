@@ -913,6 +913,42 @@ fn parse_lte<'input>(input: &'input str, state: &mut ParseState<'input>,
         }
     }
 }
+fn parse_shl<'input>(input: &'input str, state: &mut ParseState<'input>,
+                     pos: usize) -> RuleResult<Operator> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "<schwift");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Operator::ShiftLeft })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_shr<'input>(input: &'input str, state: &mut ParseState<'input>,
+                     pos: usize) -> RuleResult<Operator> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "schwift>");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Operator::ShiftRight })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
 fn parse_operator<'input>(input: &'input str, state: &mut ParseState<'input>,
                           pos: usize) -> RuleResult<Operator> {
     {
@@ -969,9 +1005,41 @@ fn parse_operator<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                     Matched(pos,
                                                                             value),
                                                                     Failed =>
-                                                                    parse_lt(input,
-                                                                             state,
-                                                                             pos),
+                                                                    {
+                                                                        let choice_res =
+                                                                            parse_lt(input,
+                                                                                     state,
+                                                                                     pos);
+                                                                        match choice_res
+                                                                            {
+                                                                            Matched(pos,
+                                                                                    value)
+                                                                            =>
+                                                                            Matched(pos,
+                                                                                    value),
+                                                                            Failed
+                                                                            =>
+                                                                            {
+                                                                                let choice_res =
+                                                                                    parse_shr(input,
+                                                                                              state,
+                                                                                              pos);
+                                                                                match choice_res
+                                                                                    {
+                                                                                    Matched(pos,
+                                                                                            value)
+                                                                                    =>
+                                                                                    Matched(pos,
+                                                                                            value),
+                                                                                    Failed
+                                                                                    =>
+                                                                                    parse_shl(input,
+                                                                                              state,
+                                                                                              pos),
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
                                                                 }
                                                             }
                                                         }

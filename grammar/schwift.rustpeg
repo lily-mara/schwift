@@ -72,8 +72,14 @@ gte -> Operator
 lte -> Operator
     = "lesssquanch" { Operator::LessThanEqual }
 
+shl -> Operator
+    = "<schwift" { Operator::ShiftLeft }
+
+shr -> Operator
+    = "schwift>" { Operator::ShiftRight }
+
 operator -> Operator
-    = plus / minus / times / divide / equality / gte / lte / gt / lt
+    = plus / minus / times / divide / equality / gte / lte / gt / lt / shr / shl
 
 whitespace
     = [ \t]+
