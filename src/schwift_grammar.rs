@@ -1260,19 +1260,18 @@ fn parse_newline<'input>(input: &'input str, state: &mut ParseState<'input>,
 fn parse_statement<'input>(input: &'input str, state: &mut ParseState<'input>,
                            pos: usize) -> RuleResult<Statement> {
     {
-        let choice_res = parse_deletion(input, state, pos);
+        let choice_res = parse_list_statements(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
             Failed => {
-                let choice_res = parse_assignment(input, state, pos);
+                let choice_res = parse_deletion(input, state, pos);
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
                     Failed => {
-                        let choice_res = parse_printing(input, state, pos);
+                        let choice_res = parse_assignment(input, state, pos);
                         match choice_res {
                             Matched(pos, value) => Matched(pos, value),
-                            Failed =>
-                            parse_list_statements(input, state, pos),
+                            Failed => parse_printing(input, state, pos),
                         }
                     }
                 }
