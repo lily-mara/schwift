@@ -6,7 +6,10 @@ use std::io::prelude::*;
 
 pub mod schwift_grammar;
 
-#[derive(Debug,Clone)]
+#[cfg(test)]
+mod syntax_tests;
+
+#[derive(Debug,Clone,PartialEq)]
 pub enum Value {
 	Str(String),
 	Int(i32),
@@ -31,7 +34,7 @@ pub enum Op<T> {
     TypeError(Value, Value),
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,PartialEq)]
 pub enum Operator {
     Add,
     Subtract,
@@ -48,7 +51,7 @@ pub enum Operator {
     Or,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,PartialEq)]
 pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),

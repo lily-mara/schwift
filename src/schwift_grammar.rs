@@ -2405,9 +2405,467 @@ fn parse_variable_expression<'input>(input: &'input str,
         }
     }
 }
+pub fn string<'input>(input: &'input str) -> ParseResult<Value> {
+    let mut state = ParseState::new();
+    match parse_string(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn string_inquotes<'input>(input: &'input str) -> ParseResult<String> {
+    let mut state = ParseState::new();
+    match parse_string_inquotes(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn int<'input>(input: &'input str) -> ParseResult<i32> {
+    let mut state = ParseState::new();
+    match parse_int(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn float<'input>(input: &'input str) -> ParseResult<f32> {
+    let mut state = ParseState::new();
+    match parse_float(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn v_int<'input>(input: &'input str) -> ParseResult<Value> {
+    let mut state = ParseState::new();
+    match parse_v_int(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn v_float<'input>(input: &'input str) -> ParseResult<Value> {
+    let mut state = ParseState::new();
+    match parse_v_float(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn truth<'input>(input: &'input str) -> ParseResult<Value> {
+    let mut state = ParseState::new();
+    match parse_truth(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn falsehood<'input>(input: &'input str) -> ParseResult<Value> {
+    let mut state = ParseState::new();
+    match parse_falsehood(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn boolean<'input>(input: &'input str) -> ParseResult<Value> {
+    let mut state = ParseState::new();
+    match parse_boolean(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn list_instantiation<'input>(input: &'input str)
+ -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_list_instantiation(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn list_append<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_list_append(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn list_statements<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_list_statements(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn list_index<'input>(input: &'input str) -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_list_index(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn value<'input>(input: &'input str) -> ParseResult<Value> {
+    let mut state = ParseState::new();
+    match parse_value(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn identifier<'input>(input: &'input str) -> ParseResult<String> {
+    let mut state = ParseState::new();
+    match parse_identifier(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn plus<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_plus(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn minus<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_minus(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn times<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_times(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn divide<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_divide(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn equality<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_equality(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn gt<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_gt(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn lt<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_lt(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn gte<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_gte(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn lte<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_lte(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn shl<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_shl(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn shr<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_shr(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn operator<'input>(input: &'input str) -> ParseResult<Operator> {
+    let mut state = ParseState::new();
+    match parse_operator(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn whitespace<'input>(input: &'input str) -> ParseResult<()> {
+    let mut state = ParseState::new();
+    match parse_whitespace(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn if_statement<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_if_statement(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn bare_if<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_bare_if(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn if_else<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_if_else(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn while_loop<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_while_loop(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
 pub fn block<'input>(input: &'input str) -> ParseResult<Vec<Statement>> {
     let mut state = ParseState::new();
     match parse_block(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn statement_ws<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_statement_ws(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn statements_ws<'input>(input: &'input str)
+ -> ParseResult<Vec<Statement>> {
+    let mut state = ParseState::new();
+    match parse_statements_ws(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn assignment<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_assignment(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn deletion<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_deletion(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn list_deletion<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_list_deletion(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn line<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_line(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }
@@ -2429,9 +2887,144 @@ pub fn file<'input>(input: &'input str) -> ParseResult<Vec<Statement>> {
                    offset: state.max_err_pos,
                    expected: state.expected,})
 }
+pub fn optional_whitespace<'input>(input: &'input str) -> ParseResult<()> {
+    let mut state = ParseState::new();
+    match parse_optional_whitespace(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn newline<'input>(input: &'input str) -> ParseResult<()> {
+    let mut state = ParseState::new();
+    match parse_newline(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn statement<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_statement(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn list_assign<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_list_assign(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn printing<'input>(input: &'input str) -> ParseResult<Statement> {
+    let mut state = ParseState::new();
+    match parse_printing(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
 pub fn expression<'input>(input: &'input str) -> ParseResult<Expression> {
     let mut state = ParseState::new();
     match parse_expression(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn list_length<'input>(input: &'input str) -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_list_length(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn not<'input>(input: &'input str) -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_not(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn expression1<'input>(input: &'input str) -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_expression1(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn operator_expression<'input>(input: &'input str)
+ -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_operator_expression(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn value_expression<'input>(input: &'input str)
+ -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_value_expression(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn variable_expression<'input>(input: &'input str)
+ -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_variable_expression(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }
