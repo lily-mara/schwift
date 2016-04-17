@@ -899,16 +899,27 @@ fn parse_expression<'input>(input: &'input str,
                             state: &mut ParseState<'input>, pos: usize)
  -> RuleResult<Expression> {
     {
-        let choice_res = parse_variable_expression(input, state, pos);
+        let choice_res = parse_operator_expression(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
             Failed => {
-                let choice_res = parse_value_expression(input, state, pos);
+                let choice_res = parse_variable_expression(input, state, pos);
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
-                    Failed => parse_operator_expression(input, state, pos),
+                    Failed => parse_value_expression(input, state, pos),
                 }
             }
+        }
+    }
+}
+fn parse_expression1<'input>(input: &'input str,
+                             state: &mut ParseState<'input>, pos: usize)
+ -> RuleResult<Expression> {
+    {
+        let choice_res = parse_variable_expression(input, state, pos);
+        match choice_res {
+            Matched(pos, value) => Matched(pos, value),
+            Failed => parse_value_expression(input, state, pos),
         }
     }
 }
@@ -918,27 +929,53 @@ fn parse_operator_expression<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = parse_expression(input, state, pos);
+            let seq_res = parse_expression1(input, state, pos);
             match seq_res {
                 Matched(pos, e1) => {
                     {
-                        let seq_res = parse_operator(input, state, pos);
+                        let seq_res =
+                            parse_optional_whitespace(input, state, pos);
                         match seq_res {
-                            Matched(pos, o) => {
+                            Matched(pos, _) => {
                                 {
                                     let seq_res =
-                                        parse_expression(input, state, pos);
+                                        parse_operator(input, state, pos);
                                     match seq_res {
-                                        Matched(pos, e2) => {
+                                        Matched(pos, o) => {
                                             {
-                                                let match_str =
-                                                    &input[start_pos..pos];
-                                                Matched(pos,
+                                                let seq_res =
+                                                    parse_optional_whitespace(input,
+                                                                              state,
+                                                                              pos);
+                                                match seq_res {
+                                                    Matched(pos, _) => {
                                                         {
-                                                            Expression::OperatorExpression(Box::new(e1),
-                                                                                           o,
-                                                                                           Box::new(e2))
-                                                        })
+                                                            let seq_res =
+                                                                parse_expression(input,
+                                                                                 state,
+                                                                                 pos);
+                                                            match seq_res {
+                                                                Matched(pos,
+                                                                        e2) =>
+                                                                {
+                                                                    {
+                                                                        let match_str =
+                                                                            &input[start_pos..pos];
+                                                                        Matched(pos,
+                                                                                {
+                                                                                    Expression::OperatorExpression(Box::new(e1),
+                                                                                                                   o,
+                                                                                                                   Box::new(e2))
+                                                                                })
+                                                                    }
+                                                                }
+                                                                Failed =>
+                                                                Failed,
+                                                            }
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
                                             }
                                         }
                                         Failed => Failed,
@@ -995,6 +1032,18 @@ fn parse_variable_expression<'input>(input: &'input str,
 pub fn file<'input>(input: &'input str) -> ParseResult<Vec<Statement>> {
     let mut state = ParseState::new();
     match parse_file(input, &mut state, 0) {
+        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
+        _ => { }
+    }
+    let (line, col) = pos_to_line(input, state.max_err_pos);
+    Err(ParseError{line: line,
+                   column: col,
+                   offset: state.max_err_pos,
+                   expected: state.expected,})
+}
+pub fn expression<'input>(input: &'input str) -> ParseResult<Expression> {
+    let mut state = ParseState::new();
+    match parse_expression(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }
