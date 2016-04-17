@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::prelude::*;
 
 pub mod schwift_grammar;
 
@@ -190,4 +192,22 @@ impl Variable {
             _ => panic!("unimplemented"),
         }
     }
+}
+
+pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, schwift_grammar::ParseError> {
+    let mut f = match File::open(filename){
+        Result::Ok(i) => i,
+        Result::Err(_) => panic!("failed to open file"),
+    };
+    let mut s = String::new();
+    match f.read_to_string(&mut s) {
+        Result::Ok(_) => {},
+        Result::Err(_) => panic!("failed to read file"),
+    };
+    schwift_grammar::file(&s)
+}
+
+pub fn run_program(filename: &str) {
+    let s = State::new();
+    s.run(parse_file(filename).unwrap());
 }
