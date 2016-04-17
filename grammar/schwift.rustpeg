@@ -186,7 +186,7 @@ printing -> Statement
 
 #[pub]
 expression -> Expression
-    = list_index / operator_expression / value_expression / list_length / variable_expression / not
+    = not / operator_expression / list_index / value_expression / list_length / variable_expression
 
 #[pub]
 list_length -> Expression
