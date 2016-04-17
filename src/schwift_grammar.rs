@@ -2003,16 +2003,16 @@ fn parse_expression<'input>(input: &'input str,
                             state: &mut ParseState<'input>, pos: usize)
  -> RuleResult<Expression> {
     {
-        let choice_res = parse_value_expression(input, state, pos);
+        let choice_res = parse_list_index(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
             Failed => {
-                let choice_res = parse_list_index(input, state, pos);
+                let choice_res = parse_operator_expression(input, state, pos);
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
                     Failed => {
                         let choice_res =
-                            parse_operator_expression(input, state, pos);
+                            parse_value_expression(input, state, pos);
                         match choice_res {
                             Matched(pos, value) => Matched(pos, value),
                             Failed => {
