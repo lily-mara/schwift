@@ -2238,7 +2238,7 @@ fn parse_expression<'input>(input: &'input str,
                             state: &mut ParseState<'input>, pos: usize)
  -> RuleResult<Expression> {
     {
-        let choice_res = parse_list_index(input, state, pos);
+        let choice_res = parse_not(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
             Failed => {
@@ -2246,26 +2246,26 @@ fn parse_expression<'input>(input: &'input str,
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
                     Failed => {
-                        let choice_res =
-                            parse_value_expression(input, state, pos);
+                        let choice_res = parse_list_index(input, state, pos);
                         match choice_res {
                             Matched(pos, value) => Matched(pos, value),
                             Failed => {
                                 let choice_res =
-                                    parse_list_length(input, state, pos);
+                                    parse_value_expression(input, state, pos);
                                 match choice_res {
                                     Matched(pos, value) =>
                                     Matched(pos, value),
                                     Failed => {
                                         let choice_res =
-                                            parse_variable_expression(input,
-                                                                      state,
-                                                                      pos);
+                                            parse_list_length(input, state,
+                                                              pos);
                                         match choice_res {
                                             Matched(pos, value) =>
                                             Matched(pos, value),
                                             Failed =>
-                                            parse_not(input, state, pos),
+                                            parse_variable_expression(input,
+                                                                      state,
+                                                                      pos),
                                         }
                                     }
                                 }

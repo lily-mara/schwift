@@ -134,3 +134,19 @@ fn test_equality() {
         )
     );
 }
+
+#[test]
+fn test_index_and_addition() {
+    let l = schwift_grammar::expression(r"x[10] + 30").unwrap();
+    assert_eq!(
+        l,
+        Expression::OperatorExpression(
+            Box::new(Expression::ListIndex(
+                "x".to_string(),
+                Box::new(Expression::Value(Value::Int(10)))
+            )),
+            Operator::Add,
+            Box::new(Expression::Value(Value::Int(30)))
+        )
+    );
+}
