@@ -26,7 +26,8 @@ pub enum Op<T> {
     TypeError(Value, Value),
 }
 
-enum Operator {
+#[derive(Debug)]
+pub enum Operator {
     Add,
     Subtract,
     Multipy,
@@ -34,7 +35,8 @@ enum Operator {
     Equality,
 }
 
-enum Expression {
+#[derive(Debug)]
+pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
     Value(Value),
@@ -42,8 +44,9 @@ enum Expression {
 
 #[derive(Debug)]
 pub enum Statement {
-    Assignment(String, Value),
+    Assignment(String, Expression),
     Delete(String),
+    Print(Expression),
 }
 
 pub const QUOTES: [&'static str; 8] = [
@@ -56,28 +59,6 @@ pub const QUOTES: [&'static str; 8] = [
     "Your program is a piece of shit and I can proove it mathmatically. -Rick",
     "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing program. -Rick",
 ];
-
-enum Operator {
-    Add,
-    Subtract,
-    Multipy,
-    Divide,
-    Equality,
-}
-
-enum Expression {
-    Variable(String),
-    OperatorExpression(Box<Expression>, Operator, Box<Expression>),
-    Value(Value),
-}
-
-#[derive(Debug)]
-pub enum Statement {
-    Assignment(String, Value),
-    Delete(String),
-}
-
-//Read more at: http://transcripts.foreverdreaming.org/viewtopic.php?f=364&t=19383]
 
 impl Variable {
     pub fn new_variable(value: Value) -> Variable {
