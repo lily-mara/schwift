@@ -1,3 +1,5 @@
+pub mod schwift_grammar;
+
 #[derive(Debug,Clone)]
 pub enum Value {
 	Str(String),
@@ -16,6 +18,26 @@ pub struct Variable {
 pub enum Op<T> {
     Ok(T),
     TypeError(Value, Value),
+}
+
+enum Operator {
+    Add,
+    Subtract,
+    Multipy,
+    Divide,
+    Equality,
+}
+
+enum Expression {
+    Variable(String),
+    OperatorExpression(Box<Expression>, Operator, Box<Expression>),
+    Value(Value),
+}
+
+#[derive(Debug)]
+pub enum Statement {
+    Assignment(String, Value),
+    Delete(String),
 }
 
 const QUOTES: [&'static str; 2] = [
