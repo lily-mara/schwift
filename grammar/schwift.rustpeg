@@ -130,7 +130,7 @@ while_loop -> Statement
 
 #[pub]
 block -> Vec<Statement>
-    = ":<" optional_whitespace newline s:statements_ws newline ">:" { s }
+    = ":<" optional_whitespace newline l:line* optional_whitespace ">:" { l }
 
 #[pub]
 statement_ws -> Statement
@@ -157,6 +157,10 @@ line -> Statement
     = optional_whitespace s:statement optional_whitespace newline* { s }
 
 #[pub]
+input -> Statement
+    = "portal gun" whitespace i:identifier { Statement::Input(i) }
+
+#[pub]
 file -> Vec<Statement>
     = line+
 
@@ -170,7 +174,7 @@ newline
 
 #[pub]
 statement -> Statement
-    = list_statements / deletion / assignment / printing / if_statement / while_loop
+    = list_statements / deletion / assignment / printing / if_statement / while_loop / input
 
 #[pub]
 list_assign -> Statement
