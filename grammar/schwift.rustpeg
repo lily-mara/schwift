@@ -1,7 +1,10 @@
 use super::{ Value, Variable, Operator, Statement, Expression };
 
 string -> Value
-    = "\"" [^"]* "\"" { Value::Str(match_str[1..(pos - 1)].to_string()) }
+    = "\"" s:string_inquotes "\"" { Value::Str(s) }
+
+string_inquotes -> String
+    = [^"]* { match_str.to_string() }
 
 int -> Value
     = [0-9]+ { Value::Int(match_str.parse::<i32>().unwrap()) }

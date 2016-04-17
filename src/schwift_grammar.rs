@@ -124,34 +124,9 @@ fn parse_string<'input>(input: &'input str, state: &mut ParseState<'input>,
                 Matched(pos, _) => {
                     {
                         let seq_res =
-                            {
-                                let mut repeat_pos = pos;
-                                loop  {
-                                    let pos = repeat_pos;
-                                    let step_res =
-                                        if input.len() > pos {
-                                            let (ch, next) =
-                                                char_range_at(input, pos);
-                                            match ch {
-                                                '\"' =>
-                                                state.mark_failure(pos,
-                                                                   "[^\"]"),
-                                                _ => Matched(next, ()),
-                                            }
-                                        } else {
-                                            state.mark_failure(pos, "[^\"]")
-                                        };
-                                    match step_res {
-                                        Matched(newpos, value) => {
-                                            repeat_pos = newpos;
-                                        }
-                                        Failed => { break ; }
-                                    }
-                                }
-                                Matched(repeat_pos, ())
-                            };
+                            parse_string_inquotes(input, state, pos);
                         match seq_res {
-                            Matched(pos, _) => {
+                            Matched(pos, s) => {
                                 {
                                     let seq_res =
                                         slice_eq(input, state, pos, "\"");
@@ -161,11 +136,7 @@ fn parse_string<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                 let match_str =
                                                     &input[start_pos..pos];
                                                 Matched(pos,
-                                                        {
-                                                            Value::Str(match_str[1..(pos
-                                                                                         -
-                                                                                         1)].to_string())
-                                                        })
+                                                        { Value::Str(s) })
                                             }
                                         }
                                         Failed => Failed,
@@ -174,6 +145,44 @@ fn parse_string<'input>(input: &'input str, state: &mut ParseState<'input>,
                             }
                             Failed => Failed,
                         }
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_string_inquotes<'input>(input: &'input str,
+                                 state: &mut ParseState<'input>, pos: usize)
+ -> RuleResult<String> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res =
+                {
+                    let mut repeat_pos = pos;
+                    loop  {
+                        let pos = repeat_pos;
+                        let step_res =
+                            if input.len() > pos {
+                                let (ch, next) = char_range_at(input, pos);
+                                match ch {
+                                    '\"' => state.mark_failure(pos, "[^\"]"),
+                                    _ => Matched(next, ()),
+                                }
+                            } else { state.mark_failure(pos, "[^\"]") };
+                        match step_res {
+                            Matched(newpos, value) => { repeat_pos = newpos; }
+                            Failed => { break ; }
+                        }
+                    }
+                    Matched(repeat_pos, ())
+                };
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { match_str.to_string() })
                     }
                 }
                 Failed => Failed,
