@@ -61,7 +61,7 @@ pub enum Expression {
     Not(Box<Expression>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq)]
 pub enum Statement {
     Assignment(String, Expression),
     Delete(String),
@@ -72,6 +72,7 @@ pub enum Statement {
     ListDelete(String, Expression),
     If(Expression, Vec<Statement>, Option<Vec<Statement>>),
     While(Expression, Vec<Statement>),
+    Input(String),
 }
 
 pub const QUOTES: [&'static str; 9] = [
@@ -218,6 +219,7 @@ impl State {
     pub fn run(&mut self, statements: Vec<Statement>) {
         for statement in statements {
             match statement {
+                Statement::Input => {},
                 Statement::ListNew(s) => {
                     self.symbols.insert(s, Variable::new_variable(Value::List(Vec::new())));
                 },
