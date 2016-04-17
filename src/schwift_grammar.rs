@@ -124,34 +124,9 @@ fn parse_string<'input>(input: &'input str, state: &mut ParseState<'input>,
                 Matched(pos, _) => {
                     {
                         let seq_res =
-                            {
-                                let mut repeat_pos = pos;
-                                loop  {
-                                    let pos = repeat_pos;
-                                    let step_res =
-                                        if input.len() > pos {
-                                            let (ch, next) =
-                                                char_range_at(input, pos);
-                                            match ch {
-                                                '\"' =>
-                                                state.mark_failure(pos,
-                                                                   "[^\"]"),
-                                                _ => Matched(next, ()),
-                                            }
-                                        } else {
-                                            state.mark_failure(pos, "[^\"]")
-                                        };
-                                    match step_res {
-                                        Matched(newpos, value) => {
-                                            repeat_pos = newpos;
-                                        }
-                                        Failed => { break ; }
-                                    }
-                                }
-                                Matched(repeat_pos, ())
-                            };
+                            parse_string_inquotes(input, state, pos);
                         match seq_res {
-                            Matched(pos, _) => {
+                            Matched(pos, s) => {
                                 {
                                     let seq_res =
                                         slice_eq(input, state, pos, "\"");
@@ -161,11 +136,7 @@ fn parse_string<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                 let match_str =
                                                     &input[start_pos..pos];
                                                 Matched(pos,
-                                                        {
-                                                            Value::Str(match_str[1..(pos
-                                                                                         -
-                                                                                         1)].to_string())
-                                                        })
+                                                        { Value::Str(s) })
                                             }
                                         }
                                         Failed => Failed,
@@ -174,6 +145,44 @@ fn parse_string<'input>(input: &'input str, state: &mut ParseState<'input>,
                             }
                             Failed => Failed,
                         }
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_string_inquotes<'input>(input: &'input str,
+                                 state: &mut ParseState<'input>, pos: usize)
+ -> RuleResult<String> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res =
+                {
+                    let mut repeat_pos = pos;
+                    loop  {
+                        let pos = repeat_pos;
+                        let step_res =
+                            if input.len() > pos {
+                                let (ch, next) = char_range_at(input, pos);
+                                match ch {
+                                    '\"' => state.mark_failure(pos, "[^\"]"),
+                                    _ => Matched(next, ()),
+                                }
+                            } else { state.mark_failure(pos, "[^\"]") };
+                        match step_res {
+                            Matched(newpos, value) => { repeat_pos = newpos; }
+                            Failed => { break ; }
+                        }
+                    }
+                    Matched(repeat_pos, ())
+                };
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { match_str.to_string() })
                     }
                 }
                 Failed => Failed,
@@ -731,8 +740,32 @@ fn parse_line<'input>(input: &'input str, state: &mut ParseState<'input>,
                                         Matched(pos, _) => {
                                             {
                                                 let seq_res =
-                                                    parse_newline(input,
-                                                                  state, pos);
+                                                    {
+                                                        let mut repeat_pos =
+                                                            pos;
+                                                        loop  {
+                                                            let pos =
+                                                                repeat_pos;
+                                                            let step_res =
+                                                                parse_newline(input,
+                                                                              state,
+                                                                              pos);
+                                                            match step_res {
+                                                                Matched(newpos,
+                                                                        value)
+                                                                => {
+                                                                    repeat_pos
+                                                                        =
+                                                                        newpos;
+                                                                }
+                                                                Failed => {
+                                                                    break ;
+                                                                }
+                                                            }
+                                                        }
+                                                        Matched(repeat_pos,
+                                                                ())
+                                                    };
                                                 match seq_res {
                                                     Matched(pos, _) => {
                                                         {
@@ -757,6 +790,27 @@ fn parse_line<'input>(input: &'input str, state: &mut ParseState<'input>,
                 Failed => Failed,
             }
         }
+    }
+}
+fn parse_file<'input>(input: &'input str, state: &mut ParseState<'input>,
+                      pos: usize) -> RuleResult<Vec<Statement>> {
+    {
+        let mut repeat_pos = pos;
+        let mut repeat_value = vec!();
+        loop  {
+            let pos = repeat_pos;
+            let step_res = parse_line(input, state, pos);
+            match step_res {
+                Matched(newpos, value) => {
+                    repeat_pos = newpos;
+                    repeat_value.push(value);
+                }
+                Failed => { break ; }
+            }
+        }
+        if repeat_value.len() >= 1usize {
+            Matched(repeat_pos, repeat_value)
+        } else { Failed }
     }
 }
 fn parse_optional_whitespace<'input>(input: &'input str,
@@ -845,16 +899,27 @@ fn parse_expression<'input>(input: &'input str,
                             state: &mut ParseState<'input>, pos: usize)
  -> RuleResult<Expression> {
     {
-        let choice_res = parse_variable_expression(input, state, pos);
+        let choice_res = parse_operator_expression(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
             Failed => {
-                let choice_res = parse_value_expression(input, state, pos);
+                let choice_res = parse_variable_expression(input, state, pos);
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
-                    Failed => parse_operator_expression(input, state, pos),
+                    Failed => parse_value_expression(input, state, pos),
                 }
             }
+        }
+    }
+}
+fn parse_expression1<'input>(input: &'input str,
+                             state: &mut ParseState<'input>, pos: usize)
+ -> RuleResult<Expression> {
+    {
+        let choice_res = parse_variable_expression(input, state, pos);
+        match choice_res {
+            Matched(pos, value) => Matched(pos, value),
+            Failed => parse_value_expression(input, state, pos),
         }
     }
 }
@@ -864,27 +929,53 @@ fn parse_operator_expression<'input>(input: &'input str,
     {
         let start_pos = pos;
         {
-            let seq_res = parse_expression(input, state, pos);
+            let seq_res = parse_expression1(input, state, pos);
             match seq_res {
                 Matched(pos, e1) => {
                     {
-                        let seq_res = parse_operator(input, state, pos);
+                        let seq_res =
+                            parse_optional_whitespace(input, state, pos);
                         match seq_res {
-                            Matched(pos, o) => {
+                            Matched(pos, _) => {
                                 {
                                     let seq_res =
-                                        parse_expression(input, state, pos);
+                                        parse_operator(input, state, pos);
                                     match seq_res {
-                                        Matched(pos, e2) => {
+                                        Matched(pos, o) => {
                                             {
-                                                let match_str =
-                                                    &input[start_pos..pos];
-                                                Matched(pos,
+                                                let seq_res =
+                                                    parse_optional_whitespace(input,
+                                                                              state,
+                                                                              pos);
+                                                match seq_res {
+                                                    Matched(pos, _) => {
                                                         {
-                                                            Expression::OperatorExpression(Box::new(e1),
-                                                                                           o,
-                                                                                           Box::new(e2))
-                                                        })
+                                                            let seq_res =
+                                                                parse_expression(input,
+                                                                                 state,
+                                                                                 pos);
+                                                            match seq_res {
+                                                                Matched(pos,
+                                                                        e2) =>
+                                                                {
+                                                                    {
+                                                                        let match_str =
+                                                                            &input[start_pos..pos];
+                                                                        Matched(pos,
+                                                                                {
+                                                                                    Expression::OperatorExpression(Box::new(e1),
+                                                                                                                   o,
+                                                                                                                   Box::new(e2))
+                                                                                })
+                                                                    }
+                                                                }
+                                                                Failed =>
+                                                                Failed,
+                                                            }
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
                                             }
                                         }
                                         Failed => Failed,
@@ -938,57 +1029,9 @@ fn parse_variable_expression<'input>(input: &'input str,
         }
     }
 }
-pub fn value<'input>(input: &'input str) -> ParseResult<Value> {
+pub fn file<'input>(input: &'input str) -> ParseResult<Vec<Statement>> {
     let mut state = ParseState::new();
-    match parse_value(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn identifier<'input>(input: &'input str) -> ParseResult<String> {
-    let mut state = ParseState::new();
-    match parse_identifier(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn assignment<'input>(input: &'input str) -> ParseResult<Statement> {
-    let mut state = ParseState::new();
-    match parse_assignment(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn deletion<'input>(input: &'input str) -> ParseResult<Statement> {
-    let mut state = ParseState::new();
-    match parse_deletion(input, &mut state, 0) {
-        Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
-        _ => { }
-    }
-    let (line, col) = pos_to_line(input, state.max_err_pos);
-    Err(ParseError{line: line,
-                   column: col,
-                   offset: state.max_err_pos,
-                   expected: state.expected,})
-}
-pub fn line<'input>(input: &'input str) -> ParseResult<Statement> {
-    let mut state = ParseState::new();
-    match parse_line(input, &mut state, 0) {
+    match parse_file(input, &mut state, 0) {
         Matched(pos, value) => { if pos == input.len() { return Ok(value) } }
         _ => { }
     }

@@ -1,7 +1,10 @@
 use super::{ Value, Variable, Operator, Statement, Expression };
 
 string -> Value
-    = "\"" [^"]* "\"" { Value::Str(match_str[1..(pos - 1)].to_string()) }
+    = "\"" s:string_inquotes "\"" { Value::Str(s) }
+
+string_inquotes -> String
+    = [^"]* { match_str.to_string() }
 
 int -> Value
     = [0-9]+ { Value::Int(match_str.parse::<i32>().unwrap()) }
@@ -18,11 +21,9 @@ falsehood -> Value
 boolean -> Value
     = truth / falsehood
 
-#[pub]
 value -> Value
     = float / int / string / boolean
 
-#[pub]
 identifier -> String
     = [a-zA-Z] [a-zA-Z0-9_]* { match_str.to_string() }
 
@@ -47,17 +48,18 @@ operator -> Operator
 whitespace
     = [ \t]+
 
-#[pub]
 assignment -> Statement
     = i:identifier whitespace "squanch" whitespace e:expression { Statement::Assignment(i, e) }
 
-#[pub]
 deletion -> Statement
     = "squanch" whitespace i:identifier { Statement::Delete(i) }
 
-#[pub]
 line -> Statement
-    = optional_whitespace s:statement optional_whitespace newline { s }
+    = optional_whitespace s:statement optional_whitespace newline* { s }
+
+#[pub]
+file -> Vec<Statement>
+    = line+
 
 optional_whitespace
     = [ \t]*
@@ -73,10 +75,13 @@ printing -> Statement
 
 #[pub]
 expression -> Expression
-    = variable_expression / value_expression / operator_expression
+    = operator_expression / variable_expression / value_expression
+
+expression1 -> Expression
+    = variable_expression / value_expression
 
 operator_expression -> Expression
-    = e1:expression o:operator e2:expression { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
+    = e1:expression1 optional_whitespace o:operator optional_whitespace e2:expression { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
 
 value_expression -> Expression
     = v:value { Expression::Value(v) }
