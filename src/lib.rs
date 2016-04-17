@@ -383,5 +383,6 @@ pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, schwift_grammar::Pa
 
 pub fn run_program(filename: &str) {
     let mut s = State::new();
-    s.run(parse_file(filename).unwrap());
+    let tokens = parse_file(filename);
+    s.run(tokens.unwrap());
 }
