@@ -828,12 +828,84 @@ fn parse_equality<'input>(input: &'input str, state: &mut ParseState<'input>,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, state, pos, "==");
+            let seq_res = slice_eq(input, state, pos, "squanchsquanch");
             match seq_res {
                 Matched(pos, _) => {
                     {
                         let match_str = &input[start_pos..pos];
                         Matched(pos, { Operator::Equality })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_gt<'input>(input: &'input str, state: &mut ParseState<'input>,
+                    pos: usize) -> RuleResult<Operator> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "more");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Operator::GreaterThan })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_lt<'input>(input: &'input str, state: &mut ParseState<'input>,
+                    pos: usize) -> RuleResult<Operator> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "less");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Operator::LessThan })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_gte<'input>(input: &'input str, state: &mut ParseState<'input>,
+                     pos: usize) -> RuleResult<Operator> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "moresquanch");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Operator::GreaterThanEqual })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_lte<'input>(input: &'input str, state: &mut ParseState<'input>,
+                     pos: usize) -> RuleResult<Operator> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "lesssquanch");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Operator::LessThanEqual })
                     }
                 }
                 Failed => Failed,
@@ -861,8 +933,53 @@ fn parse_operator<'input>(input: &'input str, state: &mut ParseState<'input>,
                                 match choice_res {
                                     Matched(pos, value) =>
                                     Matched(pos, value),
-                                    Failed =>
-                                    parse_equality(input, state, pos),
+                                    Failed => {
+                                        let choice_res =
+                                            parse_equality(input, state, pos);
+                                        match choice_res {
+                                            Matched(pos, value) =>
+                                            Matched(pos, value),
+                                            Failed => {
+                                                let choice_res =
+                                                    parse_gte(input, state,
+                                                              pos);
+                                                match choice_res {
+                                                    Matched(pos, value) =>
+                                                    Matched(pos, value),
+                                                    Failed => {
+                                                        let choice_res =
+                                                            parse_lte(input,
+                                                                      state,
+                                                                      pos);
+                                                        match choice_res {
+                                                            Matched(pos,
+                                                                    value) =>
+                                                            Matched(pos,
+                                                                    value),
+                                                            Failed => {
+                                                                let choice_res =
+                                                                    parse_gt(input,
+                                                                             state,
+                                                                             pos);
+                                                                match choice_res
+                                                                    {
+                                                                    Matched(pos,
+                                                                            value)
+                                                                    =>
+                                                                    Matched(pos,
+                                                                            value),
+                                                                    Failed =>
+                                                                    parse_lt(input,
+                                                                             state,
+                                                                             pos),
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

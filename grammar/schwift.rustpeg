@@ -58,10 +58,22 @@ divide -> Operator
     = "/" { Operator::Divide }
 
 equality -> Operator
-    = "==" { Operator::Equality }
+    = "squanchsquanch" { Operator::Equality }
+
+gt -> Operator
+    = "more" { Operator::GreaterThan }
+
+lt -> Operator
+    = "less" { Operator::LessThan }
+
+gte -> Operator
+    = "moresquanch" { Operator::GreaterThanEqual }
+
+lte -> Operator
+    = "lesssquanch" { Operator::LessThanEqual }
 
 operator -> Operator
-    = plus / minus / times / divide / equality
+    = plus / minus / times / divide / equality / gte / lte / gt / lt
 
 whitespace
     = [ \t]+

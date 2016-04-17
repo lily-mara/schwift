@@ -36,6 +36,10 @@ pub enum Operator {
     Multiply,
     Divide,
     Equality,
+    GreaterThan,
+    LessThan,
+    GreaterThanEqual,
+    LessThanEqual,
 }
 
 #[derive(Debug,Clone)]
@@ -98,7 +102,11 @@ impl State {
                     Operator::Subtract => x.subtract(y.value).unwrap(),
                     Operator::Multiply => x.multiply(y.value).unwrap(),
                     Operator::Divide => x.divide(y.value).unwrap(),
-                    _=> panic!("Unimplemented"),
+                    Operator::Equality => x.equals(y.value).unwrap(),
+                    Operator::LessThan => x.less_than(y.value).unwrap(),
+                    Operator::GreaterThan => x.greater_than(y.value).unwrap(),
+                    Operator::LessThanEqual => x.less_than_equal(y.value).unwrap(),
+                    Operator::GreaterThanEqual => x.greater_than_equal(y.value).unwrap(),
                 })
             }
             Expression::Value(v) => Variable::new_variable(v),
@@ -173,8 +181,7 @@ impl State {
                                 }
                             } else {
                                 panic!("You can only index with an int");
-
-       }
+                            }
                         } else {
                             panic!("Type error, you are trying index something other than a cob.")
                         }
@@ -365,6 +372,96 @@ impl Variable {
             },
             _ => panic!("unimplemented"),
         }
+    }
+
+    pub fn equals(&self, value: Value) -> Op<Value> {
+        Op::Ok(Value::Bool(self.value.equals(value)))
+    }
+
+    pub fn greater_than(&self, value: Value) -> Op<Value> {
+        Op::Ok(Value::Bool(self.value.greater_than(value)))
+    }
+
+    pub fn greater_than_equal(&self, value: Value) -> Op<Value> {
+        Op::Ok(Value::Bool(self.value.greater_than_equal(value)))
+    }
+
+    pub fn less_than(&self, value: Value) -> Op<Value> {
+        Op::Ok(Value::Bool(self.value.less_than(value)))
+    }
+
+    pub fn less_than_equal(&self, value: Value) -> Op<Value> {
+        Op::Ok(Value::Bool(self.value.less_than_equal(value)))
+    }
+}
+
+fn equals(x: f32, y: f32) -> bool {
+    x == y
+}
+
+fn less_than(x: f32, y: f32) -> bool {
+    x < y
+}
+
+fn less_than_equal(x: f32, y: f32) -> bool {
+    x <= y
+}
+
+fn greater_than(x: f32, y: f32) -> bool {
+    x > y
+}
+
+fn greater_than_equal(x: f32, y: f32) -> bool {
+    x >= y
+}
+
+impl Value {
+    pub fn number_comparisson(&self, other: Value, f: &Fn(f32, f32) -> bool) -> bool {
+        match *self {
+            Value::Int(i) => {
+                if let Value::Int(j) = other {
+                    f(i as f32, j as f32)
+                } else {
+                    if let Value::Float(j) = other {
+                        f(i as f32, j)
+                    } else {
+                        false
+                    }
+                }
+            },
+            Value::Float(i) => {
+                if let Value::Float(j) = other {
+                    f(i, j)
+                } else {
+                    if let Value::Int(j) = other {
+                        f(i, j as f32)
+                    } else {
+                        false
+                    }
+                }
+            },
+            _ => panic!("foo")
+        }
+    }
+
+    pub fn equals(&self, other: Value) -> bool {
+        self.number_comparisson(other, &equals)
+    }
+
+    pub fn less_than(&self, other: Value) -> bool {
+        self.number_comparisson(other, &less_than)
+    }
+
+    pub fn greater_than(&self, other: Value) -> bool {
+        self.number_comparisson(other, &greater_than)
+    }
+
+    pub fn greater_than_equal(&self, other: Value) -> bool {
+        self.number_comparisson(other, &greater_than_equal)
+    }
+
+    pub fn less_than_equal(&self, other: Value) -> bool {
+        self.number_comparisson(other, &less_than_equal)
     }
 }
 
