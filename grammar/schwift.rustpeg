@@ -93,6 +93,9 @@ bare_if -> Statement
 if_else -> Statement
     = "if" whitespace e:expression whitespace i_bod:block optional_whitespace "else" whitespace e_bod:block { Statement::If(e, i_bod, Option::Some(e_bod)) }
 
+while_loop -> Statement
+    = "while" whitespace e:expression whitespace b:block { Statement::While(e, b) }
+
 #[pub]
 block -> Vec<Statement>
     = ":<" optional_whitespace newline s:statements_ws newline ">:" { s }
@@ -126,7 +129,7 @@ newline
     = "\n"
 
 statement -> Statement
-    = list_statements / deletion / assignment / printing / if_statement
+    = list_statements / deletion / assignment / printing / if_statement / while_loop
 
 list_assign -> Statement
     = i:identifier optional_whitespace "[" optional_whitespace v:expression optional_whitespace"]" whitespace "squanch" whitespace e:expression { Statement::ListAssign(i, v, e) }

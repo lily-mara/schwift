@@ -1298,6 +1298,72 @@ fn parse_if_else<'input>(input: &'input str, state: &mut ParseState<'input>,
         }
     }
 }
+fn parse_while_loop<'input>(input: &'input str,
+                            state: &mut ParseState<'input>, pos: usize)
+ -> RuleResult<Statement> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "while");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let seq_res = parse_whitespace(input, state, pos);
+                        match seq_res {
+                            Matched(pos, _) => {
+                                {
+                                    let seq_res =
+                                        parse_expression(input, state, pos);
+                                    match seq_res {
+                                        Matched(pos, e) => {
+                                            {
+                                                let seq_res =
+                                                    parse_whitespace(input,
+                                                                     state,
+                                                                     pos);
+                                                match seq_res {
+                                                    Matched(pos, _) => {
+                                                        {
+                                                            let seq_res =
+                                                                parse_block(input,
+                                                                            state,
+                                                                            pos);
+                                                            match seq_res {
+                                                                Matched(pos,
+                                                                        b) =>
+                                                                {
+                                                                    {
+                                                                        let match_str =
+                                                                            &input[start_pos..pos];
+                                                                        Matched(pos,
+                                                                                {
+                                                                                    Statement::While(e,
+                                                                                                     b)
+                                                                                })
+                                                                    }
+                                                                }
+                                                                Failed =>
+                                                                Failed,
+                                                            }
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
 fn parse_block<'input>(input: &'input str, state: &mut ParseState<'input>,
                        pos: usize) -> RuleResult<Vec<Statement>> {
     {
@@ -1845,8 +1911,18 @@ fn parse_statement<'input>(input: &'input str, state: &mut ParseState<'input>,
                                 match choice_res {
                                     Matched(pos, value) =>
                                     Matched(pos, value),
-                                    Failed =>
-                                    parse_if_statement(input, state, pos),
+                                    Failed => {
+                                        let choice_res =
+                                            parse_if_statement(input, state,
+                                                               pos);
+                                        match choice_res {
+                                            Matched(pos, value) =>
+                                            Matched(pos, value),
+                                            Failed =>
+                                            parse_while_loop(input, state,
+                                                             pos),
+                                        }
+                                    }
                                 }
                             }
                         }
