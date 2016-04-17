@@ -153,7 +153,7 @@ impl State {
                             if index < l.len() {
                                 Variable::new_variable(l[index].clone())
                             } else {
-                                logic!("You don't have that many kernels on cob {}, idiot.", s);
+                                logic!("You don't have {} kernels on cob {}, idiot.", index, s);
                             }
                         } else {
                             logic!("You tried to index cob {} with a non-int value {:?}", s, x);
@@ -165,7 +165,7 @@ impl State {
                                 if index < s.len() {
                                     Variable::new_variable(Value::Str(s.as_str()[index..(index + 1)].to_string()))
                                 } else {
-                                    logic!("You don't have that many kernels on cob {}, idiot.", s);
+                                    logic!("You don't have {} kernels on cob {}, idiot.", index, s);
                                 }
                             } else {
                                 logic!("You tried to index cob {} with a non-int value {:?}", s, x);

@@ -3,10 +3,6 @@ string squanch "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>+
 stringSize squanch string squanch
 count squanch 0
 
-show me what you got string[count]
-show me what you got string
-show me what you got count
-
 memory on a cob
 memory assimilate 0
 
@@ -17,6 +13,8 @@ while count less stringSize :<
 
 	memorySize squanch memory squanch
 	memZero squanch memory[0]
+	show me what you got memPointer
+	show me what you got memory
 
 	if string[count] == "<" :<
 		memPointerMinusOne squanch memPointer - 1
@@ -28,7 +26,6 @@ while count less stringSize :<
 	>:
 
 	if string[count] == ">" :<
-		show me what you got ">"
 		memPointerPlusOne squanch memPointer + 1
 		if memPointerPlusOne less memorySize :<
 			memPointer squanch memPointerPlusOne
@@ -39,27 +36,22 @@ while count less stringSize :<
 	>:
 
 	if string[count] == "+" :<
-		show me what you got "+"
 		memory[memPointer] squanch memory[memPointer] + 1
 	>:
 
 	if string[count] == "-" :<
-		show me what you got "-"
 		memory[memPointer] squanch memory[memPointer] - 1
 	>:
 
 	if string[count] == "." :<
-		show me what you got "."
 		show me what you got memory[memPointer]
 	>:
 
 	if string[count] == "," :<
-		show me what you got ","
 		show me what you got memory[memPointer]
 	>:
 
 	if string[count] == "[" :<
-		show me what you got "["
 		if memZero == 0 :<
 			count squanch count + 1
 			loopGreaterZero squanch loop more 0
@@ -84,7 +76,6 @@ while count less stringSize :<
 	>:
 
 	if string[count] == "]" :<
-		show me what you got "]"
 		if !memZero == 0 :<
 			count squanch count - 1
 			loopGreaterZero squanch loop more 0
@@ -108,4 +99,6 @@ while count less stringSize :<
 			count squanch count - 1
 		>:
 	>:
+
+	count squanch count + 1
 >:
