@@ -173,7 +173,8 @@ impl State {
                                 }
                             } else {
                                 panic!("You can only index with an int");
-                            }
+
+       }
                         } else {
                             panic!("Type error, you are trying index something other than a cob.")
                         }
@@ -203,6 +204,23 @@ impl State {
                         panic!("OOOweeee you squanched it, that cob doesn't exist.")
                     }
 
+                },
+                Statement::If(bool_expression, if_body, else_body) => {
+                    let x = self.expression_to_variable(bool_expression).value;
+                    match x {
+                        Value::Bool(b) => {
+                            if b {
+                                self.run(if_body);
+                            } else {
+                                match else_body {
+                                    Option::Some(s) => self.run(s),
+                                    Option::None => {},
+                                }
+                            }
+                        }
+                        _=> panic!("Ah geez, you you used a non-bool for a bool")
+
+                    }
                 },
                 Statement::Assignment(i, j) => self.assign(i, j),
                 Statement::Delete(i) => self.delete(i),
