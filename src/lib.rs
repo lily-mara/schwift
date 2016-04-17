@@ -87,17 +87,26 @@ pub const QUOTES: [&'static str; 9] = [
     "DISQUALIFIED. -Cromulon",
 ];
 
-pub fn logic_error(s: &str) {
+fn random_quote() -> &'static str {
     let mut rng = thread_rng();
-    let choice: &str = rng.choose(&QUOTES).unwrap();
-    panic!("\n\n\tYou made a Rickdiculous mistake\n\tError:{}\n\t{}\n\n",s, choice);
+    rng.choose(&QUOTES).unwrap()
+}
+
+macro_rules! logic {
+    ( $a:expr, $( $x:expr ),* ) => {
+        {
+            let s = &format!($a, $( $x, )*);
+            let quote = random_quote();
+            panic!("\n\n\tYou made a Rickdiculous mistake\n\tError: {} \n\t{}\n\n",s, quote);
+        }
+    };
 }
 
 impl <T>Op<T> {
     fn unwrap(self) -> T {
         match self {
             Op::Ok(x) => x,
-            Op::TypeError(x, y) => { logic_error(&format!("Cannot combine {:?} and {:?}", x, y)); unreachable!(); }
+            Op::TypeError(x, y) => { logic!("Cannot combine {:?} and {:?}", x, y); }
         }
     }
 }
@@ -111,8 +120,7 @@ impl State {
                     let x = y.get(s).unwrap();
                     x.clone()
                 } else {
-                    logic_error(&format!("Tried to use variable {} before assignment", s));
-                    unreachable!();
+                    logic!("Tried to use variable {} before assignment", s);
                 }
             }
             Expression::OperatorExpression(a, o, b) => {
@@ -145,35 +153,29 @@ impl State {
                             if index < l.len() {
                                 Variable::new_variable(l[index].clone())
                             } else {
-                                logic_error("You don't have that many kernels on your cob, idiot.");
-                                unreachable!();
+                                logic!("You don't have that many kernels on cob {}, idiot.", s);
                             }
                         } else {
-                            logic_error("You can only index with an int");
-                            unreachable!();
+                            logic!("You tried to index cob {} with a non-int value {:?}", s, x);
                         }
                     } else {
                         if let &Value::Str(ref s) = val {
                             if let Value::Int(i) = x {
                                 let index = i as usize;
                                 if index < s.len() {
-                                    Variable::new_variable(Value::Str(s.as_str()[index..(index)].to_string()))
+                                    Variable::new_variable(Value::Str(s.as_str()[index..(index + 1)].to_string()))
                                 } else {
-                                    logic_error("You don't have that many kernels on your cob, idiot.");
-                                    unreachable!();
+                                    logic!("You don't have that many kernels on cob {}, idiot.", s);
                                 }
                             } else {
-                                logic_error("You can only index with an int");
-                                unreachable!();
+                                logic!("You tried to index cob {} with a non-int value {:?}", s, x);
                             }
                         } else {
-                            logic_error("Type error, you are trying index something other than a cob.");
-                            unreachable!();
+                            logic!("You tried to index variable {}, which is not indexable", s);
                         }
                     }
                 } else {
-                    logic_error("OOOweeee you squanched it, that cob doesn't exist.");
-                    unreachable!();
+                    logic!("There is no variable named {}", s);
                 }
             },
             Expression::Not(e) => {
@@ -190,13 +192,11 @@ impl State {
                         if let &Value::Str(ref s) = val {
                             Variable::new_variable(Value::Int(s.len() as i32))
                         } else {
-                            logic_error("Type error, you are trying index something other than a cob.");
-                            unreachable!();
+                            logic!("You tried to index variable {}, which is not indexable", s);
                         }
                     }
                 } else {
-                    logic_error("OOOweeee you squanched it, that cob doesn't exist.");
-                    unreachable!();
+                    logic!("There is no variable named {}", s);
                 }
             }
         }
@@ -229,10 +229,10 @@ impl State {
                         if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
                             l.push(val);
                         } else {
-                            logic_error("Type error, you are trying index something other than a cob.")
+                            logic!("You tried to index variable {}, which is not indexable", s);
                         }
                     } else {
-                        logic_error("OOOweeee you squanched it, that cob doesn't exist.")
+                        logic!("There is no variable named {}", s);
                     }
 
                 },
@@ -246,16 +246,16 @@ impl State {
                                 if index < l.len() {
                                     l[index] = val;
                                 } else {
-                                    logic_error("You don't have that many kernels on your cob.")
+                                    logic!("Cob index out of bounds for cob {}", s);
                                 }
                             } else {
-                                logic_error("You can only index with an int");
+                                logic!("You tried to index cob {} with a non-int value {:?}", s, x);
                             }
                         } else {
-                            logic_error("Type error, you are trying index something other than a cob.")
+                            logic!("You tried to index variable {}, which is not indexable", s);
                         }
                     } else {
-                        logic_error("OOOweeee you squanched it, that cob doesn't exist.")
+                        logic!("There is no variable named {}", s);
                     }
 
                 },
@@ -268,21 +268,21 @@ impl State {
                                 if index < l.len() {
                                     l.remove(index);
                                 } else {
-                                    logic_error("You don't have that many kernels on your cob, idiot.")
+                                    logic!("Cob index out of bounds for cob {}", s);
                                 }
                             } else {
-                                logic_error("You can only index with an int");
+                                logic!("You tried to index cob {} with a non-int value {:?}", s, x);
                             }
                         } else {
-                            logic_error("Type error, you are trying index something other than a cob.")
+                            logic!("You tried to index variable {}, which is not indexable", s);
                         }
                     } else {
-                        logic_error("OOOweeee you squanched it, that cob doesn't exist.")
+                        logic!("There is no variable named {}", s);
                     }
 
                 },
                 Statement::If(bool_expression, if_body, else_body) => {
-                    let x = self.expression_to_variable(bool_expression).value;
+                    let x = self.expression_to_variable(bool_expression.clone()).value;
                     match x {
                         Value::Bool(b) => {
                             if b {
@@ -294,7 +294,7 @@ impl State {
                                 }
                             }
                         }
-                        _=> logic_error("Ah geez, you you used a non-bool for a bool")
+                        _ => logic!("Tried to use non-bool value {:?} as a bool", bool_expression),
                     }
                 },
                 Statement::While(bool_expression, body) => {
@@ -312,12 +312,11 @@ impl State {
     }
 
     pub fn eval_bool(&self, bool_expression: Expression) -> bool {
-        let b = self.expression_to_variable(bool_expression).value;
+        let b = self.expression_to_variable(bool_expression.clone()).value;
         if let Value::Bool(x) = b {
             x
         } else {
-            logic_error("Ah geez, you you used a non-bool for a bool");
-            unreachable!();
+            logic!("Tried to use non-bool value {:?} as a bool", bool_expression);
         }
     }
 
@@ -350,10 +349,7 @@ impl Variable {
     pub fn not(&mut self) {
         match self.value {
             Value::Bool(b) => self.value = Value::Bool(!b),
-            _ => {
-                logic_error("Can only negate boolean values");
-                unreachable!();
-            }
+            _ => logic!("Tried to negate non-bool value {:?}", self.value),
         }
     }
 
@@ -364,7 +360,7 @@ impl Variable {
 
     pub fn assign(&mut self, value: Value) {
         if self.constant {
-            logic_error("Tried to assign to a constant value");
+            logic!("Tried to assign to constant value {:?}", self.value);
         }
         self.value = value;
     }
@@ -394,10 +390,7 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            _ => {
-                logic_error("Tried to add incompatable types");
-                unreachable!();
-            },
+            _ => logic!("Tried to add {:?} and {:?} which have incompatable types", self.value, value),
         }
     }
 
@@ -417,10 +410,7 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            _ => {
-                logic_error("Tried to subtract incompatable types");
-                unreachable!();
-            },
+            _ => logic!("Tried to subtract {:?} and {:?} which have incompatable types", self.value, value),
         }
     }
 
@@ -450,11 +440,8 @@ impl Variable {
                 } else {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
-            }
-            _ => {
-                logic_error("Tried to multiply incompatable types");
-                unreachable!();
             },
+            _ => logic!("Tried to multiply {:?} and {:?} which have incompatable types", self.value, value),
         }
     }
 
@@ -474,10 +461,7 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            _ => {
-                logic_error("Tried to divide incompatable types");
-                unreachable!();
-            },
+            _ => logic!("Tried to divide {:?} and {:?} which have incompatable types", self.value, value),
         }
     }
 
@@ -490,10 +474,7 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            _ => {
-                logic_error("Only ints can be bit-shifted.");
-                unreachable!();
-            },
+            _ => logic!("Tried to bit shift non-int value {:?} << {:?}", self.value, value),
         }
     }
 
@@ -506,15 +487,15 @@ impl Variable {
                     Op::TypeError(self.value.clone(), value.clone())
                 }
             },
-            _ => {
-                logic_error("Only ints can be bit-shifted.");
-                unreachable!();
-            },
+            _ => logic!("Tried to bit shift non-int value {:?} >> {:?}", self.value, value),
         }
     }
 
     pub fn equals(&self, value: Value) -> Op<Value> {
-        Op::Ok(Value::Bool(self.value.equals(value)))
+        match self.value {
+            Value::Str(_) => self.str_eq(value),
+            _ => Op::Ok(Value::Bool(self.value.equals(value)))
+        }
     }
 
     pub fn greater_than(&self, value: Value) -> Op<Value> {
@@ -539,6 +520,15 @@ impl Variable {
 
     pub fn or(&self, value: Value) -> Op<Value> {
         Op::Ok(Value::Bool(self.value.or(value)))
+    }
+
+    pub fn str_eq(&self, value: Value) -> Op<Value> {
+        if let Value::Str(ref x) = self.value {
+            if let Value::Str(ref y) = value {
+                return Op::Ok(Value::Bool(x == y));
+            }
+        }
+        Op::Ok(Value::Bool(false))
     }
 }
 
@@ -595,10 +585,7 @@ impl Value {
                     }
                 }
             },
-            _ => {
-                logic_error("Tried to compare incompatable types");
-                unreachable!();
-            },
+            _ => logic!("Tried to compare {:?} and {:?} (as numbers) which have incompatable types", self, other),
         }
     }
 
@@ -608,13 +595,11 @@ impl Value {
                 if let Value::Bool(o) = other {
                     f(b, o)
                 } else {
-                    logic_error("Tried to compare incompatable types");
-                    unreachable!();
+                    logic!("Tried to compare {:?} and {:?} (as bools) which have incompatable types", self, other);
                 }
             }
-            _=> {
-                logic_error("You cannot And/Or non-bool values");
-                unreachable!();
+            _ => {
+                logic!("Tried to use boolean logic on non-bool values {:?} and {:?}", self, other);
             }
         }
     }
@@ -651,12 +636,12 @@ impl Value {
 pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, schwift_grammar::ParseError> {
     let mut f = match File::open(filename){
         Result::Ok(i) => i,
-        Result::Err(_) => { logic_error("failed to open file"); unreachable!() },
+        Result::Err(_) => logic!("Failed to open file {}", filename),
     };
     let mut s = String::new();
     match f.read_to_string(&mut s) {
         Result::Ok(_) => {},
-        Result::Err(_) => { logic_error("failed to read file"); unreachable!() },
+        Result::Err(_) => logic!("Failed to read file {}", filename),
     };
     schwift_grammar::file(&s)
 }

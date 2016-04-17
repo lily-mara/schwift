@@ -104,9 +104,15 @@ shl -> Operator
 shr -> Operator
     = "schwift>" { Operator::ShiftRight }
 
+or -> Operator
+    = "or" { Operator::Or }
+
+and -> Operator
+    = "and" { Operator::And }
+
 #[pub]
 operator -> Operator
-    = plus / minus / times / divide / equality / gte / lte / gt / lt / shr / shl
+    = plus / minus / times / divide / equality / gte / lte / gt / lt / shr / shl / or / and
 
 #[pub]
 whitespace

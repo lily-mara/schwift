@@ -150,3 +150,76 @@ fn test_index_and_addition() {
         )
     );
 }
+
+#[test]
+fn test_list_deletion() {
+    let l = schwift_grammar::statement(r"squanch x[10]").unwrap();
+    assert_eq!(
+        l,
+        Statement::ListDelete(
+            "x".to_string(),
+            Expression::Value(Value::Int(10))
+        )
+    );
+}
+
+#[test]
+fn test_while_compound_condition() {
+    let l = schwift_grammar::while_loop(r#"while x or y :<
+    show me what you got 30
+    >:"#).unwrap();
+    assert_eq!(
+        l,
+        Statement::While(
+            Expression::OperatorExpression(
+                Box::new(Expression::Variable("x".to_string())),
+                Operator::Or,
+                Box::new(Expression::Variable("y".to_string())),
+            ),
+            vec![
+                Statement::Print(Expression::Value(Value::Int(30))),
+            ],
+        )
+    );
+}
+
+#[test]
+fn test_or() {
+    let l = schwift_grammar::expression(r"x or y").unwrap();
+    assert_eq!(
+        l,
+        Expression::OperatorExpression(
+            Box::new(Expression::Variable("x".to_string())),
+            Operator::Or,
+            Box::new(Expression::Variable("y".to_string())),
+        )
+    );
+}
+
+#[test]
+fn test_and() {
+    let l = schwift_grammar::expression(r"x and y").unwrap();
+    assert_eq!(
+        l,
+        Expression::OperatorExpression(
+            Box::new(Expression::Variable("x".to_string())),
+            Operator::And,
+            Box::new(Expression::Variable("y".to_string())),
+        )
+    );
+}
+
+#[test]
+fn test_neq() {
+    let l = schwift_grammar::expression(r"!x == y").unwrap();
+    assert_eq!(
+        l,
+        Expression::Not(
+            Box::new(Expression::OperatorExpression(
+                Box::new(Expression::Variable("x".to_string())),
+                Operator::Equality,
+                Box::new(Expression::Variable("y".to_string())),
+            ))
+        )
+    );
+}

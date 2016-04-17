@@ -949,6 +949,42 @@ fn parse_shr<'input>(input: &'input str, state: &mut ParseState<'input>,
         }
     }
 }
+fn parse_or<'input>(input: &'input str, state: &mut ParseState<'input>,
+                    pos: usize) -> RuleResult<Operator> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "or");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Operator::Or })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
+fn parse_and<'input>(input: &'input str, state: &mut ParseState<'input>,
+                     pos: usize) -> RuleResult<Operator> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "and");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let match_str = &input[start_pos..pos];
+                        Matched(pos, { Operator::And })
+                    }
+                }
+                Failed => Failed,
+            }
+        }
+    }
+}
 fn parse_operator<'input>(input: &'input str, state: &mut ParseState<'input>,
                           pos: usize) -> RuleResult<Operator> {
     {
@@ -1033,9 +1069,41 @@ fn parse_operator<'input>(input: &'input str, state: &mut ParseState<'input>,
                                                                                             value),
                                                                                     Failed
                                                                                     =>
-                                                                                    parse_shl(input,
-                                                                                              state,
-                                                                                              pos),
+                                                                                    {
+                                                                                        let choice_res =
+                                                                                            parse_shl(input,
+                                                                                                      state,
+                                                                                                      pos);
+                                                                                        match choice_res
+                                                                                            {
+                                                                                            Matched(pos,
+                                                                                                    value)
+                                                                                            =>
+                                                                                            Matched(pos,
+                                                                                                    value),
+                                                                                            Failed
+                                                                                            =>
+                                                                                            {
+                                                                                                let choice_res =
+                                                                                                    parse_or(input,
+                                                                                                             state,
+                                                                                                             pos);
+                                                                                                match choice_res
+                                                                                                    {
+                                                                                                    Matched(pos,
+                                                                                                            value)
+                                                                                                    =>
+                                                                                                    Matched(pos,
+                                                                                                            value),
+                                                                                                    Failed
+                                                                                                    =>
+                                                                                                    parse_and(input,
+                                                                                                              state,
+                                                                                                              pos),
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         }
