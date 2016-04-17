@@ -586,12 +586,12 @@ fn parse_list_index<'input>(input: &'input str,
                                                     Matched(pos, _) => {
                                                         {
                                                             let seq_res =
-                                                                parse_int(input,
-                                                                          state,
-                                                                          pos);
+                                                                parse_expression(input,
+                                                                                 state,
+                                                                                 pos);
                                                             match seq_res {
                                                                 Matched(pos,
-                                                                        v) =>
+                                                                        e) =>
                                                                 {
                                                                     {
                                                                         let seq_res =
@@ -622,7 +622,7 @@ fn parse_list_index<'input>(input: &'input str,
                                                                                                 Matched(pos,
                                                                                                         {
                                                                                                             Expression::ListIndex(i,
-                                                                                                                                  v)
+                                                                                                                                  Box::new(e))
                                                                                                         })
                                                                                             }
                                                                                         }

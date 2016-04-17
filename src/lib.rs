@@ -43,7 +43,7 @@ pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
     Value(Value),
-    ListIndex(String, i32),
+    ListIndex(String, Box<Expression>),
 }
 
 #[derive(Debug)]

@@ -37,7 +37,7 @@ list_statements -> Statement
     = list_instantiation / list_append / list_assign
 
 list_index -> Expression
-    = i:identifier optional_whitespace "[" optional_whitespace v:int optional_whitespace "]" { Expression::ListIndex(i, v) }
+    = i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { Expression::ListIndex(i, Box::new(e)) }
 
 value -> Value
     = v_float / v_int / string / boolean
