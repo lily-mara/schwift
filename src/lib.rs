@@ -1,4 +1,6 @@
+extern crate rand;
 use std::collections::HashMap;
+use rand::{thread_rng, Rng};
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -62,22 +64,29 @@ pub enum Statement {
     If(Expression, Vec<Statement>, Option<Vec<Statement>>),
 }
 
-pub const QUOTES: [&'static str; 8] = [
+pub const QUOTES: [&'static str; 9] = [
     "Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
     "That's planning for failure Morty, even dumber than regular planning. -Rick",
     "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty and white. -S̶n̶u̶f̶f̶l̶e̶s̶ Snowbal",
     "Existence is pain to an interpreter. -Meeseeks",
     "In bird culture this is considered a dick move -Bird Person",
-    "There is no god, gotta rip that band aid off now. You\'ll thank me later. -Rick",
+    "There is no god, gotta rip that band aid off now. You'll thank me later. -Rick",
     "Your program is a piece of shit and I can proove it mathmatically. -Rick",
     "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing program. -Rick",
+    "DISQUALIFIED. -Cromulon",
 ];
+
+pub fn logic_error(s: &str) {
+    let mut rng = thread_rng();
+    let choice: &str = rng.choose(&QUOTES).unwrap();
+    panic!("\n\n\tYou made a Rickdiculous mistake\n\tError:{}\n\t{}\n\n",s, choice);
+}
 
 impl <T>Op<T> {
     fn unwrap(self) -> T {
         match self {
             Op::Ok(x) => x,
-            Op::TypeError(x, y) => panic!("Cannot combine {:?} and {:?}", x, y)
+            Op::TypeError(x, y) => { logic_error(&format!("Cannot combine {:?} and {:?}", x, y)); unreachable!(); }
         }
     }
 }
@@ -91,7 +100,8 @@ impl State {
                     let x = y.get(s).unwrap();
                     x.clone()
                 } else {
-                    panic!("Tried to use variable {} before assignment", s)
+                    logic_error(&format!("Tried to use variable {} before assignment", s));
+                    unreachable!();
                 }
             }
             Expression::OperatorExpression(a, o, b) => {
@@ -119,16 +129,20 @@ impl State {
                             if index < l.len() {
                                 Variable::new_variable(l[index].clone())
                             } else {
-                                panic!("You don't have that many kernels on your cob, idiot.")
+                                logic_error("You don't have that many kernels on your cob, idiot.");
+                                unreachable!();
                             }
                         } else {
-                            panic!("You can only index with an int");
+                            logic_error("You can only index with an int");
+                            unreachable!();
                         }
                     } else {
-                        panic!("Type error, you are trying index something other than a cob.")
+                        logic_error("Type error, you are trying index something other than a cob.");
+                        unreachable!();
                     }
                 } else {
-                    panic!("OOOweeee you squanched it, that cob doesn't exist.")
+                    logic_error("OOOweeee you squanched it, that cob doesn't exist.");
+                    unreachable!();
                 }
             }
         }
@@ -160,10 +174,10 @@ impl State {
                         if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
                             l.push(val);
                         } else {
-                            panic!("Type error, you are trying index something other than a cob.")
+                            logic_error("Type error, you are trying index something other than a cob.")
                         }
                     } else {
-                        panic!("OOOweeee you squanched it, that cob doesn't exist.")
+                        logic_error("OOOweeee you squanched it, that cob doesn't exist.")
                     }
 
                 },
@@ -177,16 +191,16 @@ impl State {
                                 if index < l.len() {
                                     l[index] = val;
                                 } else {
-                                    panic!("You don't have that many kernels on your cob, idiot.")
+                                    logic_error("You don't have that many kernels on your cob.")
                                 }
                             } else {
-                                panic!("You can only index with an int");
+                                logic_error("You can only index with an int");
                             }
                         } else {
-                            panic!("Type error, you are trying index something other than a cob.")
+                            logic_error("Type error, you are trying index something other than a cob.")
                         }
                     } else {
-                        panic!("OOOweeee you squanched it, that cob doesn't exist.")
+                        logic_error("OOOweeee you squanched it, that cob doesn't exist.")
                     }
 
                 },
@@ -199,16 +213,16 @@ impl State {
                                 if index < l.len() {
                                     l.remove(index);
                                 } else {
-                                    panic!("You don't have that many kernels on your cob, idiot.")
+                                    logic_error("You don't have that many kernels on your cob, idiot.")
                                 }
                             } else {
-                                panic!("You can only index with an int");
+                                logic_error("You can only index with an int");
                             }
                         } else {
-                            panic!("Type error, you are trying index something other than a cob.")
+                            logic_error("Type error, you are trying index something other than a cob.")
                         }
                     } else {
-                        panic!("OOOweeee you squanched it, that cob doesn't exist.")
+                        logic_error("OOOweeee you squanched it, that cob doesn't exist.")
                     }
 
                 },
@@ -225,7 +239,7 @@ impl State {
                                 }
                             }
                         }
-                        _=> panic!("Ah geez, you you used a non-bool for a bool")
+                        _=> logic_error("Ah geez, you you used a non-bool for a bool")
 
                     }
                 },
@@ -269,7 +283,7 @@ impl Variable {
 
     pub fn assign(&mut self, value: Value) {
         if self.constant {
-            panic!("Tried to assign to a constant value");
+            logic_error("Tried to assign to a constant value");
         }
         self.value = value;
     }
@@ -468,12 +482,12 @@ impl Value {
 pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, schwift_grammar::ParseError> {
     let mut f = match File::open(filename){
         Result::Ok(i) => i,
-        Result::Err(_) => panic!("failed to open file"),
+        Result::Err(_) => { logic_error("failed to open file"); unreachable!() },
     };
     let mut s = String::new();
     match f.read_to_string(&mut s) {
         Result::Ok(_) => {},
-        Result::Err(_) => panic!("failed to read file"),
+        Result::Err(_) => { logic_error("failed to read file"); unreachable!() },
     };
     schwift_grammar::file(&s)
 }
