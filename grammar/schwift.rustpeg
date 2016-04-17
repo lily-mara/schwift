@@ -1,139 +1,186 @@
 use super::{ Value, Variable, Operator, Statement, Expression };
 
+#[pub]
 string -> Value
     = "\"" s:string_inquotes "\"" { Value::Str(s) }
 
+#[pub]
 string_inquotes -> String
     = [^"]* { match_str.to_string() }
 
+#[pub]
 int -> i32
     = "-"? [0-9]+ { match_str.parse::<i32>().unwrap() }
 
+#[pub]
 float -> f32
     = [0-9]+ "." [0-9]+ { match_str.parse::<f32>().unwrap() }
 
+#[pub]
 v_int -> Value
     = i:int { Value::Int(i) }
 
+#[pub]
 v_float -> Value
     = f:float { Value::Float(f) }
 
+#[pub]
 truth -> Value
     = "rick" { Value::Bool(true) }
 
+#[pub]
 falsehood -> Value
     = "morty" { Value::Bool(false) }
 
+#[pub]
 boolean -> Value
     = truth / falsehood
 
+#[pub]
 list_instantiation -> Statement
     = i:identifier whitespace "on a cob" { Statement::ListNew(i) }
 
+#[pub]
 list_append -> Statement
     = i:identifier whitespace "assimilate" whitespace e:expression { Statement::ListAppend(i, e) }
 
+#[pub]
 list_statements -> Statement
     = list_instantiation / list_append / list_assign / list_deletion
 
+#[pub]
 list_index -> Expression
     = i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { Expression::ListIndex(i, Box::new(e)) }
 
+#[pub]
 value -> Value
     = v_float / v_int / string / boolean
 
+#[pub]
 identifier -> String
     = [a-zA-Z] [a-zA-Z0-9_]* { match_str.to_string() }
 
+#[pub]
 plus -> Operator
     = "+" { Operator::Add }
 
+#[pub]
 minus -> Operator
     = "-" { Operator::Subtract }
 
+#[pub]
 times -> Operator
     = "*" { Operator::Multiply }
 
+#[pub]
 divide -> Operator
     = "/" { Operator::Divide }
 
+#[pub]
 equality -> Operator
     = "squanchsquanch" { Operator::Equality }
 
+#[pub]
 gt -> Operator
     = "more" { Operator::GreaterThan }
 
+#[pub]
 lt -> Operator
     = "less" { Operator::LessThan }
 
+#[pub]
 gte -> Operator
     = "moresquanch" { Operator::GreaterThanEqual }
 
+#[pub]
 lte -> Operator
     = "lesssquanch" { Operator::LessThanEqual }
 
+#[pub]
 shl -> Operator
     = "<schwift" { Operator::ShiftLeft }
 
+#[pub]
 shr -> Operator
     = "schwift>" { Operator::ShiftRight }
 
+#[pub]
 operator -> Operator
     = plus / minus / times / divide / equality / gte / lte / gt / lt / shr / shl
 
+#[pub]
 whitespace
     = [ \t]+
 
+#[pub]
 if_statement -> Statement
     = if_else / bare_if
 
+#[pub]
 bare_if -> Statement
     = "if" whitespace e:expression whitespace s:block { Statement::If(e, s, Option::None) }
 
+#[pub]
 if_else -> Statement
     = "if" whitespace e:expression whitespace i_bod:block optional_whitespace "else" whitespace e_bod:block { Statement::If(e, i_bod, Option::Some(e_bod)) }
 
+#[pub]
 while_loop -> Statement
     = "while" whitespace e:expression whitespace b:block { Statement::While(e, b) }
 
 #[pub]
 block -> Vec<Statement>
-    = ":<" optional_whitespace newline s:statements_ws newline ">:" { s }
+    = ":<" optional_whitespace newline l:line* optional_whitespace ">:" { l }
 
+#[pub]
 statement_ws -> Statement
     = optional_whitespace s:statement optional_whitespace { s }
 
+#[pub]
 statements_ws -> Vec<Statement>
     = s:statement_ws ** newline { s }
 
+#[pub]
 assignment -> Statement
     = i:identifier whitespace "squanch" whitespace e:expression { Statement::Assignment(i, e) }
 
+#[pub]
 deletion -> Statement
     = "squanch" whitespace i:identifier { Statement::Delete(i) }
 
+#[pub]
 list_deletion -> Statement
     = "squanch" whitespace i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { Statement::ListDelete(i, e) }
 
+#[pub]
 line -> Statement
     = optional_whitespace s:statement optional_whitespace newline* { s }
+
+#[pub]
+input -> Statement
+    = "portal gun" whitespace i:identifier { Statement::Input(i) }
 
 #[pub]
 file -> Vec<Statement>
     = line+
 
+#[pub]
 optional_whitespace
     = [ \t]*
 
+#[pub]
 newline
     = "\n"
 
+#[pub]
 statement -> Statement
-    = list_statements / deletion / assignment / printing / if_statement / while_loop
+    = list_statements / deletion / assignment / printing / if_statement / while_loop / input
 
+#[pub]
 list_assign -> Statement
     = i:identifier optional_whitespace "[" optional_whitespace v:expression optional_whitespace"]" whitespace "squanch" whitespace e:expression { Statement::ListAssign(i, v, e) }
 
+#[pub]
 printing -> Statement
     = "show me what you got" whitespace e:expression { Statement::Print(e) }
 
@@ -141,20 +188,26 @@ printing -> Statement
 expression -> Expression
     = list_index / operator_expression / value_expression / list_length / variable_expression / not
 
+#[pub]
 list_length -> Expression
     = i:identifier whitespace "squanch" { Expression::ListLength(i) }
 
+#[pub]
 not -> Expression
     = "!" optional_whitespace e:expression { Expression::Not(Box::new(e)) }
 
+#[pub]
 expression1 -> Expression
     = list_index / value_expression / list_length / variable_expression / not
 
+#[pub]
 operator_expression -> Expression
     = e1:expression1 optional_whitespace o:operator optional_whitespace e2:expression { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
 
+#[pub]
 value_expression -> Expression
     = v:value { Expression::Value(v) }
 
+#[pub]
 variable_expression -> Expression
     = i:identifier { Expression::Variable(i) }
