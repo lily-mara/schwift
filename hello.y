@@ -1,5 +1,6 @@
-x squanch 5
-while x less 10 :<
+x squanch 0
+
+while x lesssquanch 100 :<
 	show me what you got x
-	x squanch x + 1
+	x squanch x + 10
 >:

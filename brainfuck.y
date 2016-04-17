@@ -12,10 +12,6 @@ loop squanch 0
 while count less stringSize :<
 
 	memorySize squanch memory squanch
-	memZero squanch memory[0]
-	show me what you got memPointer
-	show me what you got memory
-
 	if string[count] == "<" :<
 		memPointerMinusOne squanch memPointer - 1
 		if memPointerMinusOne more 0 :<
@@ -52,7 +48,7 @@ while count less stringSize :<
 	>:
 
 	if string[count] == "[" :<
-		if memZero == 0 :<
+		if memory[memPointer] == 0 :<
 			count squanch count + 1
 			loopGreaterZero squanch loop more 0
 			memValue squanch memory[count]
@@ -76,7 +72,7 @@ while count less stringSize :<
 	>:
 
 	if string[count] == "]" :<
-		if !memZero == 0 :<
+		if !memory[memPointer] == 0 :<
 			count squanch count - 1
 			loopGreaterZero squanch loop more 0
 			memValue squanch memory[count]
