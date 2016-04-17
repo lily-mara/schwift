@@ -101,7 +101,7 @@ newline
     = "\n"
 
 statement -> Statement
-    = optional_whitespace* s:statements { s }
+    = optional_whitespace s:statements { s }
 
 statements -> Statement
     = list_statements / deletion / assignment / printing / if_statement

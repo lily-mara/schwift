@@ -1572,20 +1572,7 @@ fn parse_statement<'input>(input: &'input str, state: &mut ParseState<'input>,
     {
         let start_pos = pos;
         {
-            let seq_res =
-                {
-                    let mut repeat_pos = pos;
-                    loop  {
-                        let pos = repeat_pos;
-                        let step_res =
-                            parse_optional_whitespace(input, state, pos);
-                        match step_res {
-                            Matched(newpos, value) => { repeat_pos = newpos; }
-                            Failed => { break ; }
-                        }
-                    }
-                    Matched(repeat_pos, ())
-                };
+            let seq_res = parse_optional_whitespace(input, state, pos);
             match seq_res {
                 Matched(pos, _) => {
                     {
