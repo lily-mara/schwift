@@ -53,6 +53,7 @@ pub enum Statement {
     Print(Expression),
     ListNew(String),
     ListAppend(String, Expression),
+    ListAssign(String, i32, Value),
 }
 
 pub const QUOTES: [&'static str; 8] = [
