@@ -78,7 +78,7 @@ divide -> Operator
 
 #[pub]
 equality -> Operator
-    = "squanchsquanch" { Operator::Equality }
+    = "==" { Operator::Equality }
 
 #[pub]
 gt -> Operator
@@ -130,7 +130,7 @@ while_loop -> Statement
 
 #[pub]
 block -> Vec<Statement>
-    = ":<" optional_whitespace newline l:line* optional_whitespace ">:" { l }
+    = ":<" optional_whitespace newline* l:line* optional_whitespace ">:" { l }
 
 #[pub]
 statement_ws -> Statement

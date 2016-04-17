@@ -828,7 +828,7 @@ fn parse_equality<'input>(input: &'input str, state: &mut ParseState<'input>,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, state, pos, "squanchsquanch");
+            let seq_res = slice_eq(input, state, pos, "==");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -1379,7 +1379,23 @@ fn parse_block<'input>(input: &'input str, state: &mut ParseState<'input>,
                             Matched(pos, _) => {
                                 {
                                     let seq_res =
-                                        parse_newline(input, state, pos);
+                                        {
+                                            let mut repeat_pos = pos;
+                                            loop  {
+                                                let pos = repeat_pos;
+                                                let step_res =
+                                                    parse_newline(input,
+                                                                  state, pos);
+                                                match step_res {
+                                                    Matched(newpos, value) =>
+                                                    {
+                                                        repeat_pos = newpos;
+                                                    }
+                                                    Failed => { break ; }
+                                                }
+                                            }
+                                            Matched(repeat_pos, ())
+                                        };
                                     match seq_res {
                                         Matched(pos, _) => {
                                             {

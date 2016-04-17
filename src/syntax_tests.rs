@@ -1,5 +1,5 @@
 use super::schwift_grammar;
-use super::{ Value, Statement, Expression };
+use super::{ Value, Statement, Expression, Operator };
 
 #[test]
 fn test_raw_int() {
@@ -100,10 +100,37 @@ portal gun x
 }
 
 #[test]
+fn test_block_starts_with_newline() {
+    let l = schwift_grammar::block(r#":<
+
+show me what you got 10
+    >:"#).unwrap();
+    assert_eq!(
+        l,
+        vec![
+            Statement::Print(Expression::Value(Value::Int(10))),
+        ]
+    );
+}
+
+#[test]
 fn test_input() {
     let l = schwift_grammar::statement(r"portal gun x").unwrap();
     assert_eq!(
         l,
         Statement::Input("x".to_string())
+    );
+}
+
+#[test]
+fn test_equality() {
+    let l = schwift_grammar::expression(r"x == y").unwrap();
+    assert_eq!(
+        l,
+        Expression::OperatorExpression(
+            Box::new(Expression::Variable("x".to_string())),
+            Operator::Equality,
+            Box::new(Expression::Variable("y".to_string())),
+        )
     );
 }
