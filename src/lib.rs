@@ -126,6 +126,8 @@ impl State {
                     Operator::GreaterThanEqual => x.greater_than_equal(y.value).unwrap(),
                     Operator::ShiftLeft => x.shift_left(y.value).unwrap(),
                     Operator::ShiftRight => x.shift_right(y.value).unwrap(),
+                    Operator::And => x.and(y.value).unwrap(),
+                    Operator::Or => x.or(y.value).unwrap(),
                 })
             }
             Expression::Value(v) => Variable::new_variable(v),
@@ -304,7 +306,7 @@ impl State {
         }
     }
 
-    fn eval_bool(&self, bool_expression: Expression) -> bool {
+    pub fn eval_bool(&self, bool_expression: Expression) -> bool {
         let b = self.expression_to_variable(bool_expression).value;
         if let Value::Bool(x) = b {
             x
@@ -525,6 +527,14 @@ impl Variable {
     pub fn less_than_equal(&self, value: Value) -> Op<Value> {
         Op::Ok(Value::Bool(self.value.less_than_equal(value)))
     }
+
+    pub fn and(&self, value: Value) -> Op<Value> {
+        Op::Ok(Value::Bool(self.value.and(value)))
+    }
+
+    pub fn or(&self, value: Value) -> Op<Value> {
+        Op::Ok(Value::Bool(self.value.or(value)))
+    }
 }
 
 fn equals(x: f32, y: f32) -> bool {
@@ -545,6 +555,14 @@ fn greater_than(x: f32, y: f32) -> bool {
 
 fn greater_than_equal(x: f32, y: f32) -> bool {
     x >= y
+}
+
+fn and(x: bool, y: bool) -> bool {
+    x && y
+}
+
+fn or(x: bool, y: bool) -> bool {
+    x || y
 }
 
 impl Value {
@@ -579,6 +597,23 @@ impl Value {
         }
     }
 
+    pub fn bool_comparisson(&self, other: Value, f:&Fn(bool, bool) -> bool) -> bool {
+        match *self {
+            Value::Bool(b) => {
+                if let Value::Bool(o) = other {
+                    f(b, o)
+                } else {
+                    logic_error("Tried to compare incompatable types");
+                    unreachable!();
+                }
+            }
+            _=> {
+                logic_error("You cannot And/Or non-bool values");
+                unreachable!();
+            }
+        }
+    }
+
     pub fn equals(&self, other: Value) -> bool {
         self.number_comparisson(other, &equals)
     }
@@ -597,6 +632,14 @@ impl Value {
 
     pub fn less_than_equal(&self, other: Value) -> bool {
         self.number_comparisson(other, &less_than_equal)
+    }
+
+    pub fn and(&self, other: Value) -> bool {
+        self.bool_comparisson(other, &and)
+    }
+
+    pub fn or(&self, other: Value) -> bool {
+        self.bool_comparisson(other, &or)
     }
 }
 
