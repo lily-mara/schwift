@@ -100,6 +100,22 @@ impl State {
                 })
             }
             Expression::Value(v) => Variable::new_variable(v),
+            Expression::ListIndex(ref s, i) => {
+                if self.symbols.contains_key(s) {
+                    if let Value::List(l) = self.symbols.get(s).unwrap().value {
+                        let x = i as usize;
+                        if x < l.len() {
+                            Variable::new_variable(l[x])
+                        } else {
+                            panic!("You don't have that many kernels on your cob, idiot.")
+                        }
+                    } else {
+                        panic!("Type error, you are trying index something other than a cob.")
+                    }
+                } else {
+                    panic!("OOOweeee you squanched it, that cob doesn't exist.")
+                }
+            }
         }
     }
 
