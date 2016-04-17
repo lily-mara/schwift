@@ -29,7 +29,7 @@ pub enum Op<T> {
     TypeError(Value, Value),
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Operator {
     Add,
     Subtract,
@@ -38,7 +38,7 @@ pub enum Operator {
     Equality,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
@@ -53,7 +53,7 @@ pub enum Statement {
     Print(Expression),
     ListNew(String),
     ListAppend(String, Expression),
-    ListAssign(String, i32, Value),
+    ListAssign(String, i32, Expression),
 }
 
 pub const QUOTES: [&'static str; 8] = [
@@ -102,10 +102,10 @@ impl State {
             Expression::Value(v) => Variable::new_variable(v),
             Expression::ListIndex(ref s, i) => {
                 if self.symbols.contains_key(s) {
-                    if let Value::List(l) = self.symbols.get(s).unwrap().value {
+                    if let Value::List(ref l) = self.symbols.get(s).unwrap().value {
                         let x = i as usize;
                         if x < l.len() {
-                            Variable::new_variable(l[x])
+                            Variable::new_variable(l[x].clone())
                         } else {
                             panic!("You don't have that many kernels on your cob, idiot.")
                         }
@@ -136,6 +136,40 @@ impl State {
     pub fn run(&mut self, statements: Vec<Statement>) {
         for statement in statements {
             match statement {
+                Statement::ListNew(S) => {
+                    self.symbols.insert(S, Variable::new_variable(Value::List(Vec::new())));
+                },
+                Statement::ListAppend(ref s, ref e) => {
+                    if self.symbols.contains_key(s) {
+                        let val = self.expression_to_variable(e.clone()).value;
+                        if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
+                            l.push(val);
+                        } else {
+                            panic!("Type error, you are trying index something other than a cob.")
+                        }
+                    } else {
+                        panic!("OOOweeee you squanched it, that cob doesn't exist.")
+                    }
+
+                },
+                Statement::ListAssign(ref s, ref i, ref e) => {
+                    if self.symbols.contains_key(s) {
+                        let val = self.expression_to_variable(e.clone()).value;
+                        if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
+                            let x = *i as usize;
+                            if x < l.len() {
+                                l[x] = val;
+                            } else {
+                                panic!("You don't have that many kernels on your cob, idiot.")
+                            }
+                        } else {
+                            panic!("Type error, you are trying index something other than a cob.")
+                        }
+                    } else {
+                        panic!("OOOweeee you squanched it, that cob doesn't exist.")
+                    }
+
+                },
                 Statement::Assignment(i, j) => self.assign(i, j),
                 Statement::Delete(i) => self.delete(i),
                 Statement::Print(i) => self.print(i),
