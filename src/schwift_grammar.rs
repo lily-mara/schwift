@@ -1172,9 +1172,9 @@ fn parse_list_assign<'input>(input: &'input str,
                                                     Matched(pos, _) => {
                                                         {
                                                             let seq_res =
-                                                                parse_int(input,
-                                                                          state,
-                                                                          pos);
+                                                                parse_expression(input,
+                                                                                 state,
+                                                                                 pos);
                                                             match seq_res {
                                                                 Matched(pos,
                                                                         v) =>
