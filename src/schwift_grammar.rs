@@ -1204,9 +1204,9 @@ fn parse_list_assign<'input>(input: &'input str,
                                                                                         {
                                                                                             {
                                                                                                 let seq_res =
-                                                                                                    parse_optional_whitespace(input,
-                                                                                                                              state,
-                                                                                                                              pos);
+                                                                                                    parse_whitespace(input,
+                                                                                                                     state,
+                                                                                                                     pos);
                                                                                                 match seq_res
                                                                                                     {
                                                                                                     Matched(pos,
@@ -1227,24 +1227,41 @@ fn parse_list_assign<'input>(input: &'input str,
                                                                                                                 {
                                                                                                                     {
                                                                                                                         let seq_res =
-                                                                                                                            parse_expression(input,
+                                                                                                                            parse_whitespace(input,
                                                                                                                                              state,
                                                                                                                                              pos);
                                                                                                                         match seq_res
                                                                                                                             {
                                                                                                                             Matched(pos,
-                                                                                                                                    e)
+                                                                                                                                    _)
                                                                                                                             =>
                                                                                                                             {
                                                                                                                                 {
-                                                                                                                                    let match_str =
-                                                                                                                                        &input[start_pos..pos];
-                                                                                                                                    Matched(pos,
+                                                                                                                                    let seq_res =
+                                                                                                                                        parse_expression(input,
+                                                                                                                                                         state,
+                                                                                                                                                         pos);
+                                                                                                                                    match seq_res
+                                                                                                                                        {
+                                                                                                                                        Matched(pos,
+                                                                                                                                                e)
+                                                                                                                                        =>
+                                                                                                                                        {
                                                                                                                                             {
-                                                                                                                                                Statement::ListAssign(i,
-                                                                                                                                                                      v,
-                                                                                                                                                                      e)
-                                                                                                                                            })
+                                                                                                                                                let match_str =
+                                                                                                                                                    &input[start_pos..pos];
+                                                                                                                                                Matched(pos,
+                                                                                                                                                        {
+                                                                                                                                                            Statement::ListAssign(i,
+                                                                                                                                                                                  v,
+                                                                                                                                                                                  e)
+                                                                                                                                                        })
+                                                                                                                                            }
+                                                                                                                                        }
+                                                                                                                                        Failed
+                                                                                                                                        =>
+                                                                                                                                        Failed,
+                                                                                                                                    }
                                                                                                                                 }
                                                                                                                             }
                                                                                                                             Failed
