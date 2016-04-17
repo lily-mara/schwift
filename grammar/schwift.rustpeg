@@ -89,7 +89,7 @@ newline
     = "\n"
 
 statement -> Statement
-    = deletion / assignment / printing / list_statements
+    = list_statements / deletion / assignment / printing
 
 list_assign -> Statement
     = i:identifier optional_whitespace "[" optional_whitespace v:expression optional_whitespace"]" whitespace "squanch" whitespace e:expression { Statement::ListAssign(i, v, e) }
