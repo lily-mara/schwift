@@ -548,7 +548,13 @@ fn parse_list_statements<'input>(input: &'input str,
         let choice_res = parse_list_instantiation(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
-            Failed => parse_list_append(input, state, pos),
+            Failed => {
+                let choice_res = parse_list_append(input, state, pos);
+                match choice_res {
+                    Matched(pos, value) => Matched(pos, value),
+                    Failed => parse_list_assign(input, state, pos),
+                }
+            }
         }
     }
 }
@@ -1125,7 +1131,14 @@ fn parse_statement<'input>(input: &'input str, state: &mut ParseState<'input>,
                 let choice_res = parse_assignment(input, state, pos);
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
-                    Failed => parse_printing(input, state, pos),
+                    Failed => {
+                        let choice_res = parse_printing(input, state, pos);
+                        match choice_res {
+                            Matched(pos, value) => Matched(pos, value),
+                            Failed =>
+                            parse_list_statements(input, state, pos),
+                        }
+                    }
                 }
             }
         }
@@ -1336,7 +1349,14 @@ fn parse_expression<'input>(input: &'input str,
                 let choice_res = parse_variable_expression(input, state, pos);
                 match choice_res {
                     Matched(pos, value) => Matched(pos, value),
-                    Failed => parse_value_expression(input, state, pos),
+                    Failed => {
+                        let choice_res =
+                            parse_value_expression(input, state, pos);
+                        match choice_res {
+                            Matched(pos, value) => Matched(pos, value),
+                            Failed => parse_list_index(input, state, pos),
+                        }
+                    }
                 }
             }
         }

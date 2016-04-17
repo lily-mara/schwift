@@ -34,7 +34,7 @@ list_append -> Statement
     = i:identifier whitespace "assimilate" whitespace e:expression { Statement::ListAppend(i, e) }
 
 list_statements -> Statement
-    = list_instantiation / list_append
+    = list_instantiation / list_append / list_assign
 
 list_index -> Expression
     = i:identifier optional_whitespace "[" optional_whitespace v:int optional_whitespace "]" { Expression::ListIndex(i, v) }
@@ -86,7 +86,7 @@ newline
     = "\n"
 
 statement -> Statement
-    = deletion / assignment / printing
+    = deletion / assignment / printing / list_statements
 
 list_assign -> Statement
     = i:identifier optional_whitespace "[" optional_whitespace v:int optional_whitespace"]" optional_whitespace "squanch" e:expression { Statement::ListAssign(i, v, e) }
@@ -96,7 +96,7 @@ printing -> Statement
 
 #[pub]
 expression -> Expression
-    = operator_expression / variable_expression / value_expression
+    = operator_expression / variable_expression / value_expression / list_index
 
 expression1 -> Expression
     = variable_expression / value_expression
