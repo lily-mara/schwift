@@ -55,6 +55,7 @@ pub enum Statement {
     ListAppend(String, Expression),
     ListAssign(String, Expression, Expression),
     ListDelete(String, Expression),
+    If(Expression, Vec<Statement>, Option<Vec<Statement>>),
 }
 
 pub const QUOTES: [&'static str; 8] = [
