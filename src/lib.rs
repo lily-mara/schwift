@@ -40,6 +40,7 @@ pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
     Value(Value),
+    ListIndex(String, i32),
 }
 
 #[derive(Debug)]
@@ -47,6 +48,8 @@ pub enum Statement {
     Assignment(String, Expression),
     Delete(String),
     Print(Expression),
+    ListNew(String),
+    ListAppend(String, Expression),
 }
 
 pub const QUOTES: [&'static str; 8] = [

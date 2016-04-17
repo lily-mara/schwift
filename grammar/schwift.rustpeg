@@ -6,11 +6,17 @@ string -> Value
 string_inquotes -> String
     = [^"]* { match_str.to_string() }
 
-int -> Value
-    = [0-9]+ { Value::Int(match_str.parse::<i32>().unwrap()) }
+int -> i32
+    = "-"? [0-9]+ { match_str.parse::<i32>().unwrap() }
 
-float -> Value
-    = [0-9]+ "." [0-9]+ { Value::Float(match_str.parse::<f32>().unwrap()) }
+float -> f32
+    = [0-9]+ "." [0-9]+ { match_str.parse::<f32>().unwrap() }
+
+v_int -> Value
+    = i:int { Value::Int(i) }
+
+v_float -> Value
+    = f:float { Value::Float(f) }
 
 truth -> Value
     = "rick" { Value::Bool(true) }
@@ -21,8 +27,20 @@ falsehood -> Value
 boolean -> Value
     = truth / falsehood
 
+list_instantiation -> Statement
+    = i:identifier whitespace "on a cob" { Statement::ListNew(i) }
+
+list_append -> Statement
+    = i:identifier whitespace "assimilate" whitespace e:expression { Statement::ListAppend(i, e) }
+
+list_statements -> Statement
+    = list_instantiation / list_append
+
+list_index -> Expression
+    = i:identifier optional_whitespace "[" optional_whitespace v:int optional_whitespace "]" { Expression::ListIndex(i, v) }
+
 value -> Value
-    = float / int / string / boolean
+    = v_float / v_int / string / boolean
 
 identifier -> String
     = [a-zA-Z] [a-zA-Z0-9_]* { match_str.to_string() }
