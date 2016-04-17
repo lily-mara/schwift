@@ -52,6 +52,7 @@ pub enum Expression {
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
     Value(Value),
     ListIndex(String, Box<Expression>),
+    ListLength(String),
     Not(Box<Expression>),
 }
 
@@ -127,8 +128,9 @@ impl State {
             Expression::Value(v) => Variable::new_variable(v),
             Expression::ListIndex(ref s, ref e) => {
                 if self.symbols.contains_key(s) {
-                    if let Value::List(ref l) = self.symbols.get(s).unwrap().value {
-                        let x = self.expression_to_variable(*e.clone()).value;
+                    let x = self.expression_to_variable(*e.clone()).value;
+                    let val = &(self.symbols).get(s).unwrap().value;
+                    if let &Value::List(ref l) = val {
                         if let Value::Int(i) = x {
                             let index = i as usize;
                             if index < l.len() {
@@ -142,8 +144,23 @@ impl State {
                             unreachable!();
                         }
                     } else {
-                        logic_error("Type error, you are trying index something other than a cob.");
-                        unreachable!();
+                        if let &Value::Str(ref s) = val {
+                            if let Value::Int(i) = x {
+                                let index = i as usize;
+                                if index < s.len() {
+                                    Variable::new_variable(Value::Str(s.as_str()[index..(index)].to_string()))
+                                } else {
+                                    logic_error("You don't have that many kernels on your cob, idiot.");
+                                    unreachable!();
+                                }
+                            } else {
+                                logic_error("You can only index with an int");
+                                unreachable!();
+                            }
+                        } else {
+                            logic_error("Type error, you are trying index something other than a cob.");
+                            unreachable!();
+                        }
                     }
                 } else {
                     logic_error("OOOweeee you squanched it, that cob doesn't exist.");
@@ -155,6 +172,24 @@ impl State {
                 x.not();
                 x
             },
+            Expression::ListLength(ref s) => {
+                if self.symbols.contains_key(s) {
+                    let val = &(self.symbols).get(s).unwrap().value;
+                    if let &Value::List(ref l) = val {
+                        Variable::new_variable(Value::Int(l.len() as i32))
+                    } else {
+                        if let &Value::Str(ref s) = val {
+                            Variable::new_variable(Value::Int(s.len() as i32))
+                        } else {
+                            logic_error("Type error, you are trying index something other than a cob.");
+                            unreachable!();
+                        }
+                    }
+                } else {
+                    logic_error("OOOweeee you squanched it, that cob doesn't exist.");
+                    unreachable!();
+                }
+            }
         }
     }
 

@@ -2085,17 +2085,68 @@ fn parse_expression<'input>(input: &'input str,
                             Matched(pos, value) => Matched(pos, value),
                             Failed => {
                                 let choice_res =
-                                    parse_variable_expression(input, state,
-                                                              pos);
+                                    parse_list_length(input, state, pos);
                                 match choice_res {
                                     Matched(pos, value) =>
                                     Matched(pos, value),
-                                    Failed => parse_not(input, state, pos),
+                                    Failed => {
+                                        let choice_res =
+                                            parse_variable_expression(input,
+                                                                      state,
+                                                                      pos);
+                                        match choice_res {
+                                            Matched(pos, value) =>
+                                            Matched(pos, value),
+                                            Failed =>
+                                            parse_not(input, state, pos),
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+fn parse_list_length<'input>(input: &'input str,
+                             state: &mut ParseState<'input>, pos: usize)
+ -> RuleResult<Expression> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = parse_identifier(input, state, pos);
+            match seq_res {
+                Matched(pos, i) => {
+                    {
+                        let seq_res = parse_whitespace(input, state, pos);
+                        match seq_res {
+                            Matched(pos, _) => {
+                                {
+                                    let seq_res =
+                                        slice_eq(input, state, pos,
+                                                 "squanch");
+                                    match seq_res {
+                                        Matched(pos, _) => {
+                                            {
+                                                let match_str =
+                                                    &input[start_pos..pos];
+                                                Matched(pos,
+                                                        {
+                                                            Expression::ListLength(i)
+                                                        })
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                }
+                Failed => Failed,
             }
         }
     }
@@ -2144,10 +2195,31 @@ fn parse_expression1<'input>(input: &'input str,
                              state: &mut ParseState<'input>, pos: usize)
  -> RuleResult<Expression> {
     {
-        let choice_res = parse_variable_expression(input, state, pos);
+        let choice_res = parse_list_index(input, state, pos);
         match choice_res {
             Matched(pos, value) => Matched(pos, value),
-            Failed => parse_value_expression(input, state, pos),
+            Failed => {
+                let choice_res = parse_value_expression(input, state, pos);
+                match choice_res {
+                    Matched(pos, value) => Matched(pos, value),
+                    Failed => {
+                        let choice_res = parse_list_length(input, state, pos);
+                        match choice_res {
+                            Matched(pos, value) => Matched(pos, value),
+                            Failed => {
+                                let choice_res =
+                                    parse_variable_expression(input, state,
+                                                              pos);
+                                match choice_res {
+                                    Matched(pos, value) =>
+                                    Matched(pos, value),
+                                    Failed => parse_not(input, state, pos),
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

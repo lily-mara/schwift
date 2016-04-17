@@ -136,13 +136,16 @@ printing -> Statement
 
 #[pub]
 expression -> Expression
-    = list_index / operator_expression / value_expression / variable_expression / not
+    = list_index / operator_expression / value_expression / list_length / variable_expression / not
+
+list_length -> Expression
+    = i:identifier whitespace "squanch" { Expression::ListLength(i) }
 
 not -> Expression
     = "!" optional_whitespace e:expression { Expression::Not(Box::new(e)) }
 
 expression1 -> Expression
-    = variable_expression / value_expression
+    = list_index / value_expression / list_length / variable_expression / not
 
 operator_expression -> Expression
     = e1:expression1 optional_whitespace o:operator optional_whitespace e2:expression { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
