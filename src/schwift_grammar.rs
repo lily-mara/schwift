@@ -2015,11 +2015,59 @@ fn parse_expression<'input>(input: &'input str,
                             parse_operator_expression(input, state, pos);
                         match choice_res {
                             Matched(pos, value) => Matched(pos, value),
-                            Failed =>
-                            parse_variable_expression(input, state, pos),
+                            Failed => {
+                                let choice_res =
+                                    parse_variable_expression(input, state,
+                                                              pos);
+                                match choice_res {
+                                    Matched(pos, value) =>
+                                    Matched(pos, value),
+                                    Failed => parse_not(input, state, pos),
+                                }
+                            }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+fn parse_not<'input>(input: &'input str, state: &mut ParseState<'input>,
+                     pos: usize) -> RuleResult<Expression> {
+    {
+        let start_pos = pos;
+        {
+            let seq_res = slice_eq(input, state, pos, "!");
+            match seq_res {
+                Matched(pos, _) => {
+                    {
+                        let seq_res =
+                            parse_optional_whitespace(input, state, pos);
+                        match seq_res {
+                            Matched(pos, _) => {
+                                {
+                                    let seq_res =
+                                        parse_expression(input, state, pos);
+                                    match seq_res {
+                                        Matched(pos, e) => {
+                                            {
+                                                let match_str =
+                                                    &input[start_pos..pos];
+                                                Matched(pos,
+                                                        {
+                                                            Expression::Not(Box::new(e))
+                                                        })
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                }
+                Failed => Failed,
             }
         }
     }

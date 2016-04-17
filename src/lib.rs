@@ -50,6 +50,7 @@ pub enum Expression {
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
     Value(Value),
     ListIndex(String, Box<Expression>),
+    Not(Box<Expression>),
 }
 
 #[derive(Debug)]
@@ -144,7 +145,12 @@ impl State {
                     logic_error("OOOweeee you squanched it, that cob doesn't exist.");
                     unreachable!();
                 }
-            }
+            },
+            Expression::Not(e) => {
+                let mut x = self.expression_to_variable(*e);
+                x.not();
+                x
+            },
         }
     }
 
@@ -273,6 +279,16 @@ impl Variable {
             Value::Bool(i) => print!("{}", i),
             Value::Str(ref i) => print!("{}", i),
             Value::List(ref i) => print!("{:?}", i),
+        }
+    }
+
+    pub fn not(&mut self) {
+        match self.value {
+            Value::Bool(b) => self.value = Value::Bool(!b),
+            _ => {
+                logic_error("Can only negate boolean values");
+                unreachable!();
+            }
         }
     }
 

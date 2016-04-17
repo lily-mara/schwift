@@ -130,7 +130,10 @@ printing -> Statement
 
 #[pub]
 expression -> Expression
-    = value_expression / list_index / operator_expression / variable_expression
+    = value_expression / list_index / operator_expression / variable_expression / not
+
+not -> Expression
+    = "!" optional_whitespace e:expression { Expression::Not(Box::new(e)) }
 
 expression1 -> Expression
     = variable_expression / value_expression
