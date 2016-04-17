@@ -1,15 +1,14 @@
 extern crate schwift;
 
-use schwift::{ Variable, Value, QUOTES };
+use schwift::{ Variable, Value };
+use schwift::schwift_grammar::{ value, statement, identifier, assignment, deletion };
 
 fn main() {
-    let x = Value::Str("Hello, Evans my favorite".to_string());
-    let y = Variable::new_variable(x);
-
-    let z = Value::Int(10);
-
-    let b = y.multiply(z);
-    //println!("Hello, {:?}!", x);
-    println!("{:?}", b);
-    println!("{}",QUOTES[2]);
+    println!("{:?}", value("\"hello!\""));
+    println!("{:?}", value("10"));
+    println!("{:?}", value("10.5"));
+    println!("{:?}", statement("x squanch 10"));
+    println!("{:?}", statement("squanch x"));
+    println!("{:?}", assignment("x squanch 10"));
+    println!("{:?}", deletion("squanch x"));
 }

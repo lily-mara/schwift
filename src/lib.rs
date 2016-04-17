@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+pub mod schwift_grammar;
+
 #[derive(Debug,Clone)]
 pub enum Value {
 	Str(String),
@@ -34,6 +36,27 @@ pub const QUOTES: [&'static str; 8] = [
     "Your program is a piece of shit and I can proove it mathmatically. -Rick",
     "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing program. -Rick",
 ];
+
+enum Operator {
+    Add,
+    Subtract,
+    Multipy,
+    Divide,
+    Equality,
+}
+
+enum Expression {
+    Variable(String),
+    OperatorExpression(Box<Expression>, Operator, Box<Expression>),
+    Value(Value),
+}
+
+#[derive(Debug)]
+pub enum Statement {
+    Assignment(String, Value),
+    Delete(String),
+}
+
 //Read more at: http://transcripts.foreverdreaming.org/viewtopic.php?f=364&t=19383]
 
 impl Variable {
