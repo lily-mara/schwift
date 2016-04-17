@@ -32,7 +32,7 @@ pub enum Op<T> {
 pub enum Operator {
     Add,
     Subtract,
-    Multipy,
+    Multiply,
     Divide,
     Equality,
 }
@@ -61,6 +61,70 @@ pub const QUOTES: [&'static str; 8] = [
     "Your program is a piece of shit and I can proove it mathmatically. -Rick",
     "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing program. -Rick",
 ];
+
+impl <T>Op<T> {
+    fn unwrap(&self) -> T {
+        match self {
+            &Op::Ok(x) => x,
+            &Op::TypeError(x, y) => panic!("Cannot combine {:?} and {:?}", x, y)
+        }
+    }
+}
+
+impl State {
+    fn expression_to_variable(&self, exp: Expression) -> Variable {
+        match exp {
+            Expression::Variable(ref s) => {
+                if self.symbols.contains_key(s) {
+                    *self.symbols.get(s).unwrap().clone()
+                } else {
+                    panic!("Tried to use variable {} before assignment", s)
+                }
+            }
+            Expression::OperatorExpression(a, o, b) => {
+                let x = self.expression_to_variable(*a);
+                let y = self.expression_to_variable(*b);
+                Variable::new_variable(match o {
+                    Operator::Add => x.add(y.value).unwrap(),
+                    Operator::Subtract => x.subtract(y.value).unwrap(),
+                    Operator::Multiply => x.multiply(y.value).unwrap(),
+                    Operator::Divide => x.divide(y.value).unwrap(),
+                    _=> panic!("Unimplemented"),
+                })
+            }
+            Expression::Value(v) => Variable::new_variable(v),
+        }
+    }
+
+    fn assign(&mut self, str: String, exp: Expression) {
+        self.symbols.insert(str, self.expression_to_variable(exp));
+    }
+
+    fn delete(&mut self, str: String) {
+        self.symbols.remove(&str);
+    }
+
+    fn print(&mut self, exp: Expression) {
+        let x = self.expression_to_variable(exp);
+        x.println();
+    }
+
+    pub fn run(&mut self, statements: Vec<Statement>) {
+        for statement in statements {
+            match statement {
+                Statement::Assignment(i, j) => self.assign(i, j),
+                Statement::Delete(i) => self.delete(i),
+                Statement::Print(i) => self.print(i),
+            }
+        }
+    }
+
+    pub fn new() -> State {
+        State {
+            symbols:HashMap::new()
+        }
+    }
+}
 
 impl Variable {
     pub fn new_variable(value: Value) -> Variable {
