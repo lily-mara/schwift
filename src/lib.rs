@@ -56,7 +56,7 @@ pub enum Expression {
     Not(Box<Expression>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Assignment(String, Expression),
     Delete(String),
@@ -286,13 +286,29 @@ impl State {
                             }
                         }
                         _=> logic_error("Ah geez, you you used a non-bool for a bool")
-
                     }
                 },
+                Statement::While(bool_expression, body) => {
+                    let mut b = self.eval_bool(bool_expression.clone());
+                    while b {
+                        self.run(body.clone());
+                        b = self.eval_bool(bool_expression.clone());
+                    }
+                }
                 Statement::Assignment(i, j) => self.assign(i, j),
                 Statement::Delete(i) => self.delete(i),
                 Statement::Print(i) => self.print(i),
             }
+        }
+    }
+
+    fn eval_bool(&self, bool_expression: Expression) -> bool {
+        let b = self.expression_to_variable(bool_expression).value;
+        if let Value::Bool(x) = b {
+            x
+        } else {
+            logic_error("Ah geez, you you used a non-bool for a bool");
+            unreachable!();
         }
     }
 
