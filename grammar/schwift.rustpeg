@@ -78,7 +78,7 @@ divide -> Operator
 
 #[pub]
 equality -> Operator
-    = "==" { Operator::Equality }
+    = "squanch" { Operator::Equality }
 
 #[pub]
 gt -> Operator

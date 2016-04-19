@@ -123,7 +123,7 @@ fn test_input() {
 
 #[test]
 fn test_equality() {
-    let l = super::expression(r"(== x y)").unwrap();
+    let l = super::expression(r"(squanch x y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -210,7 +210,7 @@ fn test_and() {
 
 #[test]
 fn test_neq() {
-    let l = super::expression(r"!(== x y)").unwrap();
+    let l = super::expression(r"!(squanch x y)").unwrap();
     assert_eq!(
         l,
         Expression::Not(

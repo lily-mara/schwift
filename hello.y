@@ -1,6 +1,6 @@
 x squanch 0
 
-while x lesssquanch 100 :<
+while (lesssquanch x 100) :<
 	show me what you got x
-	x squanch x + 10
+	x squanch (+ x 10)
 >:

@@ -1187,7 +1187,7 @@ fn parse_equality<'input>(input: &'input str, state: &mut ParseState<'input>,
             {
                 let start_pos = pos;
                 {
-                    let seq_res = slice_eq(input, state, pos, "==");
+                    let seq_res = slice_eq(input, state, pos, "squanch");
                     match seq_res {
                         Matched(pos, _) => {
                             {
