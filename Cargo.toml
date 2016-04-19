@@ -5,3 +5,6 @@ authors = ["vhundal50 <vhundal50@yahoo.com>"]
 
 [dependencies]
 rand = "0.3"
+
+[features]
+trace = []

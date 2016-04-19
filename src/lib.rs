@@ -4,10 +4,7 @@ use rand::{thread_rng, Rng};
 use std::fs::File;
 use std::io::prelude::*;
 
-pub mod schwift_grammar;
-
-#[cfg(test)]
-mod syntax_tests;
+pub mod grammar;
 
 #[derive(Debug,Clone,PartialEq)]
 pub enum Value {
@@ -633,7 +630,7 @@ impl Value {
     }
 }
 
-pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, schwift_grammar::ParseError> {
+pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, grammar::ParseError> {
     let mut f = match File::open(filename){
         Result::Ok(i) => i,
         Result::Err(_) => logic!("Failed to open file {}", filename),
@@ -643,7 +640,7 @@ pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, schwift_grammar::Pa
         Result::Ok(_) => {},
         Result::Err(_) => logic!("Failed to read file {}", filename),
     };
-    schwift_grammar::file(&s)
+    grammar::file(&s)
 }
 
 pub fn run_program(filename: &str) {
