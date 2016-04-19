@@ -1,13 +1,13 @@
-#[cfg(feature = "trace")]
+#[cfg(any(feature = "trace", test))]
 mod grammar_debug;
 
-#[cfg(not(feature = "trace"))]
+#[cfg(not(any(feature = "trace", test)))]
 mod grammar;
 
-#[cfg(feature = "trace")]
+#[cfg(any(feature = "trace", test))]
 pub use self::grammar_debug::*;
 
-#[cfg(not(feature = "trace"))]
+#[cfg(not(any(feature = "trace", test)))]
 pub use self::grammar::*;
 
 #[cfg(test)]
