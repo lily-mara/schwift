@@ -192,7 +192,7 @@ printing -> Statement
 
 #[pub]
 expression -> Expression
-    = not / operator_expression / list_index / value_expression / list_length / variable_expression
+    = operator_expression / parenthesis_expression / expression1
 
 #[pub]
 list_length -> Expression
@@ -208,7 +208,10 @@ expression1 -> Expression
 
 #[pub]
 operator_expression -> Expression
-    = e1:expression1 optional_whitespace o:operator optional_whitespace e2:expression { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
+    = "(" optional_whitespace o:operator whitespace e1:expression whitespace e2:expression optional_whitespace ")" { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
+
+parenthesis_expression -> Expression
+    = "(" optional_whitespace e:expression1 optional_whitespace ")" { e }
 
 #[pub]
 value_expression -> Expression

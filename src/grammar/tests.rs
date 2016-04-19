@@ -123,7 +123,7 @@ fn test_input() {
 
 #[test]
 fn test_equality() {
-    let l = super::expression(r"x == y").unwrap();
+    let l = super::expression(r"(== x y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -136,7 +136,7 @@ fn test_equality() {
 
 #[test]
 fn test_index_and_addition() {
-    let l = super::expression(r"x[10] + 30").unwrap();
+    let l = super::expression(r"(+ x[10] 30)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -164,7 +164,7 @@ fn test_list_deletion() {
 
 #[test]
 fn test_while_compound_condition() {
-    let l = super::while_loop(r#"while x or y :<
+    let l = super::while_loop(r#"while (or x y) :<
     show me what you got 30
     >:"#).unwrap();
     assert_eq!(
@@ -184,7 +184,7 @@ fn test_while_compound_condition() {
 
 #[test]
 fn test_or() {
-    let l = super::expression(r"x or y").unwrap();
+    let l = super::expression(r"(or x y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -197,7 +197,7 @@ fn test_or() {
 
 #[test]
 fn test_and() {
-    let l = super::expression(r"x and y").unwrap();
+    let l = super::expression(r"(and x y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -210,7 +210,7 @@ fn test_and() {
 
 #[test]
 fn test_neq() {
-    let l = super::expression(r"!x == y").unwrap();
+    let l = super::expression(r"!(== x y)").unwrap();
     assert_eq!(
         l,
         Expression::Not(
@@ -224,16 +224,54 @@ fn test_neq() {
 }
 
 #[test]
-fn test_nneq() {
-    let l = super::expression(r"x == y").unwrap();
+fn test_operator_expression_parenthesis() {
+    let l = super::expression(r"(+ x y)").unwrap();
     assert_eq!(
         l,
-        Expression::Not(
+        Expression::OperatorExpression(
+            Box::new(Expression::Variable("x".to_string())),
+            Operator::Add,
+            Box::new(Expression::Variable("y".to_string())),
+        )
+    );
+}
+
+#[test]
+fn test_expression_parenthesis() {
+    let l = super::expression(r"(x)").unwrap();
+    assert_eq!(
+        l,
+        Expression::Variable("x".to_string())
+    );
+}
+
+
+#[test]
+fn test_operator_expression_parenthesis_expression_parenthesis() {
+    let l = super::expression(r"(+ (x) y)").unwrap();
+    assert_eq!(
+        l,
+        Expression::OperatorExpression(
+            Box::new(Expression::Variable("x".to_string())),
+            Operator::Add,
+            Box::new(Expression::Variable("y".to_string())),
+        )
+    );
+}
+
+#[test]
+fn test_multiple_operator_expressions_parenthesis() {
+    let l = super::expression(r"(* (+ x y) 5)").unwrap();
+    assert_eq!(
+        l,
+        Expression::OperatorExpression(
             Box::new(Expression::OperatorExpression(
                 Box::new(Expression::Variable("x".to_string())),
-                Operator::Equality,
+                Operator::Add,
                 Box::new(Expression::Variable("y".to_string())),
-            ))
+            )),
+            Operator::Multiply,
+            Box::new(Expression::Value(Value::Int(5))),
         )
     );
 }
