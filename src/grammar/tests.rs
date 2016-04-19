@@ -123,7 +123,7 @@ fn test_input() {
 
 #[test]
 fn test_equality() {
-    let l = super::expression(r"(squanch x y)").unwrap();
+    let l = super::expression(r"(x == y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -136,7 +136,7 @@ fn test_equality() {
 
 #[test]
 fn test_index_and_addition() {
-    let l = super::expression(r"(+ x[10] 30)").unwrap();
+    let l = super::expression(r"(x[10] + 30)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -164,7 +164,7 @@ fn test_list_deletion() {
 
 #[test]
 fn test_while_compound_condition() {
-    let l = super::while_loop(r#"while (or x y) :<
+    let l = super::while_loop(r#"while (x or y) :<
     show me what you got 30
     >:"#).unwrap();
     assert_eq!(
@@ -184,7 +184,7 @@ fn test_while_compound_condition() {
 
 #[test]
 fn test_or() {
-    let l = super::expression(r"(or x y)").unwrap();
+    let l = super::expression(r"(x or y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -197,7 +197,7 @@ fn test_or() {
 
 #[test]
 fn test_and() {
-    let l = super::expression(r"(and x y)").unwrap();
+    let l = super::expression(r"(x and y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -210,7 +210,7 @@ fn test_and() {
 
 #[test]
 fn test_neq() {
-    let l = super::expression(r"!(squanch x y)").unwrap();
+    let l = super::expression(r"!(x == y)").unwrap();
     assert_eq!(
         l,
         Expression::Not(
@@ -225,7 +225,7 @@ fn test_neq() {
 
 #[test]
 fn test_operator_expression_parenthesis() {
-    let l = super::expression(r"(+ x y)").unwrap();
+    let l = super::expression(r"(x + y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -248,7 +248,7 @@ fn test_expression_parenthesis() {
 
 #[test]
 fn test_operator_expression_parenthesis_expression_parenthesis() {
-    let l = super::expression(r"(+ (x) y)").unwrap();
+    let l = super::expression(r"((x) + y)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(
@@ -261,7 +261,7 @@ fn test_operator_expression_parenthesis_expression_parenthesis() {
 
 #[test]
 fn test_multiple_operator_expressions_parenthesis() {
-    let l = super::expression(r"(* (+ x y) 5)").unwrap();
+    let l = super::expression(r"((x + y) * 5)").unwrap();
     assert_eq!(
         l,
         Expression::OperatorExpression(

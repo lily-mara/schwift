@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use rand::{thread_rng, Rng};
 use std::fs::File;
 use std::io::prelude::*;
+use std::io;
 
 pub mod grammar;
 
@@ -216,7 +217,17 @@ impl State {
     pub fn run(&mut self, statements: Vec<Statement>) {
         for statement in statements {
             match statement {
-                Statement::Input(ref s) => {},
+                Statement::Input(ref s) => {
+                    let mut input = String::new();
+
+                    match io::stdin().read_line(&mut input) {
+                        Ok(_) => {}
+                        Err(e) => logic!("Failed to read from standard input: {}", e),
+                    }
+
+                    input = input.trim().to_string();
+                    self.symbols.insert(s.to_string(), Variable::new_variable(Value::Str(input)));
+                },
                 Statement::ListNew(s) => {
                     self.symbols.insert(s, Variable::new_variable(Value::List(Vec::new())));
                 },

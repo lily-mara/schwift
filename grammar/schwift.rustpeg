@@ -78,7 +78,7 @@ divide -> Operator
 
 #[pub]
 equality -> Operator
-    = "squanch" { Operator::Equality }
+    = "==" { Operator::Equality }
 
 #[pub]
 gt -> Operator
@@ -208,7 +208,7 @@ expression1 -> Expression
 
 #[pub]
 operator_expression -> Expression
-    = "(" optional_whitespace o:operator whitespace e1:expression whitespace e2:expression optional_whitespace ")" { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
+    = "(" optional_whitespace e1:expression whitespace o:operator whitespace e2:expression optional_whitespace ")" { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
 
 parenthesis_expression -> Expression
     = "(" optional_whitespace e:expression1 optional_whitespace ")" { e }

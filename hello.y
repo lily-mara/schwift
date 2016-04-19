@@ -1,6 +1,7 @@
-x squanch 0
+show me what you got "Enter your name: "
 
-while (lesssquanch x 100) :<
-	show me what you got x
-	x squanch (+ x 10)
->:
+portal gun name
+
+greeting squanch ("Hello, " + name)
+
+show me what you got greeting

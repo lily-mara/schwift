@@ -828,7 +828,7 @@ fn parse_equality<'input>(input: &'input str, state: &mut ParseState<'input>,
     {
         let start_pos = pos;
         {
-            let seq_res = slice_eq(input, state, pos, "squanch");
+            let seq_res = slice_eq(input, state, pos, "==");
             match seq_res {
                 Matched(pos, _) => {
                     {
@@ -2449,9 +2449,9 @@ fn parse_operator_expression<'input>(input: &'input str,
                             Matched(pos, _) => {
                                 {
                                     let seq_res =
-                                        parse_operator(input, state, pos);
+                                        parse_expression(input, state, pos);
                                     match seq_res {
-                                        Matched(pos, o) => {
+                                        Matched(pos, e1) => {
                                             {
                                                 let seq_res =
                                                     parse_whitespace(input,
@@ -2461,12 +2461,12 @@ fn parse_operator_expression<'input>(input: &'input str,
                                                     Matched(pos, _) => {
                                                         {
                                                             let seq_res =
-                                                                parse_expression(input,
-                                                                                 state,
-                                                                                 pos);
+                                                                parse_operator(input,
+                                                                               state,
+                                                                               pos);
                                                             match seq_res {
                                                                 Matched(pos,
-                                                                        e1) =>
+                                                                        o) =>
                                                                 {
                                                                     {
                                                                         let seq_res =
