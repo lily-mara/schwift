@@ -1,0 +1,1 @@
+![Schwift logo](logo.png)
