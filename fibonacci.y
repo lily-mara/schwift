@@ -5,14 +5,14 @@ count squanch 0
 
 nums on a cob
 
-while (less count 20) :<
+while (count less 20) :<
 	tmp squanch b
-	b squanch (+ a b)
+	b squanch (a + b)
 	a squanch tmp
 
 	nums assimilate a
 
-	count squanch (+ count 1)
+	count squanch (count + 1)
 >:
 
 show me what you got nums
