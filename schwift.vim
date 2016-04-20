@@ -3,9 +3,9 @@ if exists("b:current_syntax")
 endif
 
 syntax keyword schwiftKeyword squanch
-syntax keyword schwiftKeyword show me what you got
-syntax keyword schwiftKeyword portal gun
-syntax keyword schwiftKeyword on a cob
+syntax match schwiftKeyword "show me what you got"
+syntax match schwiftKeyword "portal gun"
+syntax match schwiftKeyword "on a cob"
 syntax keyword schwiftKeyword assimilate
 highlight link schwiftKeyword Keyword
 
