@@ -1,4 +1,6 @@
 extern crate rand;
+extern crate rustc_serialize;
+
 use std::collections::HashMap;
 use rand::{thread_rng, Rng};
 use std::fs::File;
@@ -7,7 +9,7 @@ use std::io;
 
 pub mod grammar;
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug,Clone,PartialEq)]
 pub enum Value {
 	Str(String),
 	Int(i32),
@@ -16,7 +18,7 @@ pub enum Value {
 	List(Vec<Value>),
 }
 
-#[derive(Clone)]
+#[derive(RustcEncodable, RustcDecodable, Clone)]
 pub struct Variable {
     value: Value,
     constant: bool,
@@ -32,7 +34,7 @@ pub enum Op<T> {
     TypeError(Value, Value),
 }
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug,Clone,PartialEq)]
 pub enum Operator {
     Add,
     Subtract,
@@ -49,7 +51,7 @@ pub enum Operator {
     Or,
 }
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug,Clone,PartialEq)]
 pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
@@ -59,7 +61,7 @@ pub enum Expression {
     Not(Box<Expression>),
 }
 
-#[derive(Debug, Clone,PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug, Clone,PartialEq)]
 pub enum Statement {
     Assignment(String, Expression),
     Delete(String),
@@ -642,7 +644,7 @@ impl Value {
     }
 }
 
-pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, grammar::ParseError> {
+pub fn compile(filename: &str) ->  Result<Vec<Statement>, grammar::ParseError> {
     let mut f = match File::open(filename){
         Result::Ok(i) => i,
         Result::Err(_) => logic!("Failed to open file {}", filename),
@@ -657,6 +659,6 @@ pub fn parse_file(filename: &str) ->  Result<Vec<Statement>, grammar::ParseError
 
 pub fn run_program(filename: &str) {
     let mut s = State::new();
-    let tokens = parse_file(filename);
+    let tokens = compile(filename);
     s.run(tokens.unwrap());
 }
