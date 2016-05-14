@@ -597,7 +597,7 @@ impl PartialEq for Value {
             (&Value::Int(ref i), &Value::Float(ref f)) | (&Value::Float(ref f), &Value::Int(ref i))
                 => (*i as f32 - f).abs() < std::f32::EPSILON,
             (&Value::Float(ref f1), &Value::Float(ref f2)) => (f1 - f2).abs() < std::f32::EPSILON,
-            _ => logic!("Tried to compare incompatable values {:?} and {:?}", self, other),
+            _ => false,
         }
     }
 
