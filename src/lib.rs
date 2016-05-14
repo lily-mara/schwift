@@ -9,7 +9,7 @@ use std::io;
 
 pub mod grammar;
 
-#[derive(RustcEncodable, RustcDecodable, Debug,Clone,PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug,Clone)]
 pub enum Value {
 	Str(String),
 	Int(i32),
@@ -164,15 +164,15 @@ impl State {
                     Operator::Subtract => x.subtract(y.value).unwrap(),
                     Operator::Multiply => x.multiply(y.value).unwrap(),
                     Operator::Divide => x.divide(y.value).unwrap(),
-                    Operator::Equality => x.equals(y.value).unwrap(),
-                    Operator::LessThan => x.less_than(y.value).unwrap(),
-                    Operator::GreaterThan => x.greater_than(y.value).unwrap(),
-                    Operator::LessThanEqual => x.less_than_equal(y.value).unwrap(),
-                    Operator::GreaterThanEqual => x.greater_than_equal(y.value).unwrap(),
+                    Operator::Equality => x.equals(&y.value),
+                    Operator::LessThan => x.less_than(&y.value),
+                    Operator::GreaterThan => x.greater_than(&y.value),
+                    Operator::LessThanEqual => x.less_than_equal(&y.value),
+                    Operator::GreaterThanEqual => x.greater_than_equal(&y.value),
                     Operator::ShiftLeft => x.shift_left(y.value).unwrap(),
                     Operator::ShiftRight => x.shift_right(y.value).unwrap(),
-                    Operator::And => x.and(y.value).unwrap(),
-                    Operator::Or => x.or(y.value).unwrap(),
+                    Operator::And => x.and(&y.value),
+                    Operator::Or => x.or(&y.value),
                 })
             }
             Expression::Value(ref v) => Variable::new_variable(v.clone()),
@@ -502,145 +502,107 @@ impl Variable {
         }
     }
 
-    pub fn equals(&self, value: Value) -> Op<Value> {
+    pub fn equals(&self, value: &Value) -> Value {
         match self.value {
             Value::Str(_) => self.str_eq(value),
-            _ => Op::Ok(Value::Bool(self.value.equals(value)))
+            _ => Value::Bool(self.value.eq(value))
         }
     }
 
-    pub fn greater_than(&self, value: Value) -> Op<Value> {
-        Op::Ok(Value::Bool(self.value.greater_than(value)))
+    pub fn greater_than(&self, value: &Value) -> Value {
+        Value::Bool(self.value.greater_than(value))
     }
 
-    pub fn greater_than_equal(&self, value: Value) -> Op<Value> {
-        Op::Ok(Value::Bool(self.value.greater_than_equal(value)))
+    pub fn greater_than_equal(&self, value: &Value) -> Value {
+        Value::Bool(self.value.greater_than_equal(value))
     }
 
-    pub fn less_than(&self, value: Value) -> Op<Value> {
-        Op::Ok(Value::Bool(self.value.less_than(value)))
+    pub fn less_than(&self, value: &Value) -> Value {
+        Value::Bool(self.value.less_than(value))
     }
 
-    pub fn less_than_equal(&self, value: Value) -> Op<Value> {
-        Op::Ok(Value::Bool(self.value.less_than_equal(value)))
+    pub fn less_than_equal(&self, value: &Value) -> Value {
+        Value::Bool(self.value.less_than_equal(value))
     }
 
-    pub fn and(&self, value: Value) -> Op<Value> {
-        Op::Ok(Value::Bool(self.value.and(value)))
+    pub fn and(&self, value: &Value) -> Value {
+        Value::Bool(self.value.and(value))
     }
 
-    pub fn or(&self, value: Value) -> Op<Value> {
-        Op::Ok(Value::Bool(self.value.or(value)))
+    pub fn or(&self, value: &Value) -> Value {
+        Value::Bool(self.value.or(value))
     }
 
-    pub fn str_eq(&self, value: Value) -> Op<Value> {
-        if let Value::Str(ref x) = self.value {
-            if let Value::Str(ref y) = value {
-                return Op::Ok(Value::Bool(x == y));
-            }
+    pub fn str_eq(&self, value: &Value) -> Value {
+        let val = &self.value;
+        if let (&Value::Str(ref x), &Value::Str(ref y)) = (val, value) {
+            return Value::Bool(x == y);
         }
-        Op::Ok(Value::Bool(false))
+        Value::Bool(false)
     }
-}
-
-fn equals(x: f32, y: f32) -> bool {
-    (x - y).abs() < std::f32::EPSILON
-}
-
-fn less_than(x: f32, y: f32) -> bool {
-    x < y
-}
-
-fn less_than_equal(x: f32, y: f32) -> bool {
-    x <= y
-}
-
-fn greater_than(x: f32, y: f32) -> bool {
-    x > y
-}
-
-fn greater_than_equal(x: f32, y: f32) -> bool {
-    x >= y
-}
-
-fn and(x: bool, y: bool) -> bool {
-    x && y
-}
-
-fn or(x: bool, y: bool) -> bool {
-    x || y
 }
 
 impl Value {
-    pub fn number_comparisson(&self, other: Value, f: &Fn(f32, f32) -> bool) -> bool {
+    fn assert_f32(&self) -> f32 {
         match *self {
-            Value::Int(i) => {
-                if let Value::Int(j) = other {
-                    f(i as f32, j as f32)
-                } else {
-                    if let Value::Float(j) = other {
-                        f(i as f32, j)
-                    } else {
-                        false
-                    }
-                }
-            },
-            Value::Float(i) => {
-                if let Value::Float(j) = other {
-                    f(i, j)
-                } else {
-                    if let Value::Int(j) = other {
-                        f(i, j as f32)
-                    } else {
-                        false
-                    }
-                }
-            },
-            _ => logic!("Tried to compare {:?} and {:?} (as numbers) which have incompatable types", self, other),
+            Value::Float(f) => f,
+            Value::Int(i) => i as f32,
+            _ => logic!("Tried to use non-float value {:?} as float", self),
         }
     }
 
-    pub fn bool_comparisson(&self, other: Value, f:&Fn(bool, bool) -> bool) -> bool {
+    fn assert_bool(&self) -> bool {
         match *self {
             Value::Bool(b) => {
-                if let Value::Bool(o) = other {
-                    f(b, o)
-                } else {
-                    logic!("Tried to compare {:?} and {:?} (as bools) which have incompatable types", self, other);
-                }
+                b
             }
             _ => {
-                logic!("Tried to use boolean logic on non-bool values {:?} and {:?}", self, other);
+                logic!("Tried to use non-boolean value {:?} as boolean", self);
             }
         }
     }
 
-    pub fn equals(&self, other: Value) -> bool {
-        self.number_comparisson(other, &equals)
+    pub fn less_than(&self, other: &Value) -> bool {
+        self.assert_f32() < other.assert_f32()
     }
 
-    pub fn less_than(&self, other: Value) -> bool {
-        self.number_comparisson(other, &less_than)
+    pub fn greater_than(&self, other: &Value) -> bool {
+        self.assert_f32() > other.assert_f32()
     }
 
-    pub fn greater_than(&self, other: Value) -> bool {
-        self.number_comparisson(other, &greater_than)
+    pub fn greater_than_equal(&self, other: &Value) -> bool {
+        self.assert_f32() >= other.assert_f32()
     }
 
-    pub fn greater_than_equal(&self, other: Value) -> bool {
-        self.number_comparisson(other, &greater_than_equal)
+    pub fn less_than_equal(&self, other: &Value) -> bool {
+        self.assert_f32() <= other.assert_f32()
     }
 
-    pub fn less_than_equal(&self, other: Value) -> bool {
-        self.number_comparisson(other, &less_than_equal)
+    pub fn and(&self, other: &Value) -> bool {
+        self.assert_bool() && other.assert_bool()
     }
 
-    pub fn and(&self, other: Value) -> bool {
-        self.bool_comparisson(other, &and)
+    pub fn or(&self, other: &Value) -> bool {
+        self.assert_bool() || other.assert_bool()
+    }
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Value) -> bool {
+        match (self, other) {
+            (&Value::Bool(b1), &Value::Bool(b2)) => b1 == b2,
+            (&Value::Str(ref s1), &Value::Str(ref s2)) => s1 == s2,
+            (&Value::List(ref l1), &Value::List(ref l2)) => l1 == l2,
+            (&Value::Int(ref i1), &Value::Int(ref i2)) => i1 == i2,
+            (&Value::Int(ref i), &Value::Float(ref f)) | (&Value::Float(ref f), &Value::Int(ref i))
+                => (*i as f32 - f).abs() < std::f32::EPSILON,
+            (&Value::Float(ref f1), &Value::Float(ref f2)) => (f1 - f2).abs() < std::f32::EPSILON,
+            _ => logic!("Tried to compare incompatable values {:?} and {:?}", self, other),
+        }
     }
 
-    pub fn or(&self, other: Value) -> bool {
-        self.bool_comparisson(other, &or)
+    fn ne(&self, other: &Value) -> bool {
+        !self.eq(other)
     }
 }
 
