@@ -1,3 +1,5 @@
+#![allow(clippy)]
+
 #[cfg(any(feature = "trace", test))]
 mod grammar_debug;
 

@@ -110,21 +110,54 @@ impl <T>Op<T> {
 }
 
 impl State {
-    fn expression_to_variable(&self, exp: Expression) -> Variable {
-        match exp {
-            Expression::Variable(ref s) => {
-                if self.symbols.contains_key(s) {
-                    let y = &(self.symbols);
-                    let x = y.get(s).unwrap();
-                    x.clone()
-                } else {
-                    logic!("Tried to use variable {} before assignment", s);
+    fn list_index(&self, list_name: &str, exp: &Expression) -> Variable {
+        let inner_expression_value = self.expression_to_variable(exp).value;
+        match self.symbols.get(list_name) {
+            Some(symbol) => {
+                match symbol.value {
+                    Value::List(ref l) => {
+                        if let Value::Int(i) = inner_expression_value {
+                            let index = i as usize;
+                            if index < l.len() {
+                                Variable::new_variable(l[index].clone())
+                            } else {
+                                logic!("You don't have {} kernels on cob {}, idiot.", index, list_name);
+                            }
+                        } else {
+                            logic!("You tried to index cob {} with a non-int value {:?}", list_name, inner_expression_value);
+                        }
+                    },
+                    Value::Str(ref s) => {
+                        if let Value::Int(i) = inner_expression_value {
+                            let index = i as usize;
+                            if index < s.len() {
+                                Variable::new_variable(Value::Str(s.as_str()[index..(index + 1)].to_string()))
+                            } else {
+                                logic!("You don't have {} kernels on cob {}, idiot.", index, list_name);
+                            }
+                        } else {
+                            logic!("You tried to index cob {} with a non-int value {:?}", list_name, inner_expression_value);
+                        }
+                    },
+                    _ => logic!("You tried to index variable {}, which is not indexable", list_name),
                 }
             }
-            Expression::OperatorExpression(a, o, b) => {
-                let x = self.expression_to_variable(*a);
-                let y = self.expression_to_variable(*b);
-                Variable::new_variable(match o {
+            None => logic!("There is no variable named {}", list_name),
+        }
+    }
+
+    fn expression_to_variable(&self, exp: &Expression) -> Variable {
+        match *exp {
+            Expression::Variable(ref s) => {
+                match self.symbols.get(s) {
+                    Some(variable) => variable.clone(),
+                    None => logic!("Tried to use variable {} before assignment", s)
+                }
+            }
+            Expression::OperatorExpression(ref a, ref o, ref b) => {
+                let x = self.expression_to_variable(a);
+                let y = self.expression_to_variable(b);
+                Variable::new_variable(match *o {
                     Operator::Add => x.add(y.value).unwrap(),
                     Operator::Subtract => x.subtract(y.value).unwrap(),
                     Operator::Multiply => x.multiply(y.value).unwrap(),
@@ -140,76 +173,38 @@ impl State {
                     Operator::Or => x.or(y.value).unwrap(),
                 })
             }
-            Expression::Value(v) => Variable::new_variable(v),
-            Expression::ListIndex(ref s, ref e) => {
-                if self.symbols.contains_key(s) {
-                    let x = self.expression_to_variable(*e.clone()).value;
-                    let val = &(self.symbols).get(s).unwrap().value;
-                    if let &Value::List(ref l) = val {
-                        if let Value::Int(i) = x {
-                            let index = i as usize;
-                            if index < l.len() {
-                                Variable::new_variable(l[index].clone())
-                            } else {
-                                logic!("You don't have {} kernels on cob {}, idiot.", index, s);
-                            }
-                        } else {
-                            logic!("You tried to index cob {} with a non-int value {:?}", s, x);
-                        }
-                    } else {
-                        if let &Value::Str(ref s) = val {
-                            if let Value::Int(i) = x {
-                                let index = i as usize;
-                                if index < s.len() {
-                                    Variable::new_variable(Value::Str(s.as_str()[index..(index + 1)].to_string()))
-                                } else {
-                                    logic!("You don't have {} kernels on cob {}, idiot.", index, s);
-                                }
-                            } else {
-                                logic!("You tried to index cob {} with a non-int value {:?}", s, x);
-                            }
-                        } else {
-                            logic!("You tried to index variable {}, which is not indexable", s);
-                        }
-                    }
-                } else {
-                    logic!("There is no variable named {}", s);
-                }
-            },
-            Expression::Not(e) => {
-                let mut x = self.expression_to_variable(*e);
+            Expression::Value(ref v) => Variable::new_variable(v.clone()),
+            Expression::ListIndex(ref s, ref e) => self.list_index(s, e),
+            Expression::Not(ref e) => {
+                let mut x = self.expression_to_variable(e);
                 x.not();
                 x
             },
             Expression::ListLength(ref s) => {
-                if self.symbols.contains_key(s) {
-                    let val = &(self.symbols).get(s).unwrap().value;
-                    if let &Value::List(ref l) = val {
-                        Variable::new_variable(Value::Int(l.len() as i32))
-                    } else {
-                        if let &Value::Str(ref s) = val {
-                            Variable::new_variable(Value::Int(s.len() as i32))
-                        } else {
-                            logic!("You tried to index variable {}, which is not indexable", s);
+                match self.symbols.get(s) {
+                    Some(symbol) => {
+                        match symbol.value {
+                            Value::List(ref l) => Variable::new_variable(Value::Int(l.len() as i32)),
+                            Value::Str(ref s) => Variable::new_variable(Value::Int(s.len() as i32)),
+                            _ => logic!("You tried to index variable {}, which is not indexable", s),
                         }
-                    }
-                } else {
-                    logic!("There is no variable named {}", s);
+                    },
+                    None => logic!("There is no variable named {}", s),
                 }
             }
         }
     }
 
-    fn assign(&mut self, str: String, exp: Expression) {
+    fn assign(&mut self, str: String, exp: &Expression) {
         let v = self.expression_to_variable(exp);
         self.symbols.insert(str, v);
     }
 
-    fn delete(&mut self, str: String) {
-        self.symbols.remove(&str);
+    fn delete(&mut self, str: &str) {
+        self.symbols.remove(str);
     }
 
-    fn print(&mut self, exp: Expression) {
+    fn print(&mut self, exp: &Expression) {
         let x = self.expression_to_variable(exp);
         x.println();
     }
@@ -233,7 +228,7 @@ impl State {
                 },
                 Statement::ListAppend(ref s, ref e) => {
                     if self.symbols.contains_key(s) {
-                        let val = self.expression_to_variable(e.clone()).value;
+                        let val = self.expression_to_variable(e).value;
                         if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
                             l.push(val);
                         } else {
@@ -246,8 +241,8 @@ impl State {
                 },
                 Statement::ListAssign(ref s, ref index_expression, ref assign_expression) => {
                     if self.symbols.contains_key(s) {
-                        let val = self.expression_to_variable(assign_expression.clone()).value;
-                        let x = self.expression_to_variable(index_expression.clone()).value;
+                        let val = self.expression_to_variable(assign_expression).value;
+                        let x = self.expression_to_variable(index_expression).value;
                         if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
                             if let Value::Int(i) = x {
                                 let index = i as usize;
@@ -269,7 +264,7 @@ impl State {
                 },
                 Statement::ListDelete(ref s, ref index_expression) => {
                     if self.symbols.contains_key(s) {
-                        let x = self.expression_to_variable(index_expression.clone()).value;
+                        let x = self.expression_to_variable(index_expression).value;
                         if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
                             if let Value::Int(i) = x {
                                 let index = i as usize;
@@ -290,7 +285,7 @@ impl State {
 
                 },
                 Statement::If(bool_expression, if_body, else_body) => {
-                    let x = self.expression_to_variable(bool_expression.clone()).value;
+                    let x = self.expression_to_variable(&bool_expression).value;
                     match x {
                         Value::Bool(b) => {
                             if b {
@@ -305,22 +300,22 @@ impl State {
                         _ => logic!("Tried to use non-bool value {:?} as a bool", bool_expression),
                     }
                 },
-                Statement::While(bool_expression, body) => {
-                    let mut b = self.eval_bool(bool_expression.clone());
+                Statement::While(ref bool_expression, ref body) => {
+                    let mut b = self.eval_bool(bool_expression);
                     while b {
                         self.run(body.clone());
-                        b = self.eval_bool(bool_expression.clone());
+                        b = self.eval_bool(bool_expression);
                     }
                 }
-                Statement::Assignment(i, j) => self.assign(i, j),
-                Statement::Delete(i) => self.delete(i),
-                Statement::Print(i) => self.print(i),
+                Statement::Assignment(i, j) => self.assign(i, &j),
+                Statement::Delete(ref i) => self.delete(i),
+                Statement::Print(ref i) => self.print(i),
             }
         }
     }
 
-    pub fn eval_bool(&self, bool_expression: Expression) -> bool {
-        let b = self.expression_to_variable(bool_expression.clone()).value;
+    pub fn eval_bool(&self, bool_expression: &Expression) -> bool {
+        let b = self.expression_to_variable(bool_expression).value;
         if let Value::Bool(x) = b {
             x
         } else {
@@ -328,7 +323,13 @@ impl State {
         }
     }
 
-    pub fn new() -> State {
+    pub fn new() -> Self {
+        State::default()
+    }
+}
+
+impl Default for State {
+    fn default() -> Self {
         State {
             symbols:HashMap::new()
         }
@@ -366,11 +367,11 @@ impl Variable {
         println!("");
     }
 
-    pub fn assign(&mut self, value: Value) {
+    pub fn assign(&mut self, value: &Value) {
         if self.constant {
             logic!("Tried to assign to constant value {:?}", self.value);
         }
-        self.value = value;
+        self.value = value.clone();
     }
 
     pub fn add(&self, value: Value) -> Op<Value> {
@@ -442,7 +443,7 @@ impl Variable {
                 if let Value::Int(j) = value {
                     let mut new_buf = i.clone();
                     for _ in 0..(j - 1) {
-                        new_buf.push_str(&i);
+                        new_buf.push_str(i);
                     }
                     Op::Ok(Value::Str(new_buf))
                 } else {
@@ -541,7 +542,7 @@ impl Variable {
 }
 
 fn equals(x: f32, y: f32) -> bool {
-    x == y
+    (x - y).abs() < std::f32::EPSILON
 }
 
 fn less_than(x: f32, y: f32) -> bool {
