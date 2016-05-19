@@ -275,3 +275,22 @@ fn test_multiple_operator_expressions_parenthesis() {
         )
     );
 }
+
+#[test]
+fn test_file_leading_newlines() {
+    let l = super::file(r#"
+
+
+show me what you got 10
+
+
+
+
+"#).unwrap();
+    assert_eq!(
+        l,
+        vec![
+            Statement::Print(Expression::Value(Value::Int(10))),
+        ]
+    );
+}

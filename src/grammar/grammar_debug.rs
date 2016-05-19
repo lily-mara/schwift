@@ -2786,22 +2786,62 @@ fn parse_file<'input>(input: &'input str, state: &mut ParseState<'input>,
                  "file" , line , col , pos);
         let mut __peg_closure = || {
             {
-                let mut repeat_pos = pos;
-                let mut repeat_value = vec!();
-                loop  {
-                    let pos = repeat_pos;
-                    let step_res = parse_line(input, state, pos);
-                    match step_res {
-                        Matched(newpos, value) => {
-                            repeat_pos = newpos;
-                            repeat_value.push(value);
+                let start_pos = pos;
+                {
+                    let seq_res =
+                        {
+                            let mut repeat_pos = pos;
+                            loop  {
+                                let pos = repeat_pos;
+                                let step_res =
+                                    parse_newline(input, state, pos);
+                                match step_res {
+                                    Matched(newpos, value) => {
+                                        repeat_pos = newpos;
+                                    }
+                                    Failed => { break ; }
+                                }
+                            }
+                            Matched(repeat_pos, ())
+                        };
+                    match seq_res {
+                        Matched(pos, _) => {
+                            {
+                                let seq_res =
+                                    {
+                                        let mut repeat_pos = pos;
+                                        let mut repeat_value = vec!();
+                                        loop  {
+                                            let pos = repeat_pos;
+                                            let step_res =
+                                                parse_line(input, state, pos);
+                                            match step_res {
+                                                Matched(newpos, value) => {
+                                                    repeat_pos = newpos;
+                                                    repeat_value.push(value);
+                                                }
+                                                Failed => { break ; }
+                                            }
+                                        }
+                                        if repeat_value.len() >= 1usize {
+                                            Matched(repeat_pos, repeat_value)
+                                        } else { Failed }
+                                    };
+                                match seq_res {
+                                    Matched(pos, l) => {
+                                        {
+                                            let match_str =
+                                                &input[start_pos..pos];
+                                            Matched(pos, { l })
+                                        }
+                                    }
+                                    Failed => Failed,
+                                }
+                            }
                         }
-                        Failed => { break ; }
+                        Failed => Failed,
                     }
                 }
-                if repeat_value.len() >= 1usize {
-                    Matched(repeat_pos, repeat_value)
-                } else { Failed }
             } };
         let __peg_result = __peg_closure();
         match __peg_result {
