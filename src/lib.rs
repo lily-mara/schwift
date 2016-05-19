@@ -10,7 +10,7 @@ use std::cmp::Ordering;
 
 pub mod grammar;
 
-#[derive(RustcEncodable, RustcDecodable, Debug,Clone)]
+#[derive(RustcEncodable, RustcDecodable, Debug, Clone)]
 pub enum Value {
     Str(String),
     Int(i32),
@@ -23,7 +23,7 @@ pub struct State {
     symbols: HashMap<String, Value>
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug,Clone,PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug, Clone, PartialEq)]
 pub enum Operator {
     Add,
     Subtract,
@@ -40,7 +40,7 @@ pub enum Operator {
     Or,
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug,Clone,PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug, Clone, PartialEq)]
 pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
@@ -50,7 +50,7 @@ pub enum Expression {
     Not(Box<Expression>),
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug, Clone,PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug, Clone, PartialEq)]
 pub enum Statement {
     Assignment(String, Expression),
     Delete(String),
