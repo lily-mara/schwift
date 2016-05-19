@@ -94,44 +94,44 @@ macro_rules! logic {
 impl Expression {
     pub fn eval(&self, state: &State) -> Value {
         match *self {
-            Expression::Variable(ref s) => {
-                match state.symbols.get(s) {
-                    Some(variable) => variable.clone(),
-                    None => logic!("Tried to use variable {} before assignment", s)
+            Expression::Variable(ref var_name) => {
+                match state.symbols.get(var_name) {
+                    Some(value) => value.clone(),
+                    None => logic!("Tried to use variable {} before assignment", var_name)
                 }
             }
-            Expression::OperatorExpression(ref a, ref operator, ref b) => {
-                let x = a.eval(state);
-                let y = b.eval(state);
+            Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
+                let left = left_exp.eval(state);
+                let right = right_exp.eval(state);
                 match *operator {
-                    Operator::Add => x.add(&y),
-                    Operator::Subtract => x.subtract(&y),
-                    Operator::Multiply => x.multiply(&y),
-                    Operator::Divide => x.divide(&y),
-                    Operator::Equality => x.equals(&y),
-                    Operator::LessThan => x.less_than(&y),
-                    Operator::GreaterThan => x.greater_than(&y),
-                    Operator::LessThanEqual => x.less_than_equal(&y),
-                    Operator::GreaterThanEqual => x.greater_than_equal(&y),
-                    Operator::ShiftLeft => x.shift_left(&y),
-                    Operator::ShiftRight => x.shift_right(&y),
-                    Operator::And => x.and(&y),
-                    Operator::Or => x.or(&y),
+                    Operator::Add => left.add(&right),
+                    Operator::Subtract => left.subtract(&right),
+                    Operator::Multiply => left.multiply(&right),
+                    Operator::Divide => left.divide(&right),
+                    Operator::Equality => left.equals(&right),
+                    Operator::LessThan => left.less_than(&right),
+                    Operator::GreaterThan => left.greater_than(&right),
+                    Operator::LessThanEqual => left.less_than_equal(&right),
+                    Operator::GreaterThanEqual => left.greater_than_equal(&right),
+                    Operator::ShiftLeft => left.shift_left(&right),
+                    Operator::ShiftRight => left.shift_right(&right),
+                    Operator::And => left.and(&right),
+                    Operator::Or => left.or(&right),
                 }
             }
             Expression::Value(ref v) => v.clone(),
-            Expression::ListIndex(ref s, ref e) => state.list_index(s, e),
+            Expression::ListIndex(ref var_name, ref e) => state.list_index(var_name, e),
             Expression::Not(ref e) => e.eval(state).not(),
-            Expression::ListLength(ref s) => {
-                match state.symbols.get(s) {
-                    Some(symbol) => {
-                        match *symbol {
-                            Value::List(ref l) => Value::Int(l.len() as i32),
+            Expression::ListLength(ref var_name) => {
+                match state.symbols.get(var_name) {
+                    Some(value) => {
+                        match *value {
+                            Value::List(ref list) => Value::Int(list.len() as i32),
                             Value::Str(ref s) => Value::Int(s.len() as i32),
-                            _ => logic!("You tried to index variable {}, which is not indexable", s),
+                            _ => logic!("You tried to index variable {}, which is not indexable", var_name),
                         }
                     },
-                    None => logic!("There is no variable named {}", s),
+                    None => logic!("There is no variable named {}", var_name),
                 }
             }
         }
