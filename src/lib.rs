@@ -6,6 +6,7 @@ use rand::{thread_rng, Rng};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io;
+use std::cmp::Ordering;
 
 pub mod grammar;
 
@@ -18,20 +19,8 @@ pub enum Value {
 	List(Vec<Value>),
 }
 
-#[derive(RustcEncodable, RustcDecodable, Clone)]
-pub struct Variable {
-    value: Value,
-    constant: bool,
-}
-
 pub struct State {
-    symbols: HashMap<String, Variable>
-}
-
-#[derive(Debug)]
-pub enum Op<T> {
-    Ok(T),
-    TypeError(Value, Value),
+    symbols: HashMap<String, Value>
 }
 
 #[derive(RustcEncodable, RustcDecodable, Debug,Clone,PartialEq)]
@@ -102,26 +91,64 @@ macro_rules! logic {
     };
 }
 
-impl <T>Op<T> {
-    fn unwrap(self) -> T {
-        match self {
-            Op::Ok(x) => x,
-            Op::TypeError(x, y) => { logic!("Cannot combine {:?} and {:?}", x, y); }
+impl Expression {
+    pub fn eval(&self, state: &State) -> Value {
+        match *self {
+            Expression::Variable(ref s) => {
+                match state.symbols.get(s) {
+                    Some(variable) => variable.clone(),
+                    None => logic!("Tried to use variable {} before assignment", s)
+                }
+            }
+            Expression::OperatorExpression(ref a, ref operator, ref b) => {
+                let x = a.eval(state);
+                let y = b.eval(state);
+                match *operator {
+                    Operator::Add => x.add(&y),
+                    Operator::Subtract => x.subtract(&y),
+                    Operator::Multiply => x.multiply(&y),
+                    Operator::Divide => x.divide(&y),
+                    Operator::Equality => x.equals(&y),
+                    Operator::LessThan => x.less_than(&y),
+                    Operator::GreaterThan => x.greater_than(&y),
+                    Operator::LessThanEqual => x.less_than_equal(&y),
+                    Operator::GreaterThanEqual => x.greater_than_equal(&y),
+                    Operator::ShiftLeft => x.shift_left(&y),
+                    Operator::ShiftRight => x.shift_right(&y),
+                    Operator::And => x.and(&y),
+                    Operator::Or => x.or(&y),
+                }
+            }
+            Expression::Value(ref v) => v.clone(),
+            Expression::ListIndex(ref s, ref e) => state.list_index(s, e),
+            Expression::Not(ref e) => e.eval(state).not(),
+            Expression::ListLength(ref s) => {
+                match state.symbols.get(s) {
+                    Some(symbol) => {
+                        match *symbol {
+                            Value::List(ref l) => Value::Int(l.len() as i32),
+                            Value::Str(ref s) => Value::Int(s.len() as i32),
+                            _ => logic!("You tried to index variable {}, which is not indexable", s),
+                        }
+                    },
+                    None => logic!("There is no variable named {}", s),
+                }
+            }
         }
     }
 }
 
 impl State {
-    fn list_index(&self, list_name: &str, exp: &Expression) -> Variable {
-        let inner_expression_value = self.expression_to_variable(exp).value;
+    fn list_index(&self, list_name: &str, exp: &Expression) -> Value {
+        let inner_expression_value = exp.eval(self);
         match self.symbols.get(list_name) {
             Some(symbol) => {
-                match symbol.value {
+                match *symbol {
                     Value::List(ref l) => {
                         if let Value::Int(i) = inner_expression_value {
                             let index = i as usize;
                             if index < l.len() {
-                                Variable::new_variable(l[index].clone())
+                                l[index].clone()
                             } else {
                                 logic!("You don't have {} kernels on cob {}, idiot.", index, list_name);
                             }
@@ -133,7 +160,7 @@ impl State {
                         if let Value::Int(i) = inner_expression_value {
                             let index = i as usize;
                             if index < s.len() {
-                                Variable::new_variable(Value::Str(s.as_str()[index..(index + 1)].to_string()))
+                                Value::Str(s.as_str()[index..(index + 1)].to_string())
                             } else {
                                 logic!("You don't have {} kernels on cob {}, idiot.", index, list_name);
                             }
@@ -148,57 +175,8 @@ impl State {
         }
     }
 
-    fn expression_to_variable(&self, exp: &Expression) -> Variable {
-        match *exp {
-            Expression::Variable(ref s) => {
-                match self.symbols.get(s) {
-                    Some(variable) => variable.clone(),
-                    None => logic!("Tried to use variable {} before assignment", s)
-                }
-            }
-            Expression::OperatorExpression(ref a, ref o, ref b) => {
-                let x = self.expression_to_variable(a);
-                let y = self.expression_to_variable(b);
-                Variable::new_variable(match *o {
-                    Operator::Add => x.add(y.value).unwrap(),
-                    Operator::Subtract => x.subtract(y.value).unwrap(),
-                    Operator::Multiply => x.multiply(y.value).unwrap(),
-                    Operator::Divide => x.divide(y.value).unwrap(),
-                    Operator::Equality => x.equals(&y.value),
-                    Operator::LessThan => x.less_than(&y.value),
-                    Operator::GreaterThan => x.greater_than(&y.value),
-                    Operator::LessThanEqual => x.less_than_equal(&y.value),
-                    Operator::GreaterThanEqual => x.greater_than_equal(&y.value),
-                    Operator::ShiftLeft => x.shift_left(y.value).unwrap(),
-                    Operator::ShiftRight => x.shift_right(y.value).unwrap(),
-                    Operator::And => x.and(&y.value),
-                    Operator::Or => x.or(&y.value),
-                })
-            }
-            Expression::Value(ref v) => Variable::new_variable(v.clone()),
-            Expression::ListIndex(ref s, ref e) => self.list_index(s, e),
-            Expression::Not(ref e) => {
-                let mut x = self.expression_to_variable(e);
-                x.not();
-                x
-            },
-            Expression::ListLength(ref s) => {
-                match self.symbols.get(s) {
-                    Some(symbol) => {
-                        match symbol.value {
-                            Value::List(ref l) => Variable::new_variable(Value::Int(l.len() as i32)),
-                            Value::Str(ref s) => Variable::new_variable(Value::Int(s.len() as i32)),
-                            _ => logic!("You tried to index variable {}, which is not indexable", s),
-                        }
-                    },
-                    None => logic!("There is no variable named {}", s),
-                }
-            }
-        }
-    }
-
     fn assign(&mut self, str: String, exp: &Expression) {
-        let v = self.expression_to_variable(exp);
+        let v = exp.eval(self);
         self.symbols.insert(str, v);
     }
 
@@ -207,7 +185,7 @@ impl State {
     }
 
     fn print(&mut self, exp: &Expression) {
-        let x = self.expression_to_variable(exp);
+        let x = exp.eval(self);
         x.println();
     }
 
@@ -223,71 +201,81 @@ impl State {
                     }
 
                     input = input.trim().to_string();
-                    self.symbols.insert(s.to_string(), Variable::new_variable(Value::Str(input)));
+                    self.symbols.insert(s.to_string(), Value::Str(input));
                 },
                 Statement::ListNew(s) => {
-                    self.symbols.insert(s, Variable::new_variable(Value::List(Vec::new())));
+                    self.symbols.insert(s, Value::List(Vec::new()));
                 },
-                Statement::ListAppend(ref s, ref e) => {
+                Statement::ListAppend(ref s, ref append_exp) => {
+                    let to_append = append_exp.eval(self);
+                    match self.symbols.get_mut(s) {
+                        Some(value) => {
+                            if let Value::List(ref mut l) = *value {
+                                l.push(to_append);
+                            } else {
+                                logic!("You tried to index variable {}, which is not indexable", s);
+                            }
+                        },
+                        None => logic!("There is no variable named {}", s),
+                    }
                     if self.symbols.contains_key(s) {
-                        let val = self.expression_to_variable(e).value;
-                        if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
-                            l.push(val);
-                        } else {
-                            logic!("You tried to index variable {}, which is not indexable", s);
-                        }
-                    } else {
-                        logic!("There is no variable named {}", s);
                     }
 
                 },
-                Statement::ListAssign(ref s, ref index_expression, ref assign_expression) => {
-                    if self.symbols.contains_key(s) {
-                        let val = self.expression_to_variable(assign_expression).value;
-                        let x = self.expression_to_variable(index_expression).value;
-                        if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
-                            if let Value::Int(i) = x {
+                Statement::ListAssign(ref s, ref index_exp, ref assign_exp) => {
+                    let to_assign = assign_exp.eval(self);
+                    let index = index_exp.eval(self);
+
+                    match self.symbols.get_mut(s) {
+                        Some(value) => {
+                        if let Value::List(ref mut l) = *value {
+                            if let Value::Int(i) = index {
                                 let index = i as usize;
                                 if index < l.len() {
-                                    l[index] = val;
+                                    l[index] = to_assign;
                                 } else {
                                     logic!("Cob index out of bounds for cob {}", s);
                                 }
                             } else {
-                                logic!("You tried to index cob {} with a non-int value {:?}", s, x);
+                                logic!("You tried to index cob {} with a non-int value {:?}", s, index);
                             }
                         } else {
                             logic!("You tried to index variable {}, which is not indexable", s);
                         }
+                        },
+                        None => logic!("There is no variable named {}", s)
+                    }
+
+                    if self.symbols.contains_key(s) {
                     } else {
-                        logic!("There is no variable named {}", s);
                     }
 
                 },
                 Statement::ListDelete(ref s, ref index_expression) => {
-                    if self.symbols.contains_key(s) {
-                        let x = self.expression_to_variable(index_expression).value;
-                        if let Value::List(ref mut l) = self.symbols.get_mut(s).unwrap().value {
-                            if let Value::Int(i) = x {
-                                let index = i as usize;
-                                if index < l.len() {
-                                    l.remove(index);
+                    let x = index_expression.eval(self);
+                    match self.symbols.get_mut(s) {
+                        Option::Some(value) => {
+                            if let Value::List(ref mut l) = *value {
+                                if let Value::Int(i) = x {
+                                    let index = i as usize;
+                                    if index < l.len() {
+                                        l.remove(index);
+                                    } else {
+                                        logic!("Cob index out of bounds for cob {}", s);
+                                    }
                                 } else {
-                                    logic!("Cob index out of bounds for cob {}", s);
+                                    logic!("You tried to index cob {} with a non-int value {:?}", s, x);
                                 }
                             } else {
-                                logic!("You tried to index cob {} with a non-int value {:?}", s, x);
+                                logic!("You tried to index variable {}, which is not indexable", s);
                             }
-                        } else {
-                            logic!("You tried to index variable {}, which is not indexable", s);
-                        }
-                    } else {
-                        logic!("There is no variable named {}", s);
+                        },
+                        Option::None => logic!("There is no variable named {}", s)
                     }
 
                 },
                 Statement::If(bool_expression, if_body, else_body) => {
-                    let x = self.expression_to_variable(&bool_expression).value;
+                    let x = bool_expression.eval(self);
                     match x {
                         Value::Bool(b) => {
                             if b {
@@ -317,7 +305,7 @@ impl State {
     }
 
     pub fn eval_bool(&self, bool_expression: &Expression) -> bool {
-        let b = self.expression_to_variable(bool_expression).value;
+        let b = bool_expression.eval(self);
         if let Value::Bool(x) = b {
             x
         } else {
@@ -338,17 +326,9 @@ impl Default for State {
     }
 }
 
-impl Variable {
-    pub fn new_variable(value: Value) -> Variable {
-        Variable{ value: value, constant: false }
-    }
-
-    pub fn new_constant(value: Value) -> Variable {
-        Variable{ value: value, constant: true }
-    }
-
+impl Value {
     pub fn print(&self) {
-        match self.value {
+        match *self {
             Value::Int(i) => print!("{}", i),
             Value::Float(i) => print!("{}", i),
             Value::Bool(i) => print!("{}", i),
@@ -357,192 +337,11 @@ impl Variable {
         }
     }
 
-    pub fn not(&mut self) {
-        match self.value {
-            Value::Bool(b) => self.value = Value::Bool(!b),
-            _ => logic!("Tried to negate non-bool value {:?}", self.value),
-        }
-    }
-
     pub fn println(&self) {
         self.print();
         println!("");
     }
 
-    pub fn assign(&mut self, value: &Value) {
-        if self.constant {
-            logic!("Tried to assign to constant value {:?}", self.value);
-        }
-        self.value = value.clone();
-    }
-
-    pub fn add(&self, value: Value) -> Op<Value> {
-        match self.value {
-            Value::Int(i) => {
-                if let Value::Int(j) = value {
-                    Op::Ok(Value::Int(i + j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            Value::Float(i) => {
-                if let Value::Float(j) = value {
-                    Op::Ok(Value::Float(i + j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            Value::Str(ref i) => {
-                if let Value::Str(j) = value {
-                    let mut new_buf = i.clone();
-                    new_buf.push_str(&j);
-                    Op::Ok(Value::Str(new_buf))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            _ => logic!("Tried to add {:?} and {:?} which have incompatable types", self.value, value),
-        }
-    }
-
-    pub fn subtract(&self, value: Value) -> Op<Value> {
-        match self.value {
-            Value::Int(i) => {
-                if let Value::Int(j) = value {
-                    Op::Ok(Value::Int(i - j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            Value::Float(i) => {
-                if let Value::Float(j) = value {
-                    Op::Ok(Value::Float(i - j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            _ => logic!("Tried to subtract {:?} and {:?} which have incompatable types", self.value, value),
-        }
-    }
-
-    pub fn multiply(&self, value: Value) -> Op<Value> {
-        match self.value {
-            Value::Int(i) => {
-                if let Value::Int(j) = value {
-                    Op::Ok(Value::Int(i * j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            Value::Float(i) => {
-                if let Value::Float(j) = value {
-                    Op::Ok(Value::Float(i * j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            Value::Str(ref i) => {
-                if let Value::Int(j) = value {
-                    let mut new_buf = i.clone();
-                    for _ in 0..(j - 1) {
-                        new_buf.push_str(i);
-                    }
-                    Op::Ok(Value::Str(new_buf))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            _ => logic!("Tried to multiply {:?} and {:?} which have incompatable types", self.value, value),
-        }
-    }
-
-    pub fn divide(&self, value: Value) -> Op<Value> {
-        match self.value {
-            Value::Int(i) => {
-                if let Value::Int(j) = value {
-                    Op::Ok(Value::Int(i / j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            Value::Float(i) => {
-                if let Value::Float(j) = value {
-                    Op::Ok(Value::Float(i / j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            _ => logic!("Tried to divide {:?} and {:?} which have incompatable types", self.value, value),
-        }
-    }
-
-    pub fn shift_left(&self, value: Value) -> Op<Value> {
-        match self.value {
-            Value::Int(i) => {
-                if let Value::Int(j) = value {
-                    Op::Ok(Value::Int(i << j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            _ => logic!("Tried to bit shift non-int value {:?} << {:?}", self.value, value),
-        }
-    }
-
-    pub fn shift_right(&self, value: Value) -> Op<Value> {
-        match self.value {
-            Value::Int(i) => {
-                if let Value::Int(j) = value {
-                    Op::Ok(Value::Int(i >> j))
-                } else {
-                    Op::TypeError(self.value.clone(), value.clone())
-                }
-            },
-            _ => logic!("Tried to bit shift non-int value {:?} >> {:?}", self.value, value),
-        }
-    }
-
-    pub fn equals(&self, value: &Value) -> Value {
-        match self.value {
-            Value::Str(_) => self.str_eq(value),
-            _ => Value::Bool(self.value.eq(value))
-        }
-    }
-
-    pub fn greater_than(&self, value: &Value) -> Value {
-        Value::Bool(self.value.greater_than(value))
-    }
-
-    pub fn greater_than_equal(&self, value: &Value) -> Value {
-        Value::Bool(self.value.greater_than_equal(value))
-    }
-
-    pub fn less_than(&self, value: &Value) -> Value {
-        Value::Bool(self.value.less_than(value))
-    }
-
-    pub fn less_than_equal(&self, value: &Value) -> Value {
-        Value::Bool(self.value.less_than_equal(value))
-    }
-
-    pub fn and(&self, value: &Value) -> Value {
-        Value::Bool(self.value.and(value))
-    }
-
-    pub fn or(&self, value: &Value) -> Value {
-        Value::Bool(self.value.or(value))
-    }
-
-    pub fn str_eq(&self, value: &Value) -> Value {
-        let val = &self.value;
-        if let (&Value::Str(ref x), &Value::Str(ref y)) = (val, value) {
-            return Value::Bool(x == y);
-        }
-        Value::Bool(false)
-    }
-}
-
-impl Value {
     fn assert_f32(&self) -> f32 {
         match *self {
             Value::Float(f) => f,
@@ -562,28 +361,121 @@ impl Value {
         }
     }
 
-    pub fn less_than(&self, other: &Value) -> bool {
-        self.assert_f32() < other.assert_f32()
+    pub fn not(&mut self) -> Value {
+        match *self {
+            Value::Bool(b) => Value::Bool(!b),
+            _ => logic!("Tried to negate non-bool value {:?}", self),
+        }
     }
 
-    pub fn greater_than(&self, other: &Value) -> bool {
-        self.assert_f32() > other.assert_f32()
+    pub fn less_than(&self, other: &Value) -> Value {
+        Value::Bool(self.assert_f32() < other.assert_f32())
     }
 
-    pub fn greater_than_equal(&self, other: &Value) -> bool {
-        self.assert_f32() >= other.assert_f32()
+    pub fn greater_than(&self, other: &Value) -> Value {
+        Value::Bool(self.assert_f32() > other.assert_f32())
     }
 
-    pub fn less_than_equal(&self, other: &Value) -> bool {
-        self.assert_f32() <= other.assert_f32()
+    pub fn greater_than_equal(&self, other: &Value) -> Value {
+        Value::Bool(self.assert_f32() >= other.assert_f32())
     }
 
-    pub fn and(&self, other: &Value) -> bool {
-        self.assert_bool() && other.assert_bool()
+    pub fn less_than_equal(&self, other: &Value) -> Value {
+        Value::Bool(self.assert_f32() <= other.assert_f32())
     }
 
-    pub fn or(&self, other: &Value) -> bool {
-        self.assert_bool() || other.assert_bool()
+    pub fn and(&self, other: &Value) -> Value {
+        Value::Bool(self.assert_bool() && other.assert_bool())
+    }
+
+    pub fn or(&self, other: &Value) -> Value {
+        Value::Bool(self.assert_bool() || other.assert_bool())
+    }
+
+    pub fn equals(&self, other: &Value) -> Value {
+        Value::Bool(self.eq(other))
+    }
+
+    pub fn add(&self, other: &Value) -> Value {
+        match (self, other) {
+            (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 + f2),
+            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 + i2),
+            (&Value::Float(ref f), &Value::Int(ref i)) |
+            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 + *f),
+            (&Value::Str(ref s1), &Value::Str(ref s2)) => {
+                let mut new_buf = s1.clone();
+                new_buf.push_str(&s2);
+                Value::Str(new_buf)
+            },
+            _ => logic!("Tried to add {:?} and {:?} which have incompatable types", self, other),
+        }
+    }
+
+    pub fn subtract(&self, other: &Value) -> Value {
+        match (self, other) {
+            (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 - f2),
+            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 - i2),
+            (&Value::Float(ref f), &Value::Int(ref i)) => Value::Float(f - *i as f32),
+            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 - f),
+            _ => logic!("Tried to subtract {:?} and {:?} which have incompatable types", self, other),
+        }
+    }
+
+    pub fn multiply(&self, other: &Value) -> Value {
+        match (self, other) {
+            (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 * f2),
+            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 * i2),
+            (&Value::Float(ref f), &Value::Int(ref i)) |
+            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 * *f),
+            (&Value::Str(ref s), &Value::Int(ref i)) => {
+                let mut new_buf = s.clone();
+                for _ in 0..(i - 1) {
+                    new_buf.push_str(s);
+                }
+                Value::Str(new_buf)
+            },
+            _ => logic!("Tried to multiply {:?} and {:?} which have incompatable types", self, other),
+        }
+    }
+
+    pub fn divide(&self, other: &Value) -> Value {
+        match (self, other) {
+            (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 / f2),
+            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 / i2),
+            (&Value::Float(ref f), &Value::Int(ref i)) => Value::Float(f / *i as f32),
+            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 / f),
+            _ => logic!("Tried to divide {:?} and {:?} which have incompatable types", self, other),
+        }
+    }
+
+    pub fn shift_left(&self, other: &Value) -> Value {
+        match (self, other) {
+            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 << i2),
+            _ => logic!("Tried to bit shift non-int value {:?} << {:?}", self, other),
+        }
+    }
+
+    pub fn shift_right(&self, other: &Value) -> Value {
+        match (self, other) {
+            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 >> i2),
+            _ => logic!("Tried to bit shift non-int value {:?} >> {:?}", self, other),
+        }
+    }
+}
+
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
+        if self == other {
+            Option::Some(Ordering::Equal)
+        } else {
+            let (s, o) = match (self, other) {
+                (&Value::Int(ref i), &Value::Float(ref f)) => (*i as f32, *f),
+                (&Value::Float(ref f), &Value::Int(ref i)) => (*f, *i as f32),
+                _ => return Option::None,
+            };
+
+            s.partial_cmp(&o)
+        }
     }
 }
 
