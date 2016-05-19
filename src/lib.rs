@@ -23,7 +23,7 @@ pub struct State {
     symbols: HashMap<String, Value>
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug, Clone, PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug, PartialEq)]
 pub enum Operator {
     Add,
     Subtract,
@@ -40,7 +40,7 @@ pub enum Operator {
     Or,
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug, Clone, PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug, PartialEq)]
 pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
@@ -50,7 +50,7 @@ pub enum Expression {
     Not(Box<Expression>),
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug, Clone, PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, Debug, PartialEq)]
 pub enum Statement {
     Assignment(String, Expression),
     Delete(String),
@@ -189,9 +189,9 @@ impl State {
         x.println();
     }
 
-    pub fn run(&mut self, statements: Vec<Statement>) {
+    pub fn run(&mut self, statements: &[Statement]) {
         for statement in statements {
-            match statement {
+            match *statement {
                 Statement::Input(ref s) => {
                     let mut input = String::new();
 
@@ -203,8 +203,8 @@ impl State {
                     input = input.trim().to_string();
                     self.symbols.insert(s.to_string(), Value::Str(input));
                 },
-                Statement::ListNew(s) => {
-                    self.symbols.insert(s, Value::List(Vec::new()));
+                Statement::ListNew(ref s) => {
+                    self.symbols.insert(s.clone(), Value::List(Vec::new()));
                 },
                 Statement::ListAppend(ref s, ref append_exp) => {
                     let to_append = append_exp.eval(self);
@@ -218,9 +218,6 @@ impl State {
                         },
                         None => logic!("There is no variable named {}", s),
                     }
-                    if self.symbols.contains_key(s) {
-                    }
-
                 },
                 Statement::ListAssign(ref s, ref index_exp, ref assign_exp) => {
                     let to_assign = assign_exp.eval(self);
@@ -245,11 +242,6 @@ impl State {
                         },
                         None => logic!("There is no variable named {}", s)
                     }
-
-                    if self.symbols.contains_key(s) {
-                    } else {
-                    }
-
                 },
                 Statement::ListDelete(ref s, ref index_expression) => {
                     let x = index_expression.eval(self);
@@ -272,34 +264,33 @@ impl State {
                         },
                         Option::None => logic!("There is no variable named {}", s)
                     }
-
                 },
-                Statement::If(bool_expression, if_body, else_body) => {
+                Statement::If(ref bool_expression, ref if_body, ref else_body) => {
                     let x = bool_expression.eval(self);
                     match x {
                         Value::Bool(b) => {
                             if b {
                                 self.run(if_body);
                             } else {
-                                match else_body {
-                                    Option::Some(s) => self.run(s),
+                                match *else_body {
+                                    Option::Some(ref s) => self.run(s),
                                     Option::None => {},
                                 }
                             }
-                        }
+                        },
                         _ => logic!("Tried to use non-bool value {:?} as a bool", bool_expression),
                     }
                 },
                 Statement::While(ref bool_expression, ref body) => {
                     let mut b = self.eval_bool(bool_expression);
                     while b {
-                        self.run(body.clone());
+                        self.run(body);
                         b = self.eval_bool(bool_expression);
                     }
                 }
-                Statement::Assignment(i, j) => self.assign(i, &j),
-                Statement::Delete(ref i) => self.delete(i),
-                Statement::Print(ref i) => self.print(i),
+                Statement::Assignment(ref name, ref value) => self.assign(name.clone(), value),
+                Statement::Delete(ref name) => self.delete(name),
+                Statement::Print(ref exp) => self.print(exp),
             }
         }
     }
@@ -514,5 +505,5 @@ pub fn compile(filename: &str) ->  Result<Vec<Statement>, grammar::ParseError> {
 pub fn run_program(filename: &str) {
     let mut s = State::new();
     let tokens = compile(filename);
-    s.run(tokens.unwrap());
+    s.run(&tokens.unwrap());
 }
