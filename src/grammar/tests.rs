@@ -62,6 +62,29 @@ fn test_not() {
 }
 
 #[test]
+fn test_nested_while() {
+    let l = super::while_loop(r#"while x :<
+        while y :<
+            show me what you got 30
+        >:
+    >:"#).unwrap();
+    assert_eq!(
+        l,
+        Statement::While(
+            Expression::Variable("x".to_string()),
+            vec![
+                Statement::While(
+                    Expression::Variable("y".to_string()),
+                    vec![
+                        Statement::Print(Expression::Value(Value::Int(30))),
+                    ],
+                )
+            ],
+        )
+    );
+}
+
+#[test]
 fn test_while() {
     let l = super::while_loop(r#"while x :<
     show me what you got 30

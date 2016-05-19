@@ -12,11 +12,11 @@ pub mod grammar;
 
 #[derive(RustcEncodable, RustcDecodable, Debug,Clone)]
 pub enum Value {
-	Str(String),
-	Int(i32),
-	Float(f32),
+    Str(String),
+    Int(i32),
+    Float(f32),
     Bool(bool),
-	List(Vec<Value>),
+    List(Vec<Value>),
 }
 
 pub struct State {
@@ -228,20 +228,20 @@ impl State {
 
                     match self.symbols.get_mut(s) {
                         Some(value) => {
-                        if let Value::List(ref mut l) = *value {
-                            if let Value::Int(i) = index {
-                                let index = i as usize;
-                                if index < l.len() {
-                                    l[index] = to_assign;
+                            if let Value::List(ref mut l) = *value {
+                                if let Value::Int(i) = index {
+                                    let index = i as usize;
+                                    if index < l.len() {
+                                        l[index] = to_assign;
+                                    } else {
+                                        logic!("Cob index out of bounds for cob {}", s);
+                                    }
                                 } else {
-                                    logic!("Cob index out of bounds for cob {}", s);
+                                    logic!("You tried to index cob {} with a non-int value {:?}", s, index);
                                 }
                             } else {
-                                logic!("You tried to index cob {} with a non-int value {:?}", s, index);
+                                logic!("You tried to index variable {}, which is not indexable", s);
                             }
-                        } else {
-                            logic!("You tried to index variable {}, which is not indexable", s);
-                        }
                         },
                         None => logic!("There is no variable named {}", s)
                     }
@@ -401,13 +401,13 @@ impl Value {
             (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 + f2),
             (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 + i2),
             (&Value::Float(ref f), &Value::Int(ref i)) |
-            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 + *f),
-            (&Value::Str(ref s1), &Value::Str(ref s2)) => {
-                let mut new_buf = s1.clone();
-                new_buf.push_str(&s2);
-                Value::Str(new_buf)
-            },
-            _ => logic!("Tried to add {:?} and {:?} which have incompatable types", self, other),
+                (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 + *f),
+                (&Value::Str(ref s1), &Value::Str(ref s2)) => {
+                    let mut new_buf = s1.clone();
+                    new_buf.push_str(&s2);
+                    Value::Str(new_buf)
+                },
+                _ => logic!("Tried to add {:?} and {:?} which have incompatable types", self, other),
         }
     }
 
@@ -426,15 +426,15 @@ impl Value {
             (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 * f2),
             (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 * i2),
             (&Value::Float(ref f), &Value::Int(ref i)) |
-            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 * *f),
-            (&Value::Str(ref s), &Value::Int(ref i)) => {
-                let mut new_buf = s.clone();
-                for _ in 0..(i - 1) {
-                    new_buf.push_str(s);
-                }
-                Value::Str(new_buf)
-            },
-            _ => logic!("Tried to multiply {:?} and {:?} which have incompatable types", self, other),
+                (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 * *f),
+                (&Value::Str(ref s), &Value::Int(ref i)) => {
+                    let mut new_buf = s.clone();
+                    for _ in 0..(i - 1) {
+                        new_buf.push_str(s);
+                    }
+                    Value::Str(new_buf)
+                },
+                _ => logic!("Tried to multiply {:?} and {:?} which have incompatable types", self, other),
         }
     }
 
@@ -488,8 +488,8 @@ impl PartialEq for Value {
             (&Value::Int(ref i1), &Value::Int(ref i2)) => i1 == i2,
             (&Value::Int(ref i), &Value::Float(ref f)) | (&Value::Float(ref f), &Value::Int(ref i))
                 => (*i as f32 - f).abs() < std::f32::EPSILON,
-            (&Value::Float(ref f1), &Value::Float(ref f2)) => (f1 - f2).abs() < std::f32::EPSILON,
-            _ => false,
+                (&Value::Float(ref f1), &Value::Float(ref f2)) => (f1 - f2).abs() < std::f32::EPSILON,
+                _ => false,
         }
     }
 
