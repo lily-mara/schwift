@@ -8,6 +8,7 @@ use std::io::prelude::*;
 use std::io;
 use std::cmp::Ordering;
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub mod grammar;
 
 #[derive(RustcEncodable, RustcDecodable, Debug, Clone)]
