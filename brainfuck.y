@@ -1,5 +1,5 @@
 show me what you got "Please input your brainfuck program: "
-input squanch "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>."
+portal gun input
 
 size squanch (input squanch - 1)
 count squanch 0
