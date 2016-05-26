@@ -1,4 +1,4 @@
-use super::super::{ Value, Operator, Statement, Expression };
+use super::{ Value, Operator, Statement, Expression };
 
 #[pub]
 string -> Value
@@ -168,7 +168,7 @@ input -> Statement
 
 #[pub]
 file -> Vec<Statement>
-    = newline* l:line+ { l }
+    = l:line+ { l }
 
 #[pub]
 optional_whitespace

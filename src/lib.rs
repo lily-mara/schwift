@@ -1,3 +1,6 @@
+#![feature(plugin)]
+#![plugin(peg_syntax_ext)]
+
 extern crate rand;
 extern crate rustc_serialize;
 
@@ -9,7 +12,10 @@ use std::io;
 use std::cmp::Ordering;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-pub mod grammar;
+peg_file! grammar("schwift.rustpeg");
+
+#[cfg(test)]
+mod grammar_tests;
 
 #[derive(RustcEncodable, RustcDecodable, Debug, Clone)]
 pub enum Value {
