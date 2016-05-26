@@ -11,7 +11,6 @@ use std::io::prelude::*;
 use std::io;
 use std::cmp::Ordering;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
 peg_file! grammar("schwift.rustpeg");
 
 #[cfg(test)]
@@ -55,6 +54,7 @@ pub enum Expression {
     ListIndex(String, Box<Expression>),
     ListLength(String),
     Not(Box<Expression>),
+    Eval(Box<Expression>),
 }
 
 #[derive(RustcEncodable, RustcDecodable, Debug, PartialEq)]
@@ -140,7 +140,16 @@ impl Expression {
                     },
                     None => logic!("There is no variable named {}", var_name),
                 }
-            }
+            },
+            Expression::Eval(ref exp) => {
+                let inner_exp = exp.eval(state);
+                if let Value::Str(ref inner) = inner_exp {
+                    let inner_evaled = grammar::expression(inner).unwrap();
+                    inner_evaled.eval(state)
+                } else {
+                    logic!("Eval must be given a string, got {:?}", inner_exp)
+                }
+            },
         }
     }
 }
