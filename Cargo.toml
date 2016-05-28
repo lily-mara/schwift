@@ -2,6 +2,7 @@
 authors = ["natemara <natemara@gmail.com>"]
 name = "schwift"
 version = "0.1.0"
+build = "build.rs"
 
 [dependencies]
 bincode = "0.5.6"
