@@ -26,7 +26,7 @@ pub enum Value {
 }
 
 pub struct State {
-    symbols: HashMap<String, Value>
+    symbols: HashMap<String, Value>,
 }
 
 #[derive(RustcEncodable, RustcDecodable, Debug, PartialEq)]
@@ -71,17 +71,18 @@ pub enum Statement {
     Input(String),
 }
 
-pub const QUOTES: [&'static str; 9] = [
-    "Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
-    "That's planning for failure Morty, even dumber than regular planning. -Rick",
-    "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty and white. -S̶n̶u̶f̶f̶l̶e̶s̶ Snowbal",
-    "Existence is pain to an interpreter. -Meeseeks",
-    "In bird culture this is considered a dick move -Bird Person",
-    "There is no god, gotta rip that band aid off now. You'll thank me later. -Rick",
-    "Your program is a piece of shit and I can proove it mathmatically. -Rick",
-    "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing program. -Rick",
-    "DISQUALIFIED. -Cromulon",
-];
+pub const QUOTES: [&'static str; 9] =
+    ["Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
+     "That's planning for failure Morty, even dumber than regular planning. -Rick",
+     "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty \
+      and white. -S̶n̶u̶f̶f̶l̶e̶s̶ Snowbal",
+     "Existence is pain to an interpreter. -Meeseeks",
+     "In bird culture this is considered a dick move -Bird Person",
+     "There is no god, gotta rip that band aid off now. You'll thank me later. -Rick",
+     "Your program is a piece of shit and I can proove it mathmatically. -Rick",
+     "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing \
+      program. -Rick",
+     "DISQUALIFIED. -Cromulon"];
 
 fn random_quote() -> &'static str {
     let mut rng = thread_rng();
@@ -104,7 +105,7 @@ impl Expression {
             Expression::Variable(ref var_name) => {
                 match state.symbols.get(var_name) {
                     Some(value) => value.clone(),
-                    None => logic!("Tried to use variable {} before assignment", var_name)
+                    None => logic!("Tried to use variable {} before assignment", var_name),
                 }
             }
             Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
@@ -135,12 +136,15 @@ impl Expression {
                         match *value {
                             Value::List(ref list) => Value::Int(list.len() as i32),
                             Value::Str(ref s) => Value::Int(s.len() as i32),
-                            _ => logic!("You tried to index variable {}, which is not indexable", var_name),
+                            _ => {
+                                logic!("You tried to index variable {}, which is not indexable",
+                                       var_name)
+                            }
                         }
-                    },
+                    }
                     None => logic!("There is no variable named {}", var_name),
                 }
-            },
+            }
             Expression::Eval(ref exp) => {
                 let inner_exp = exp.eval(state);
                 if let Value::Str(ref inner) = inner_exp {
@@ -149,7 +153,7 @@ impl Expression {
                 } else {
                     logic!("Eval must be given a string, got {:?}", inner_exp)
                 }
-            },
+            }
         }
     }
 }
@@ -166,25 +170,36 @@ impl State {
                             if index < l.len() {
                                 l[index].clone()
                             } else {
-                                logic!("You don't have {} kernels on cob {}, idiot.", index, list_name);
+                                logic!("You don't have {} kernels on cob {}, idiot.",
+                                       index,
+                                       list_name);
                             }
                         } else {
-                            logic!("You tried to index cob {} with a non-int value {:?}", list_name, inner_expression_value);
+                            logic!("You tried to index cob {} with a non-int value {:?}",
+                                   list_name,
+                                   inner_expression_value);
                         }
-                    },
+                    }
                     Value::Str(ref s) => {
                         if let Value::Int(i) = inner_expression_value {
                             let index = i as usize;
                             if index < s.len() {
                                 Value::Str(s.as_str()[index..(index + 1)].to_string())
                             } else {
-                                logic!("You don't have {} kernels on cob {}, idiot.", index, list_name);
+                                logic!("You don't have {} kernels on cob {}, idiot.",
+                                       index,
+                                       list_name);
                             }
                         } else {
-                            logic!("You tried to index cob {} with a non-int value {:?}", list_name, inner_expression_value);
+                            logic!("You tried to index cob {} with a non-int value {:?}",
+                                   list_name,
+                                   inner_expression_value);
                         }
-                    },
-                    _ => logic!("You tried to index variable {}, which is not indexable", list_name),
+                    }
+                    _ => {
+                        logic!("You tried to index variable {}, which is not indexable",
+                               list_name)
+                    }
                 }
             }
             None => logic!("There is no variable named {}", list_name),
@@ -218,10 +233,10 @@ impl State {
 
                     input = input.trim().to_string();
                     self.symbols.insert(s.to_string(), Value::Str(input));
-                },
+                }
                 Statement::ListNew(ref s) => {
                     self.symbols.insert(s.clone(), Value::List(Vec::new()));
-                },
+                }
                 Statement::ListAppend(ref s, ref append_exp) => {
                     let to_append = append_exp.eval(self);
                     match self.symbols.get_mut(s) {
@@ -231,10 +246,10 @@ impl State {
                             } else {
                                 logic!("You tried to index variable {}, which is not indexable", s);
                             }
-                        },
+                        }
                         None => logic!("There is no variable named {}", s),
                     }
-                },
+                }
                 Statement::ListAssign(ref s, ref index_exp, ref assign_exp) => {
                     let to_assign = assign_exp.eval(self);
                     let index = index_exp.eval(self);
@@ -250,15 +265,17 @@ impl State {
                                         logic!("Cob index out of bounds for cob {}", s);
                                     }
                                 } else {
-                                    logic!("You tried to index cob {} with a non-int value {:?}", s, index);
+                                    logic!("You tried to index cob {} with a non-int value {:?}",
+                                           s,
+                                           index);
                                 }
                             } else {
                                 logic!("You tried to index variable {}, which is not indexable", s);
                             }
-                        },
-                        None => logic!("There is no variable named {}", s)
+                        }
+                        None => logic!("There is no variable named {}", s),
                     }
-                },
+                }
                 Statement::ListDelete(ref s, ref index_expression) => {
                     let x = index_expression.eval(self);
                     match self.symbols.get_mut(s) {
@@ -272,15 +289,17 @@ impl State {
                                         logic!("Cob index out of bounds for cob {}", s);
                                     }
                                 } else {
-                                    logic!("You tried to index cob {} with a non-int value {:?}", s, x);
+                                    logic!("You tried to index cob {} with a non-int value {:?}",
+                                           s,
+                                           x);
                                 }
                             } else {
                                 logic!("You tried to index variable {}, which is not indexable", s);
                             }
-                        },
-                        Option::None => logic!("There is no variable named {}", s)
+                        }
+                        Option::None => logic!("There is no variable named {}", s),
                     }
-                },
+                }
                 Statement::If(ref bool_expression, ref if_body, ref else_body) => {
                     let x = bool_expression.eval(self);
                     match x {
@@ -290,13 +309,16 @@ impl State {
                             } else {
                                 match *else_body {
                                     Option::Some(ref s) => self.run(s),
-                                    Option::None => {},
+                                    Option::None => {}
                                 }
                             }
-                        },
-                        _ => logic!("Tried to use non-bool value {:?} as a bool", bool_expression),
+                        }
+                        _ => {
+                            logic!("Tried to use non-bool value {:?} as a bool",
+                                   bool_expression)
+                        }
                     }
-                },
+                }
                 Statement::While(ref bool_expression, ref body) => {
                     let mut b = self.eval_bool(bool_expression);
                     while b {
@@ -316,7 +338,8 @@ impl State {
         if let Value::Bool(x) = b {
             x
         } else {
-            logic!("Tried to use non-bool value {:?} as a bool", bool_expression);
+            logic!("Tried to use non-bool value {:?} as a bool",
+                   bool_expression);
         }
     }
 
@@ -327,9 +350,7 @@ impl State {
 
 impl Default for State {
     fn default() -> Self {
-        State {
-            symbols:HashMap::new()
-        }
+        State { symbols: HashMap::new() }
     }
 }
 
@@ -359,9 +380,7 @@ impl Value {
 
     fn assert_bool(&self) -> bool {
         match *self {
-            Value::Bool(b) => {
-                b
-            }
+            Value::Bool(b) => b,
             _ => {
                 logic!("Tried to use non-boolean value {:?} as boolean", self);
             }
@@ -408,13 +427,17 @@ impl Value {
             (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 + f2),
             (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 + i2),
             (&Value::Float(ref f), &Value::Int(ref i)) |
-                (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 + *f),
-                (&Value::Str(ref s1), &Value::Str(ref s2)) => {
-                    let mut new_buf = s1.clone();
-                    new_buf.push_str(&s2);
-                    Value::Str(new_buf)
-                },
-                _ => logic!("Tried to add {:?} and {:?} which have incompatable types", self, other),
+            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 + *f),
+            (&Value::Str(ref s1), &Value::Str(ref s2)) => {
+                let mut new_buf = s1.clone();
+                new_buf.push_str(&s2);
+                Value::Str(new_buf)
+            }
+            _ => {
+                logic!("Tried to add {:?} and {:?} which have incompatable types",
+                       self,
+                       other)
+            }
         }
     }
 
@@ -424,7 +447,11 @@ impl Value {
             (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 - i2),
             (&Value::Float(ref f), &Value::Int(ref i)) => Value::Float(f - *i as f32),
             (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 - f),
-            _ => logic!("Tried to subtract {:?} and {:?} which have incompatable types", self, other),
+            _ => {
+                logic!("Tried to subtract {:?} and {:?} which have incompatable types",
+                       self,
+                       other)
+            }
         }
     }
 
@@ -433,15 +460,19 @@ impl Value {
             (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 * f2),
             (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 * i2),
             (&Value::Float(ref f), &Value::Int(ref i)) |
-                (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 * *f),
-                (&Value::Str(ref s), &Value::Int(ref i)) => {
-                    let mut new_buf = s.clone();
-                    for _ in 0..(i - 1) {
-                        new_buf.push_str(s);
-                    }
-                    Value::Str(new_buf)
-                },
-                _ => logic!("Tried to multiply {:?} and {:?} which have incompatable types", self, other),
+            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 * *f),
+            (&Value::Str(ref s), &Value::Int(ref i)) => {
+                let mut new_buf = s.clone();
+                for _ in 0..(i - 1) {
+                    new_buf.push_str(s);
+                }
+                Value::Str(new_buf)
+            }
+            _ => {
+                logic!("Tried to multiply {:?} and {:?} which have incompatable types",
+                       self,
+                       other)
+            }
         }
     }
 
@@ -451,7 +482,11 @@ impl Value {
             (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 / i2),
             (&Value::Float(ref f), &Value::Int(ref i)) => Value::Float(f / *i as f32),
             (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 / f),
-            _ => logic!("Tried to divide {:?} and {:?} which have incompatable types", self, other),
+            _ => {
+                logic!("Tried to divide {:?} and {:?} which have incompatable types",
+                       self,
+                       other)
+            }
         }
     }
 
@@ -493,10 +528,10 @@ impl PartialEq for Value {
             (&Value::Str(ref s1), &Value::Str(ref s2)) => s1 == s2,
             (&Value::List(ref l1), &Value::List(ref l2)) => l1 == l2,
             (&Value::Int(ref i1), &Value::Int(ref i2)) => i1 == i2,
-            (&Value::Int(ref i), &Value::Float(ref f)) | (&Value::Float(ref f), &Value::Int(ref i))
-                => (*i as f32 - f).abs() < std::f32::EPSILON,
-                (&Value::Float(ref f1), &Value::Float(ref f2)) => (f1 - f2).abs() < std::f32::EPSILON,
-                _ => false,
+            (&Value::Int(ref i), &Value::Float(ref f)) |
+            (&Value::Float(ref f), &Value::Int(ref i)) => (*i as f32 - f).abs() < std::f32::EPSILON,
+            (&Value::Float(ref f1), &Value::Float(ref f2)) => (f1 - f2).abs() < std::f32::EPSILON,
+            _ => false,
         }
     }
 
@@ -505,14 +540,14 @@ impl PartialEq for Value {
     }
 }
 
-pub fn compile(filename: &str) ->  Result<Vec<Statement>, grammar::ParseError> {
-    let mut f = match File::open(filename){
+pub fn compile(filename: &str) -> Result<Vec<Statement>, grammar::ParseError> {
+    let mut f = match File::open(filename) {
         Result::Ok(i) => i,
         Result::Err(_) => logic!("Failed to open file {}", filename),
     };
     let mut s = String::new();
     match f.read_to_string(&mut s) {
-        Result::Ok(_) => {},
+        Result::Ok(_) => {}
         Result::Err(_) => logic!("Failed to read file {}", filename),
     };
     grammar::file(&s)
