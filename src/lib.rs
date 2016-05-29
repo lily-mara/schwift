@@ -503,6 +503,16 @@ impl Value {
             _ => logic!("Tried to bit shift non-int value {:?} >> {:?}", self, other),
         }
     }
+
+    pub fn type_str<'a>(&self) -> &'a str {
+        match *self {
+            Value::Str(_) => "string",
+            Value::Int(_) => "int",
+            Value::Bool(_) => "bool",
+            Value::List(_) => "list",
+            Value::Float(_) => "float",
+        }
+    }
 }
 
 impl PartialOrd for Value {
