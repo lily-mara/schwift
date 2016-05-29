@@ -9,6 +9,4 @@ clap = "2.5.1"
 peg = "0.3.11"
 rand = "0.3"
 rustc-serialize = "0.3.19"
-
-[dev-dependencies]
-git_hooks = "0.1.2"
+git_hooks = "0.1.3"
