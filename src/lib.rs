@@ -424,10 +424,10 @@ impl Value {
 
     pub fn add(&self, other: &Value) -> Value {
         match (self, other) {
-            (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 + f2),
-            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 + i2),
-            (&Value::Float(ref f), &Value::Int(ref i)) |
-            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 + *f),
+            (&Value::Float(f1), &Value::Float(f2)) => Value::Float(f1 + f2),
+            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 + i2),
+            (&Value::Float(f), &Value::Int(i)) |
+            (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 + f),
             (&Value::Str(ref s1), &Value::Str(ref s2)) => {
                 let mut new_buf = s1.clone();
                 new_buf.push_str(&s2);
@@ -443,10 +443,10 @@ impl Value {
 
     pub fn subtract(&self, other: &Value) -> Value {
         match (self, other) {
-            (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 - f2),
-            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 - i2),
-            (&Value::Float(ref f), &Value::Int(ref i)) => Value::Float(f - *i as f32),
-            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 - f),
+            (&Value::Float(f1), &Value::Float(f2)) => Value::Float(f1 - f2),
+            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 - i2),
+            (&Value::Float(f), &Value::Int(i)) => Value::Float(f - i as f32),
+            (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 - f),
             _ => {
                 logic!("Tried to subtract {:?} and {:?} which have incompatable types",
                        self,
@@ -457,11 +457,11 @@ impl Value {
 
     pub fn multiply(&self, other: &Value) -> Value {
         match (self, other) {
-            (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 * f2),
-            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 * i2),
-            (&Value::Float(ref f), &Value::Int(ref i)) |
-            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 * *f),
-            (&Value::Str(ref s), &Value::Int(ref i)) => {
+            (&Value::Float(f1), &Value::Float(f2)) => Value::Float(f1 * f2),
+            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 * i2),
+            (&Value::Float(f), &Value::Int(i)) |
+            (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 * f),
+            (&Value::Str(ref s), &Value::Int(i)) => {
                 let mut new_buf = s.clone();
                 for _ in 0..(i - 1) {
                     new_buf.push_str(s);
@@ -478,10 +478,10 @@ impl Value {
 
     pub fn divide(&self, other: &Value) -> Value {
         match (self, other) {
-            (&Value::Float(ref f1), &Value::Float(ref f2)) => Value::Float(f1 / f2),
-            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 / i2),
-            (&Value::Float(ref f), &Value::Int(ref i)) => Value::Float(f / *i as f32),
-            (&Value::Int(ref i), &Value::Float(ref f)) => Value::Float(*i as f32 / f),
+            (&Value::Float(f1), &Value::Float(f2)) => Value::Float(f1 / f2),
+            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 / i2),
+            (&Value::Float(f), &Value::Int(i)) => Value::Float(f / i as f32),
+            (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 / f),
             _ => {
                 logic!("Tried to divide {:?} and {:?} which have incompatable types",
                        self,
@@ -492,14 +492,14 @@ impl Value {
 
     pub fn shift_left(&self, other: &Value) -> Value {
         match (self, other) {
-            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 << i2),
+            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 << i2),
             _ => logic!("Tried to bit shift non-int value {:?} << {:?}", self, other),
         }
     }
 
     pub fn shift_right(&self, other: &Value) -> Value {
         match (self, other) {
-            (&Value::Int(ref i1), &Value::Int(ref i2)) => Value::Int(i1 >> i2),
+            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 >> i2),
             _ => logic!("Tried to bit shift non-int value {:?} >> {:?}", self, other),
         }
     }
@@ -511,8 +511,8 @@ impl PartialOrd for Value {
             Option::Some(Ordering::Equal)
         } else {
             let (s, o) = match (self, other) {
-                (&Value::Int(ref i), &Value::Float(ref f)) => (*i as f32, *f),
-                (&Value::Float(ref f), &Value::Int(ref i)) => (*f, *i as f32),
+                (&Value::Int(i), &Value::Float(f)) => (i as f32, f),
+                (&Value::Float(f), &Value::Int(i)) => (f, i as f32),
                 _ => return Option::None,
             };
 
@@ -527,10 +527,10 @@ impl PartialEq for Value {
             (&Value::Bool(b1), &Value::Bool(b2)) => b1 == b2,
             (&Value::Str(ref s1), &Value::Str(ref s2)) => s1 == s2,
             (&Value::List(ref l1), &Value::List(ref l2)) => l1 == l2,
-            (&Value::Int(ref i1), &Value::Int(ref i2)) => i1 == i2,
-            (&Value::Int(ref i), &Value::Float(ref f)) |
-            (&Value::Float(ref f), &Value::Int(ref i)) => (*i as f32 - f).abs() < std::f32::EPSILON,
-            (&Value::Float(ref f1), &Value::Float(ref f2)) => (f1 - f2).abs() < std::f32::EPSILON,
+            (&Value::Int(i1), &Value::Int(i2)) => i1 == i2,
+            (&Value::Int(i), &Value::Float(f)) |
+            (&Value::Float(f), &Value::Int(i)) => (i as f32 - f).abs() < std::f32::EPSILON,
+            (&Value::Float(f1), &Value::Float(f2)) => (f1 - f2).abs() < std::f32::EPSILON,
             _ => false,
         }
     }
