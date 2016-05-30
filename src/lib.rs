@@ -2,7 +2,6 @@
 #![plugin(peg_syntax_ext, clippy)]
 
 extern crate rand;
-extern crate rustc_serialize;
 
 use std::collections::HashMap;
 use rand::{thread_rng, Rng};
@@ -16,7 +15,7 @@ peg_file! grammar("schwift.rustpeg");
 #[cfg(test)]
 mod grammar_tests;
 
-#[derive(RustcEncodable, RustcDecodable, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Str(String),
     Int(i32),
@@ -29,7 +28,7 @@ pub struct State {
     symbols: HashMap<String, Value>,
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Operator {
     Add,
     Subtract,
@@ -46,7 +45,7 @@ pub enum Operator {
     Or,
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
@@ -57,7 +56,7 @@ pub enum Expression {
     Eval(Box<Expression>),
 }
 
-#[derive(RustcEncodable, RustcDecodable, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Assignment(String, Expression),
     Delete(String),
