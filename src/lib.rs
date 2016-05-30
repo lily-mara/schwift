@@ -1,5 +1,5 @@
 #![feature(plugin)]
-#![plugin(peg_syntax_ext)]
+#![plugin(peg_syntax_ext, clippy)]
 
 extern crate rand;
 extern crate rustc_serialize;
@@ -430,7 +430,7 @@ impl Value {
             (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 + f),
             (&Value::Str(ref s1), &Value::Str(ref s2)) => {
                 let mut new_buf = s1.clone();
-                new_buf.push_str(&s2);
+                new_buf.push_str(s2);
                 Value::Str(new_buf)
             }
             _ => {
