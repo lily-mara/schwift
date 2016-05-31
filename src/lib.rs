@@ -114,13 +114,40 @@ macro_rules! logic {
 impl Error {
     pub fn panic(&self) {
         match *self {
-            Error::UnknownVariable(ref name) => logic!("There's no {} in this universe, Morty!", name),
-            Error::IndexUnindexable(ref value) => logic!("I'll try and say this slowly Morty. You can't index that. It's a {}", value.type_str()),
-            Error::SyntaxError(ref err) => logic!("If you're going to start trying to construct sub-programs in your programs Morty, you'd better make sure you're careful! {:?}", err),
-            Error::IndexOutOfBounds(ref value, ref index) => logic!("This isn't your mom's wine bottle Morty, you can't just keep asking for more, there's not that much here! You want {}, but you're dealing with {:?}!", index, value),
-            Error::IOError(ref err) => logic!("Looks like we're having a comm-burp-unications problem Morty: {:?}", err),
-            Error::UnexpectedType(ref expected, ref value) => logic!("I asked for a {}, not a {} Morty.", expected, value.type_str()),
-            Error::InvalidBinaryExpression(ref lhs, ref rhs, ref op) => logic!("It's like apples and space worms Morty! You can't {:?} a {} and a {}!", op, lhs.type_str(), rhs.type_str()),
+            Error::UnknownVariable(ref name) => {
+                logic!("There's no {} in this universe, Morty!", name)
+            }
+            Error::IndexUnindexable(ref value) => {
+                logic!("I'll try and say this slowly Morty. You can't index that. It's a {}",
+                       value.type_str())
+            }
+            Error::SyntaxError(ref err) => {
+                logic!("If you're going to start trying to construct sub-programs in your \
+                        programs Morty, you'd better make sure you're careful! {:?}",
+                       err)
+            }
+            Error::IndexOutOfBounds(ref value, ref index) => {
+                logic!("This isn't your mom's wine bottle Morty, you can't just keep asking for \
+                        more, there's not that much here! You want {}, but you're dealing with \
+                        {:?}!",
+                       index,
+                       value)
+            }
+            Error::IOError(ref err) => {
+                logic!("Looks like we're having a comm-burp-unications problem Morty: {:?}",
+                       err)
+            }
+            Error::UnexpectedType(ref expected, ref value) => {
+                logic!("I asked for a {}, not a {} Morty.",
+                       expected,
+                       value.type_str())
+            }
+            Error::InvalidBinaryExpression(ref lhs, ref rhs, ref op) => {
+                logic!("It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
+                       op,
+                       lhs.type_str(),
+                       rhs.type_str())
+            }
         }
     }
 }
@@ -131,7 +158,7 @@ impl Expression {
             Expression::Variable(ref var_name) => {
                 match state.symbols.get(var_name) {
                     Some(value) => Ok(value.clone()),
-                    None => Err(Error::UnknownVariable(var_name.clone()))
+                    None => Err(Error::UnknownVariable(var_name.clone())),
                 }
             }
             Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
@@ -165,7 +192,7 @@ impl Expression {
                             _ => Err(Error::IndexUnindexable(value.clone())),
                         }
                     }
-                    None => Err(Error::UnknownVariable(var_name.clone()))
+                    None => Err(Error::UnknownVariable(var_name.clone())),
                 }
             }
             Expression::Eval(ref exp) => {
@@ -216,7 +243,8 @@ impl State {
                                 Err(Error::IndexOutOfBounds(inner_expression_value, index))
                             }
                         } else {
-                            Err(Error::UnexpectedType("int".to_string(), inner_expression_value.clone()))
+                            Err(Error::UnexpectedType("int".to_string(),
+                                                      inner_expression_value.clone()))
                         }
                     }
                     Value::Str(ref s) => {
@@ -230,10 +258,12 @@ impl State {
                                 Err(Error::IndexOutOfBounds(inner_expression_value, index))
                             }
                         } else {
-                            Err(Error::UnexpectedType("int".to_string(), inner_expression_value.clone()))
+                            Err(Error::UnexpectedType("int".to_string(),
+                                                      inner_expression_value.clone()))
                         }
                     }
-                    _ => Err(Error::IndexUnindexable(symbol.clone()))                }
+                    _ => Err(Error::IndexUnindexable(symbol.clone())),
+                }
             }
             None => Err(Error::UnknownVariable(list_name.to_string())),
         }
@@ -283,7 +313,7 @@ impl State {
     fn get_value(&mut self, name: &str) -> SwResult<&mut Value> {
         match self.symbols.get_mut(name) {
             Some(value) => Ok(value),
-            None => Err(Error::UnknownVariable(name.to_string()))
+            None => Err(Error::UnknownVariable(name.to_string())),
         }
     }
 
@@ -312,7 +342,11 @@ impl State {
         }
     }
 
-    fn list_assign(&mut self, list_name: &str, index_exp: &Expression, assign_exp: &Expression) -> SwResult<()> {
+    fn list_assign(&mut self,
+                   list_name: &str,
+                   index_exp: &Expression,
+                   assign_exp: &Expression)
+                   -> SwResult<()> {
         let to_assign = try!(assign_exp.eval(self));
         let element = try!(self.get_list_element(list_name, index_exp));
 
@@ -337,7 +371,11 @@ impl State {
         }
     }
 
-    fn exec_if(&mut self, bool: &Expression, if_body: &[Statement], else_body: &Option<Vec<Statement>>) -> SwResult<()> {
+    fn exec_if(&mut self,
+               bool: &Expression,
+               if_body: &[Statement],
+               else_body: &Option<Vec<Statement>>)
+               -> SwResult<()> {
         let x = try!(bool.eval(self));
         match x {
             Value::Bool(b) => {
@@ -351,7 +389,7 @@ impl State {
                 }
                 Ok(())
             }
-            _ => Err(Error::UnexpectedType("bool".to_string(), x.clone()))
+            _ => Err(Error::UnexpectedType("bool".to_string(), x.clone())),
         }
     }
 
@@ -369,14 +407,18 @@ impl State {
     pub fn execute(&mut self, statement: &Statement) -> SwResult<()> {
         match *statement {
             Statement::Input(ref s) => self.input(s.to_string()),
-            Statement::ListAssign(ref s, ref index_exp, ref assign_exp) => self.list_assign(s, index_exp, assign_exp),
+            Statement::ListAssign(ref s, ref index_exp, ref assign_exp) => {
+                self.list_assign(s, index_exp, assign_exp)
+            }
             Statement::ListAppend(ref s, ref append_exp) => self.list_append(s, append_exp),
             Statement::ListDelete(ref name, ref idx) => self.list_delete(name, idx),
             Statement::ListNew(ref s) => {
                 self.symbols.insert(s.clone(), Value::List(Vec::new()));
                 Ok(())
             }
-            Statement::If(ref bool, ref if_body, ref else_body) => self.exec_if(bool, if_body, else_body),
+            Statement::If(ref bool, ref if_body, ref else_body) => {
+                self.exec_if(bool, if_body, else_body)
+            }
             Statement::While(ref bool, ref body) => self.exec_while(bool, body),
             Statement::Assignment(ref name, ref value) => self.assign(name.clone(), value),
             Statement::Delete(ref name) => self.delete(name),
@@ -424,21 +466,21 @@ impl Value {
         match *self {
             Value::Float(f) => Ok(f),
             Value::Int(i) => Ok(i as f32),
-            _ => Err(Error::UnexpectedType("float".to_string(), self.clone()))
+            _ => Err(Error::UnexpectedType("float".to_string(), self.clone())),
         }
     }
 
     fn assert_bool(&self) -> SwResult<bool> {
         match *self {
             Value::Bool(b) => Ok(b),
-            _ => Err(Error::UnexpectedType("bool".to_string(), self.clone()))
+            _ => Err(Error::UnexpectedType("bool".to_string(), self.clone())),
         }
     }
 
     pub fn not(&mut self) -> SwResult<Value> {
         match *self {
             Value::Bool(b) => Ok(Value::Bool(!b)),
-            _ => Err(Error::UnexpectedType("bool".to_string(), self.clone()))
+            _ => Err(Error::UnexpectedType("bool".to_string(), self.clone())),
         }
     }
 
@@ -481,7 +523,7 @@ impl Value {
                 new_buf.push_str(s2);
                 Ok(Value::Str(new_buf))
             }
-            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Add))
+            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Add)),
         }
     }
 
@@ -491,7 +533,9 @@ impl Value {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 - i2)),
             (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f - i as f32)),
             (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 - f)),
-            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Subtract))
+            _ => {
+                Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Subtract))
+            }
         }
     }
 
@@ -508,7 +552,9 @@ impl Value {
                 }
                 Ok(Value::Str(new_buf))
             }
-            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Multiply))
+            _ => {
+                Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Multiply))
+            }
         }
     }
 
@@ -518,21 +564,29 @@ impl Value {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 / i2)),
             (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f / i as f32)),
             (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 / f)),
-            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Divide))
+            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Divide)),
         }
     }
 
     pub fn shift_left(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 << i2)),
-            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::ShiftLeft))
+            _ => {
+                Err(Error::InvalidBinaryExpression(self.clone(),
+                                                   other.clone(),
+                                                   Operator::ShiftLeft))
+            }
         }
     }
 
     pub fn shift_right(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 >> i2)),
-            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::ShiftRight))
+            _ => {
+                Err(Error::InvalidBinaryExpression(self.clone(),
+                                                   other.clone(),
+                                                   Operator::ShiftRight))
+            }
         }
     }
 
