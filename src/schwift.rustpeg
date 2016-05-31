@@ -1,4 +1,4 @@
-use super::{ Value, Operator, Statement, Expression };
+use super::{ Value, Operator, Statement, StatementKind, Expression };
 
 #[pub]
 string -> Value
@@ -37,15 +37,15 @@ boolean -> Value
     = truth / falsehood
 
 #[pub]
-list_instantiation -> Statement
-    = i:identifier whitespace "on a cob" { Statement::ListNew(i) }
+list_instantiation -> StatementKind
+    = i:identifier whitespace "on a cob" { StatementKind::ListNew(i) }
 
 #[pub]
-list_append -> Statement
-    = i:identifier whitespace "assimilate" whitespace e:expression { Statement::ListAppend(i, e) }
+list_append -> StatementKind
+    = i:identifier whitespace "assimilate" whitespace e:expression { StatementKind::ListAppend(i, e) }
 
 #[pub]
-list_statements -> Statement
+list_statements -> StatementKind
     = list_instantiation / list_append / list_assign / list_deletion
 
 #[pub]
@@ -119,20 +119,20 @@ whitespace
     = [ \t]+
 
 #[pub]
-if_statement -> Statement
+if_statement -> StatementKind
     = if_else / bare_if
 
 #[pub]
-bare_if -> Statement
-    = "if" whitespace e:expression whitespace s:block { Statement::If(e, s, Option::None) }
+bare_if -> StatementKind
+    = "if" whitespace e:expression whitespace s:block { StatementKind::If(e, s, Option::None) }
 
 #[pub]
-if_else -> Statement
-    = "if" whitespace e:expression whitespace i_bod:block optional_whitespace "else" whitespace e_bod:block { Statement::If(e, i_bod, Option::Some(e_bod)) }
+if_else -> StatementKind
+    = "if" whitespace e:expression whitespace i_bod:block optional_whitespace "else" whitespace e_bod:block { StatementKind::If(e, i_bod, Option::Some(e_bod)) }
 
 #[pub]
-while_loop -> Statement
-    = "while" whitespace e:expression whitespace b:block { Statement::While(e, b) }
+while_loop -> StatementKind
+    = "while" whitespace e:expression whitespace b:block { StatementKind::While(e, b) }
 
 #[pub]
 block -> Vec<Statement>
@@ -147,24 +147,24 @@ statements_ws -> Vec<Statement>
     = s:statement_ws ** newline { s }
 
 #[pub]
-assignment -> Statement
-    = i:identifier whitespace "squanch" whitespace e:expression { Statement::Assignment(i, e) }
+assignment -> StatementKind
+    = i:identifier whitespace "squanch" whitespace e:expression { StatementKind::Assignment(i, e) }
 
 #[pub]
-deletion -> Statement
-    = "squanch" whitespace i:identifier { Statement::Delete(i) }
+deletion -> StatementKind
+    = "squanch" whitespace i:identifier { StatementKind::Delete(i) }
 
 #[pub]
-list_deletion -> Statement
-    = "squanch" whitespace i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { Statement::ListDelete(i, e) }
+list_deletion -> StatementKind
+    = "squanch" whitespace i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { StatementKind::ListDelete(i, e) }
 
 #[pub]
 line -> Statement
     = optional_whitespace s:statement optional_whitespace newline* { s }
 
 #[pub]
-input -> Statement
-    = "portal gun" whitespace i:identifier { Statement::Input(i) }
+input -> StatementKind
+    = "portal gun" whitespace i:identifier { StatementKind::Input(i) }
 
 #[pub]
 file -> Vec<Statement>
@@ -179,16 +179,20 @@ newline
     = "\n"
 
 #[pub]
-statement -> Statement
+statement_kind -> StatementKind
     = list_statements / deletion / assignment / printing / if_statement / while_loop / input
 
 #[pub]
-list_assign -> Statement
-    = i:identifier optional_whitespace "[" optional_whitespace v:expression optional_whitespace"]" whitespace "squanch" whitespace e:expression { Statement::ListAssign(i, v, e) }
+statement -> Statement
+    = s:statement_kind { Statement{start: start_pos, end: pos, kind: s} }
 
 #[pub]
-printing -> Statement
-    = "show me what you got" whitespace e:expression { Statement::Print(e) }
+list_assign -> StatementKind
+    = i:identifier optional_whitespace "[" optional_whitespace v:expression optional_whitespace"]" whitespace "squanch" whitespace e:expression { StatementKind::ListAssign(i, v, e) }
+
+#[pub]
+printing -> StatementKind
+    = "show me what you got" whitespace e:expression { StatementKind::Print(e) }
 
 #[pub]
 expression -> Expression

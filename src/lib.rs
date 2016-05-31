@@ -28,6 +28,7 @@ pub enum Value {
 
 pub struct State {
     symbols: HashMap<String, Value>,
+    filename: Option<String>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -70,7 +71,14 @@ pub enum Expression {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Statement {
+pub struct Statement {
+    start: usize,
+    end: usize,
+    kind: StatementKind,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum StatementKind {
     Assignment(String, Expression),
     Delete(String),
     Print(Expression),
@@ -112,43 +120,78 @@ macro_rules! logic {
 }
 
 impl Error {
-    pub fn panic(&self) {
+    pub fn panic_message(&self) -> String {
         match *self {
             Error::UnknownVariable(ref name) => {
-                logic!("There's no {} in this universe, Morty!", name)
+                format!("There's no {} in this universe, Morty!", name)
             }
             Error::IndexUnindexable(ref value) => {
-                logic!("I'll try and say this slowly Morty. You can't index that. It's a {}",
-                       value.type_str())
+                format!("I'll try and say this slowly Morty. You can't index that. It's a {}",
+                        value.type_str())
             }
             Error::SyntaxError(ref err) => {
-                logic!("If you're going to start trying to construct sub-programs in your \
+                format!("If you're going to start trying to construct sub-programs in your \
                         programs Morty, you'd better make sure you're careful! {:?}",
-                       err)
+                        err)
             }
             Error::IndexOutOfBounds(ref value, ref index) => {
-                logic!("This isn't your mom's wine bottle Morty, you can't just keep asking for \
+                format!("This isn't your mom's wine bottle Morty, you can't just keep asking for \
                         more, there's not that much here! You want {}, but you're dealing with \
                         {:?}!",
-                       index,
-                       value)
+                        index,
+                        value)
             }
             Error::IOError(ref err) => {
-                logic!("Looks like we're having a comm-burp-unications problem Morty: {:?}",
-                       err)
+                format!("Looks like we're having a comm-burp-unications problem Morty: {:?}",
+                        err)
             }
             Error::UnexpectedType(ref expected, ref value) => {
-                logic!("I asked for a {}, not a {} Morty.",
-                       expected,
-                       value.type_str())
+                format!("I asked for a {}, not a {} Morty.",
+                        expected,
+                        value.type_str())
             }
             Error::InvalidBinaryExpression(ref lhs, ref rhs, ref op) => {
-                logic!("It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
-                       op,
-                       lhs.type_str(),
-                       rhs.type_str())
+                format!("It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
+                        op,
+                        lhs.type_str(),
+                        rhs.type_str())
             }
         }
+    }
+
+    pub fn full_panic_message(&self, statement: &Statement, filename: &str) -> String {
+        let type_msg = self.panic_message();
+        let quote = random_quote();
+
+        println!("{}", filename);
+
+        let mut source = String::new();
+        let mut f = File::open(filename).unwrap();
+        f.read_to_string(&mut source).unwrap();
+
+        assert!(statement.start < statement.end);
+        assert!(source.is_char_boundary(statement.start));
+        assert!(source.is_char_boundary(statement.end));
+
+        let source_part = unsafe { source.slice_unchecked(statement.start, statement.end) };
+
+        format!(r#"
+    You made a Rickdiculous mistake:
+
+    {}
+    {}
+
+    {}
+
+    "#,
+                source_part,
+                type_msg,
+                quote)
+    }
+
+    pub fn panic(&self, statement: &Statement, source: &str) {
+        println!("{}", self.full_panic_message(statement, source));
+        std::process::exit(1);
     }
 }
 
@@ -405,32 +448,35 @@ impl State {
     }
 
     pub fn execute(&mut self, statement: &Statement) -> SwResult<()> {
-        match *statement {
-            Statement::Input(ref s) => self.input(s.to_string()),
-            Statement::ListAssign(ref s, ref index_exp, ref assign_exp) => {
+        match statement.kind {
+            StatementKind::Input(ref s) => self.input(s.to_string()),
+            StatementKind::ListAssign(ref s, ref index_exp, ref assign_exp) => {
                 self.list_assign(s, index_exp, assign_exp)
             }
-            Statement::ListAppend(ref s, ref append_exp) => self.list_append(s, append_exp),
-            Statement::ListDelete(ref name, ref idx) => self.list_delete(name, idx),
-            Statement::ListNew(ref s) => {
+            StatementKind::ListAppend(ref s, ref append_exp) => self.list_append(s, append_exp),
+            StatementKind::ListDelete(ref name, ref idx) => self.list_delete(name, idx),
+            StatementKind::ListNew(ref s) => {
                 self.symbols.insert(s.clone(), Value::List(Vec::new()));
                 Ok(())
             }
-            Statement::If(ref bool, ref if_body, ref else_body) => {
+            StatementKind::If(ref bool, ref if_body, ref else_body) => {
                 self.exec_if(bool, if_body, else_body)
             }
-            Statement::While(ref bool, ref body) => self.exec_while(bool, body),
-            Statement::Assignment(ref name, ref value) => self.assign(name.clone(), value),
-            Statement::Delete(ref name) => self.delete(name),
-            Statement::Print(ref exp) => self.print(exp),
+            StatementKind::While(ref bool, ref body) => self.exec_while(bool, body),
+            StatementKind::Assignment(ref name, ref value) => self.assign(name.clone(), value),
+            StatementKind::Delete(ref name) => self.delete(name),
+            StatementKind::Print(ref exp) => self.print(exp),
         }
     }
 
     pub fn run(&mut self, statements: &[Statement]) {
+        let filename = self.filename.clone();
+        let ufilename = filename.unwrap();
+
         for statement in statements {
             match self.execute(statement) {
                 Ok(_) => {}
-                Err(e) => e.panic(),
+                Err(e) => e.panic(statement, &ufilename),
             }
         }
     }
@@ -442,7 +488,10 @@ impl State {
 
 impl Default for State {
     fn default() -> Self {
-        State { symbols: HashMap::new() }
+        State {
+            symbols: HashMap::new(),
+            filename: None,
+        }
     }
 }
 
@@ -651,6 +700,7 @@ pub fn compile(filename: &str) -> Result<Vec<Statement>, grammar::ParseError> {
 
 pub fn run_program(filename: &str) {
     let mut s = State::new();
+    s.filename = Some(filename.to_string());
     let tokens = compile(filename);
     s.run(&tokens.unwrap());
 }
