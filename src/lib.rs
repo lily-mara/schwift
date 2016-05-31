@@ -10,6 +10,8 @@ use std::io::prelude::*;
 use std::io;
 use std::cmp::Ordering;
 
+pub type SwResult<T> = Result<T, Error>;
+
 peg_file! grammar("schwift.rustpeg");
 
 #[cfg(test)]
@@ -43,6 +45,17 @@ pub enum Operator {
     ShiftRight,
     And,
     Or,
+}
+
+#[derive(Debug)]
+pub enum Error {
+    UnknownVariable(String),
+    IndexUnindexable(Value),
+    SyntaxError(grammar::ParseError),
+    IndexOutOfBounds(Value, usize),
+    IOError(io::Error),
+    UnexpectedType(String, Value),
+    InvalidBinaryExpression(Value, Value, Operator),
 }
 
 #[derive(Debug, PartialEq)]
@@ -98,24 +111,38 @@ macro_rules! logic {
     };
 }
 
+impl Error {
+    pub fn panic(&self) {
+        match *self {
+            Error::UnknownVariable(ref name) => logic!("There's no {} in this universe, Morty!", name),
+            Error::IndexUnindexable(ref value) => logic!("I'll try and say this slowly Morty. You can't index that. It's a {}", value.type_str()),
+            Error::SyntaxError(ref err) => logic!("If you're going to start trying to construct sub-programs in your programs Morty, you'd better make sure you're careful! {:?}", err),
+            Error::IndexOutOfBounds(ref value, ref index) => logic!("This isn't your mom's wine bottle Morty, you can't just keep asking for more, there's not that much here! You want {}, but you're dealing with {:?}!", index, value),
+            Error::IOError(ref err) => logic!("Looks like we're having a comm-burp-unications problem Morty: {:?}", err),
+            Error::UnexpectedType(ref expected, ref value) => logic!("I asked for a {}, not a {} Morty.", expected, value.type_str()),
+            Error::InvalidBinaryExpression(ref lhs, ref rhs, ref op) => logic!("It's like apples and space worms Morty! You can't {:?} a {} and a {}!", op, lhs.type_str(), rhs.type_str()),
+        }
+    }
+}
+
 impl Expression {
-    pub fn eval(&self, state: &State) -> Value {
+    pub fn eval(&self, state: &State) -> SwResult<Value> {
         match *self {
             Expression::Variable(ref var_name) => {
                 match state.symbols.get(var_name) {
-                    Some(value) => value.clone(),
-                    None => logic!("Tried to use variable {} before assignment", var_name),
+                    Some(value) => Ok(value.clone()),
+                    None => Err(Error::UnknownVariable(var_name.clone()))
                 }
             }
             Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
-                let left = left_exp.eval(state);
-                let right = right_exp.eval(state);
+                let left = try!(left_exp.eval(state));
+                let right = try!(right_exp.eval(state));
                 match *operator {
                     Operator::Add => left.add(&right),
                     Operator::Subtract => left.subtract(&right),
                     Operator::Multiply => left.multiply(&right),
                     Operator::Divide => left.divide(&right),
-                    Operator::Equality => left.equals(&right),
+                    Operator::Equality => Ok(left.equals(&right)),
                     Operator::LessThan => left.less_than(&right),
                     Operator::GreaterThan => left.greater_than(&right),
                     Operator::LessThanEqual => left.less_than_equal(&right),
@@ -126,40 +153,57 @@ impl Expression {
                     Operator::Or => left.or(&right),
                 }
             }
-            Expression::Value(ref v) => v.clone(),
+            Expression::Value(ref v) => Ok(v.clone()),
             Expression::ListIndex(ref var_name, ref e) => state.list_index(var_name, e),
-            Expression::Not(ref e) => e.eval(state).not(),
+            Expression::Not(ref e) => try!(e.eval(state)).not(),
             Expression::ListLength(ref var_name) => {
                 match state.symbols.get(var_name) {
                     Some(value) => {
                         match *value {
-                            Value::List(ref list) => Value::Int(list.len() as i32),
-                            Value::Str(ref s) => Value::Int(s.len() as i32),
-                            _ => {
-                                logic!("You tried to index variable {}, which is not indexable",
-                                       var_name)
-                            }
+                            Value::List(ref list) => Ok(Value::Int(list.len() as i32)),
+                            Value::Str(ref s) => Ok(Value::Int(s.len() as i32)),
+                            _ => Err(Error::IndexUnindexable(value.clone())),
                         }
                     }
-                    None => logic!("There is no variable named {}", var_name),
+                    None => Err(Error::UnknownVariable(var_name.clone()))
                 }
             }
             Expression::Eval(ref exp) => {
-                let inner_exp = exp.eval(state);
-                if let Value::Str(ref inner) = inner_exp {
-                    let inner_evaled = grammar::expression(inner).unwrap();
-                    inner_evaled.eval(state)
+                let inner_val = try!(exp.eval(state));
+                if let Value::Str(ref inner) = inner_val {
+                    match grammar::expression(inner) {
+                        Ok(inner_evaled) => inner_evaled.eval(state),
+                        Err(s) => Err(Error::SyntaxError(s)),
+                    }
                 } else {
-                    logic!("Eval must be given a string, got {:?}", inner_exp)
+                    Err(Error::UnexpectedType("string".to_string(), inner_val))
                 }
             }
+        }
+    }
+
+    pub fn try_bool(&self, state: &State) -> SwResult<bool> {
+        let value = try!(self.eval(state));
+        if let Value::Bool(x) = value {
+            Ok(x)
+        } else {
+            Err(Error::UnexpectedType("bool".to_string(), value))
+        }
+    }
+
+    pub fn try_int(&self, state: &State) -> SwResult<i32> {
+        let value = try!(self.eval(state));
+        if let Value::Int(x) = value {
+            Ok(x)
+        } else {
+            Err(Error::UnexpectedType("int".to_string(), value))
         }
     }
 }
 
 impl State {
-    fn list_index(&self, list_name: &str, exp: &Expression) -> Value {
-        let inner_expression_value = exp.eval(self);
+    fn list_index(&self, list_name: &str, exp: &Expression) -> SwResult<Value> {
+        let inner_expression_value = try!(exp.eval(self));
         match self.symbols.get(list_name) {
             Some(symbol) => {
                 match *symbol {
@@ -167,178 +211,185 @@ impl State {
                         if let Value::Int(i) = inner_expression_value {
                             let index = i as usize;
                             if index < l.len() {
-                                l[index].clone()
+                                Ok(l[index].clone())
                             } else {
-                                logic!("You don't have {} kernels on cob {}, idiot.",
-                                       index,
-                                       list_name);
+                                Err(Error::IndexOutOfBounds(inner_expression_value, index))
                             }
                         } else {
-                            logic!("You tried to index cob {} with a non-int value {:?}",
-                                   list_name,
-                                   inner_expression_value);
+                            Err(Error::UnexpectedType("int".to_string(), inner_expression_value.clone()))
                         }
                     }
                     Value::Str(ref s) => {
                         if let Value::Int(i) = inner_expression_value {
                             let index = i as usize;
-                            if index < s.len() {
-                                Value::Str(s.as_str()[index..(index + 1)].to_string())
+                            let chars: Vec<char> = s.chars().collect();
+
+                            if index < chars.len() {
+                                Ok(Value::Str(chars[index].to_string()))
                             } else {
-                                logic!("You don't have {} kernels on cob {}, idiot.",
-                                       index,
-                                       list_name);
+                                Err(Error::IndexOutOfBounds(inner_expression_value, index))
                             }
                         } else {
-                            logic!("You tried to index cob {} with a non-int value {:?}",
-                                   list_name,
-                                   inner_expression_value);
+                            Err(Error::UnexpectedType("int".to_string(), inner_expression_value.clone()))
                         }
                     }
-                    _ => {
-                        logic!("You tried to index variable {}, which is not indexable",
-                               list_name)
-                    }
-                }
+                    _ => Err(Error::IndexUnindexable(symbol.clone()))                }
             }
-            None => logic!("There is no variable named {}", list_name),
+            None => Err(Error::UnknownVariable(list_name.to_string())),
         }
     }
 
-    fn assign(&mut self, str: String, exp: &Expression) {
-        let v = exp.eval(self);
+    fn assign(&mut self, str: String, exp: &Expression) -> SwResult<()> {
+        let v = try!(exp.eval(self));
         self.symbols.insert(str, v);
+        Ok(())
     }
 
-    fn delete(&mut self, str: &str) {
-        self.symbols.remove(str);
+    fn delete(&mut self, name: &str) -> SwResult<()> {
+        match self.symbols.remove(name) {
+            Some(_) => Ok(()),
+            None => Err(Error::UnknownVariable(name.to_string())),
+        }
     }
 
-    fn print(&mut self, exp: &Expression) {
-        let x = exp.eval(self);
+    fn print(&mut self, exp: &Expression) -> SwResult<()> {
+        let x = try!(exp.eval(self));
         x.println();
+        Ok(())
+    }
+
+    fn input(&mut self, name: String) -> SwResult<()> {
+        let mut input = String::new();
+
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => {}
+            Err(e) => return Err(Error::IOError(e)),
+        }
+
+        input = input.trim().to_string();
+        self.symbols.insert(name, Value::Str(input));
+
+        Ok(())
+    }
+
+    fn list_append(&mut self, list_name: &str, append_exp: &Expression) -> SwResult<()> {
+        let to_append = try!(append_exp.eval(self));
+        let list = try!(self.get_list(list_name));
+
+        list.push(to_append);
+        Ok(())
+    }
+
+    fn get_value(&mut self, name: &str) -> SwResult<&mut Value> {
+        match self.symbols.get_mut(name) {
+            Some(value) => Ok(value),
+            None => Err(Error::UnknownVariable(name.to_string()))
+        }
+    }
+
+    fn get_list(&mut self, name: &str) -> SwResult<&mut Vec<Value>> {
+        let value = try!(self.get_value(name));
+        match *value {
+            Value::List(ref mut l) => Ok(l),
+            _ => Err(Error::IndexUnindexable(value.clone())),
+        }
+    }
+
+    fn get_list_element(&mut self, name: &str, index_exp: &Expression) -> SwResult<&mut Value> {
+        let index = try!(index_exp.try_int(self)) as usize;
+        let value = try!(self.get_value(name));
+        let value_for_errors = value.clone();
+
+        match *value {
+            Value::List(ref mut list) => {
+                if list.len() < index {
+                    Ok(&mut list[index])
+                } else {
+                    Err(Error::IndexOutOfBounds(value_for_errors, index))
+                }
+            }
+            _ => Err(Error::IndexUnindexable(value_for_errors)),
+        }
+    }
+
+    fn list_assign(&mut self, list_name: &str, index_exp: &Expression, assign_exp: &Expression) -> SwResult<()> {
+        let to_assign = try!(assign_exp.eval(self));
+        let element = try!(self.get_list_element(list_name, index_exp));
+
+        *element = to_assign;
+        Ok(())
+    }
+
+    fn list_delete(&mut self, list_name: &str, index_exp: &Expression) -> SwResult<()> {
+        let index_value = try!(index_exp.eval(self));
+        let list = try!(self.get_list(list_name));
+
+        if let Value::Int(i) = index_value {
+            let index = i as usize;
+            if index < list.len() {
+                list.remove(index);
+                Ok(())
+            } else {
+                Err(Error::IndexOutOfBounds(Value::List(list.clone()), index))
+            }
+        } else {
+            Err(Error::UnexpectedType("int".to_string(), index_value))
+        }
+    }
+
+    fn exec_if(&mut self, bool: &Expression, if_body: &[Statement], else_body: &Option<Vec<Statement>>) -> SwResult<()> {
+        let x = try!(bool.eval(self));
+        match x {
+            Value::Bool(b) => {
+                if b {
+                    self.run(if_body);
+                } else {
+                    match *else_body {
+                        Option::Some(ref s) => self.run(s),
+                        Option::None => {}
+                    }
+                }
+                Ok(())
+            }
+            _ => Err(Error::UnexpectedType("bool".to_string(), x.clone()))
+        }
+    }
+
+    fn exec_while(&mut self, bool: &Expression, body: &[Statement]) -> SwResult<()> {
+        let mut condition = try!(bool.try_bool(self));
+
+        while condition {
+            self.run(body);
+            condition = try!(bool.try_bool(self));
+        }
+
+        Ok(())
+    }
+
+    pub fn execute(&mut self, statement: &Statement) -> SwResult<()> {
+        match *statement {
+            Statement::Input(ref s) => self.input(s.to_string()),
+            Statement::ListAssign(ref s, ref index_exp, ref assign_exp) => self.list_assign(s, index_exp, assign_exp),
+            Statement::ListAppend(ref s, ref append_exp) => self.list_append(s, append_exp),
+            Statement::ListDelete(ref name, ref idx) => self.list_delete(name, idx),
+            Statement::ListNew(ref s) => {
+                self.symbols.insert(s.clone(), Value::List(Vec::new()));
+                Ok(())
+            }
+            Statement::If(ref bool, ref if_body, ref else_body) => self.exec_if(bool, if_body, else_body),
+            Statement::While(ref bool, ref body) => self.exec_while(bool, body),
+            Statement::Assignment(ref name, ref value) => self.assign(name.clone(), value),
+            Statement::Delete(ref name) => self.delete(name),
+            Statement::Print(ref exp) => self.print(exp),
+        }
     }
 
     pub fn run(&mut self, statements: &[Statement]) {
         for statement in statements {
-            match *statement {
-                Statement::Input(ref s) => {
-                    let mut input = String::new();
-
-                    match io::stdin().read_line(&mut input) {
-                        Ok(_) => {}
-                        Err(e) => logic!("Failed to read from standard input: {}", e),
-                    }
-
-                    input = input.trim().to_string();
-                    self.symbols.insert(s.to_string(), Value::Str(input));
-                }
-                Statement::ListNew(ref s) => {
-                    self.symbols.insert(s.clone(), Value::List(Vec::new()));
-                }
-                Statement::ListAppend(ref s, ref append_exp) => {
-                    let to_append = append_exp.eval(self);
-                    match self.symbols.get_mut(s) {
-                        Some(value) => {
-                            if let Value::List(ref mut l) = *value {
-                                l.push(to_append);
-                            } else {
-                                logic!("You tried to index variable {}, which is not indexable", s);
-                            }
-                        }
-                        None => logic!("There is no variable named {}", s),
-                    }
-                }
-                Statement::ListAssign(ref s, ref index_exp, ref assign_exp) => {
-                    let to_assign = assign_exp.eval(self);
-                    let index = index_exp.eval(self);
-
-                    match self.symbols.get_mut(s) {
-                        Some(value) => {
-                            if let Value::List(ref mut l) = *value {
-                                if let Value::Int(i) = index {
-                                    let index = i as usize;
-                                    if index < l.len() {
-                                        l[index] = to_assign;
-                                    } else {
-                                        logic!("Cob index out of bounds for cob {}", s);
-                                    }
-                                } else {
-                                    logic!("You tried to index cob {} with a non-int value {:?}",
-                                           s,
-                                           index);
-                                }
-                            } else {
-                                logic!("You tried to index variable {}, which is not indexable", s);
-                            }
-                        }
-                        None => logic!("There is no variable named {}", s),
-                    }
-                }
-                Statement::ListDelete(ref s, ref index_expression) => {
-                    let x = index_expression.eval(self);
-                    match self.symbols.get_mut(s) {
-                        Option::Some(value) => {
-                            if let Value::List(ref mut l) = *value {
-                                if let Value::Int(i) = x {
-                                    let index = i as usize;
-                                    if index < l.len() {
-                                        l.remove(index);
-                                    } else {
-                                        logic!("Cob index out of bounds for cob {}", s);
-                                    }
-                                } else {
-                                    logic!("You tried to index cob {} with a non-int value {:?}",
-                                           s,
-                                           x);
-                                }
-                            } else {
-                                logic!("You tried to index variable {}, which is not indexable", s);
-                            }
-                        }
-                        Option::None => logic!("There is no variable named {}", s),
-                    }
-                }
-                Statement::If(ref bool_expression, ref if_body, ref else_body) => {
-                    let x = bool_expression.eval(self);
-                    match x {
-                        Value::Bool(b) => {
-                            if b {
-                                self.run(if_body);
-                            } else {
-                                match *else_body {
-                                    Option::Some(ref s) => self.run(s),
-                                    Option::None => {}
-                                }
-                            }
-                        }
-                        _ => {
-                            logic!("Tried to use non-bool value {:?} as a bool",
-                                   bool_expression)
-                        }
-                    }
-                }
-                Statement::While(ref bool_expression, ref body) => {
-                    let mut b = self.eval_bool(bool_expression);
-                    while b {
-                        self.run(body);
-                        b = self.eval_bool(bool_expression);
-                    }
-                }
-                Statement::Assignment(ref name, ref value) => self.assign(name.clone(), value),
-                Statement::Delete(ref name) => self.delete(name),
-                Statement::Print(ref exp) => self.print(exp),
+            match self.execute(statement) {
+                Ok(_) => {}
+                Err(e) => e.panic(),
             }
-        }
-    }
-
-    pub fn eval_bool(&self, bool_expression: &Expression) -> bool {
-        let b = bool_expression.eval(self);
-        if let Value::Bool(x) = b {
-            x
-        } else {
-            logic!("Tried to use non-bool value {:?} as a bool",
-                   bool_expression);
         }
     }
 
@@ -369,137 +420,119 @@ impl Value {
         println!("");
     }
 
-    fn assert_f32(&self) -> f32 {
+    fn assert_f32(&self) -> SwResult<f32> {
         match *self {
-            Value::Float(f) => f,
-            Value::Int(i) => i as f32,
-            _ => logic!("Tried to use non-float value {:?} as float", self),
+            Value::Float(f) => Ok(f),
+            Value::Int(i) => Ok(i as f32),
+            _ => Err(Error::UnexpectedType("float".to_string(), self.clone()))
         }
     }
 
-    fn assert_bool(&self) -> bool {
+    fn assert_bool(&self) -> SwResult<bool> {
         match *self {
-            Value::Bool(b) => b,
-            _ => {
-                logic!("Tried to use non-boolean value {:?} as boolean", self);
-            }
+            Value::Bool(b) => Ok(b),
+            _ => Err(Error::UnexpectedType("bool".to_string(), self.clone()))
         }
     }
 
-    pub fn not(&mut self) -> Value {
+    pub fn not(&mut self) -> SwResult<Value> {
         match *self {
-            Value::Bool(b) => Value::Bool(!b),
-            _ => logic!("Tried to negate non-bool value {:?}", self),
+            Value::Bool(b) => Ok(Value::Bool(!b)),
+            _ => Err(Error::UnexpectedType("bool".to_string(), self.clone()))
         }
     }
 
-    pub fn less_than(&self, other: &Value) -> Value {
-        Value::Bool(self.assert_f32() < other.assert_f32())
+    pub fn less_than(&self, other: &Value) -> SwResult<Value> {
+        Ok(Value::Bool(try!(self.assert_f32()) < try!(other.assert_f32())))
     }
 
-    pub fn greater_than(&self, other: &Value) -> Value {
-        Value::Bool(self.assert_f32() > other.assert_f32())
+    pub fn greater_than(&self, other: &Value) -> SwResult<Value> {
+        Ok(Value::Bool(try!(self.assert_f32()) > try!(other.assert_f32())))
     }
 
-    pub fn greater_than_equal(&self, other: &Value) -> Value {
-        Value::Bool(self.assert_f32() >= other.assert_f32())
+    pub fn greater_than_equal(&self, other: &Value) -> SwResult<Value> {
+        Ok(Value::Bool(try!(self.assert_f32()) >= try!(other.assert_f32())))
     }
 
-    pub fn less_than_equal(&self, other: &Value) -> Value {
-        Value::Bool(self.assert_f32() <= other.assert_f32())
+    pub fn less_than_equal(&self, other: &Value) -> SwResult<Value> {
+        Ok(Value::Bool(try!(self.assert_f32()) <= try!(other.assert_f32())))
     }
 
-    pub fn and(&self, other: &Value) -> Value {
-        Value::Bool(self.assert_bool() && other.assert_bool())
+    pub fn and(&self, other: &Value) -> SwResult<Value> {
+        Ok(Value::Bool(try!(self.assert_bool()) && try!(other.assert_bool())))
     }
 
-    pub fn or(&self, other: &Value) -> Value {
-        Value::Bool(self.assert_bool() || other.assert_bool())
+    pub fn or(&self, other: &Value) -> SwResult<Value> {
+        Ok(Value::Bool(try!(self.assert_bool()) || try!(other.assert_bool())))
     }
 
     pub fn equals(&self, other: &Value) -> Value {
         Value::Bool(self.eq(other))
     }
 
-    pub fn add(&self, other: &Value) -> Value {
+    pub fn add(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Float(f1), &Value::Float(f2)) => Value::Float(f1 + f2),
-            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 + i2),
+            (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 + f2)),
+            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 + i2)),
             (&Value::Float(f), &Value::Int(i)) |
-            (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 + f),
+            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 + f)),
             (&Value::Str(ref s1), &Value::Str(ref s2)) => {
                 let mut new_buf = s1.clone();
                 new_buf.push_str(s2);
-                Value::Str(new_buf)
+                Ok(Value::Str(new_buf))
             }
-            _ => {
-                logic!("Tried to add {:?} and {:?} which have incompatable types",
-                       self,
-                       other)
-            }
+            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Add))
         }
     }
 
-    pub fn subtract(&self, other: &Value) -> Value {
+    pub fn subtract(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Float(f1), &Value::Float(f2)) => Value::Float(f1 - f2),
-            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 - i2),
-            (&Value::Float(f), &Value::Int(i)) => Value::Float(f - i as f32),
-            (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 - f),
-            _ => {
-                logic!("Tried to subtract {:?} and {:?} which have incompatable types",
-                       self,
-                       other)
-            }
+            (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 - f2)),
+            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 - i2)),
+            (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f - i as f32)),
+            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 - f)),
+            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Subtract))
         }
     }
 
-    pub fn multiply(&self, other: &Value) -> Value {
+    pub fn multiply(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Float(f1), &Value::Float(f2)) => Value::Float(f1 * f2),
-            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 * i2),
+            (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 * f2)),
+            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 * i2)),
             (&Value::Float(f), &Value::Int(i)) |
-            (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 * f),
+            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 * f)),
             (&Value::Str(ref s), &Value::Int(i)) => {
                 let mut new_buf = s.clone();
                 for _ in 0..(i - 1) {
                     new_buf.push_str(s);
                 }
-                Value::Str(new_buf)
+                Ok(Value::Str(new_buf))
             }
-            _ => {
-                logic!("Tried to multiply {:?} and {:?} which have incompatable types",
-                       self,
-                       other)
-            }
+            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Multiply))
         }
     }
 
-    pub fn divide(&self, other: &Value) -> Value {
+    pub fn divide(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Float(f1), &Value::Float(f2)) => Value::Float(f1 / f2),
-            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 / i2),
-            (&Value::Float(f), &Value::Int(i)) => Value::Float(f / i as f32),
-            (&Value::Int(i), &Value::Float(f)) => Value::Float(i as f32 / f),
-            _ => {
-                logic!("Tried to divide {:?} and {:?} which have incompatable types",
-                       self,
-                       other)
-            }
+            (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 / f2)),
+            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 / i2)),
+            (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f / i as f32)),
+            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 / f)),
+            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Divide))
         }
     }
 
-    pub fn shift_left(&self, other: &Value) -> Value {
+    pub fn shift_left(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 << i2),
-            _ => logic!("Tried to bit shift non-int value {:?} << {:?}", self, other),
+            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 << i2)),
+            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::ShiftLeft))
         }
     }
 
-    pub fn shift_right(&self, other: &Value) -> Value {
+    pub fn shift_right(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Int(i1), &Value::Int(i2)) => Value::Int(i1 >> i2),
-            _ => logic!("Tried to bit shift non-int value {:?} >> {:?}", self, other),
+            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 >> i2)),
+            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::ShiftRight))
         }
     }
 
