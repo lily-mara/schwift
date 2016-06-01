@@ -1,3 +1,7 @@
 nums on a cob
 
-foo squanch (nums + 1)
+normal plan :<
+	foo squanch (nums + 1)
+>: plan for failure :<
+	show me what you got "THERE WAS A ERROR"
+>:

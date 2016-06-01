@@ -95,6 +95,7 @@ pub enum StatementKind {
     If(Expression, Vec<Statement>, Option<Vec<Statement>>),
     While(Expression, Vec<Statement>),
     Input(String),
+    Catch(Vec<Statement>, Vec<Statement>),
 }
 
 pub const QUOTES: [&'static str; 9] =
@@ -507,6 +508,13 @@ impl State {
         Ok(())
     }
 
+    fn catch(&mut self, try: &[Statement], catch: &[Statement]) -> SwErResult<()> {
+        match self.run(try) {
+            Ok(()) => Ok(()),
+            Err(_) => self.run(catch),
+        }
+    }
+
     #[allow(needless_return)]
     pub fn execute(&mut self, statement: &Statement) -> SwErResult<()> {
         match statement.kind {
@@ -533,6 +541,7 @@ impl State {
             }
             StatementKind::Delete(ref name) => try_nop_error!(self.delete(name), statement),
             StatementKind::Print(ref exp) => try_nop_error!(self.print(exp), statement),
+            StatementKind::Catch(ref try, ref catch) => self.catch(try, catch),
         }
     }
 

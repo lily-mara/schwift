@@ -135,6 +135,10 @@ while_loop -> StatementKind
     = "while" whitespace e:expression whitespace b:block { StatementKind::While(e, b) }
 
 #[pub]
+catch -> StatementKind
+    = "normal plan" optional_whitespace try:block optional_whitespace "plan for failure" optional_whitespace catch:block { StatementKind::Catch(try, catch) }
+
+#[pub]
 block -> Vec<Statement>
     = ":<" optional_whitespace newline* l:line* optional_whitespace ">:" { l }
 
@@ -180,7 +184,7 @@ newline
 
 #[pub]
 statement_kind -> StatementKind
-    = list_statements / deletion / assignment / printing / if_statement / while_loop / input
+    = list_statements / deletion / assignment / printing / if_statement / while_loop / input / catch
 
 #[pub]
 statement -> Statement
