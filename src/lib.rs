@@ -76,7 +76,7 @@ pub enum Expression {
     Eval(Box<Expression>),
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Statement {
     start: usize,
     end: usize,
@@ -154,6 +154,25 @@ macro_rules! try_nop_error {
             }
         }
     };
+}
+
+#[cfg(test)]
+impl std::cmp::PartialEq<StatementKind> for Statement {
+    fn eq(&self, kind: &StatementKind) -> bool {
+        self.kind == *kind
+    }
+}
+
+impl std::cmp::PartialEq<Statement> for Statement {
+    #[cfg(test)]
+    fn eq(&self, other: &Statement) -> bool {
+        self.kind == other.kind
+    }
+
+    #[cfg(not(test))]
+    fn eq(&self, other: &Statement) -> bool {
+        self.kind == other.kind && self.start == other.start && self.end == other.end
+    }
 }
 
 impl Error {

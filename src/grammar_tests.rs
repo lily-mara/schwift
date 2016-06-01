@@ -1,5 +1,13 @@
-use super::{Value, StatementKind, Expression, Operator};
+use super::{Value, StatementKind, Expression, Operator, Statement};
 use super::grammar;
+
+fn statement(kind: StatementKind) -> Statement {
+    Statement {
+        kind: kind,
+        start: 0,
+        end: 1,
+    }
+}
 
 #[test]
 fn test_raw_int() {
@@ -68,71 +76,70 @@ fn test_not() {
                Expression::Not(Box::new(Expression::Variable("foo".to_string()))));
 }
 
-// #[test]
-// fn test_nested_while() {
-// let l = grammar::while_loop(r#"while x :<
-// while y :<
-// show me what you got 30
-// >:
-// >:"#)
-// .unwrap();
-// assert_eq!(l,
-// StatementKind::While(Expression::Variable("x".to_string()),
-// vec![Statement::While(Expression::Variable("y".to_string()),
-// vec![
-// Statement::Print(Expression::Value(Value::Int(30))),
-// ])]));
-// }
-//
+#[test]
+fn test_nested_while() {
+    let l = grammar::while_loop(r#"while x :<
+ while y :<
+ show me what you got 30
+ >:
+ >:"#)
+        .unwrap();
+    assert_eq!(l,
+               StatementKind::While(Expression::Variable("x".to_string()),
+                                    vec![statement(StatementKind::While(Expression::Variable("y".to_string()),
+               vec![
+               statement(StatementKind::Print(Expression::Value(Value::Int(30)))),
+               ]
+               ))]));
+}
 
-// #[test]
-// fn test_while() {
-// let l = grammar::while_loop(r#"while x :<
-// show me what you got 30
-// >:"#)
-// .unwrap();
-// assert_eq!(l,
-// StatementKind::While(Expression::Variable("x".to_string()),
-// vec![
-// Statement::Print(Expression::Value(Value::Int(30))),
-// ]));
-// }
-//
 
-// #[test]
-// fn test_block() {
-// let l = grammar::block(r#":<
-// show me what you got 10
-//
-//
-//
-//
-// portal gun x
-//
-//
-// >:"#)
-// .unwrap();
-// assert_eq!(l,
-// vec![
-// StatementKind::Print(Expression::Value(Value::Int(10))),
-// StatementKind::Input("x".to_string()),
-// ]);
-// }
-//
+#[test]
+fn test_while() {
+    let l = grammar::while_loop(r#"while x :<
+ show me what you got 30
+ >:"#)
+        .unwrap();
+    assert_eq!(l,
+               StatementKind::While(Expression::Variable("x".to_string()),
+                                    vec![
+               statement(StatementKind::Print(Expression::Value(Value::Int(30)))),
+               ]));
+}
 
-// #[test]
-// fn test_block_starts_with_newline() {
-// let l = grammar::block(r#":<
-//
-// show me what you got 10
-// >:"#)
-// .unwrap();
-// assert_eq!(l,
-// vec![
-// StatementKind::Print(Expression::Value(Value::Int(10))),
-// ]);
-// }
-//
+
+#[test]
+fn test_block() {
+    let l = grammar::block(r#":<
+ show me what you got 10
+
+
+
+
+ portal gun x
+
+
+ >:"#)
+        .unwrap();
+
+    assert_eq!(l.len(), 2);
+    assert_eq!(l[0].kind,
+               StatementKind::Print(Expression::Value(Value::Int(10))));
+    assert_eq!(l[1].kind, StatementKind::Input("x".to_string()));
+}
+
+
+#[test]
+fn test_block_starts_with_newline() {
+    let l = grammar::block(r#":<
+
+show me what you got 10
+    >:"#)
+        .unwrap();
+    assert_eq!(l.len(), 1);
+    assert_eq!(l[0].kind,
+               StatementKind::Print(Expression::Value(Value::Int(10))));
+}
 
 #[test]
 fn test_input() {
@@ -172,27 +179,27 @@ fn test_list_deletion() {
                StatementKind::ListDelete("x".to_string(), Expression::Value(Value::Int(10))));
 }
 
-// #[test]
-// fn test_while_compound_condition() {
-// let l = grammar::while_loop(r#"while (x or y) :<
-// show me what you got 30
-// >:"#)
-// .unwrap();
-// assert_eq!(
-// l,
-// StatementKind::While(
-// Expression::OperatorExpression(
-// Box::new(Expression::Variable("x".to_string())),
-// Operator::Or,
-// Box::new(Expression::Variable("y".to_string())),
-// ),
-// vec![
-// Statement::Print(Expression::Value(Value::Int(30))),
-// ],
-// )
-// );
-// }
-//
+#[test]
+fn test_while_compound_condition() {
+    let l = grammar::while_loop(r#"while (x or y) :<
+ show me what you got 30
+ >:"#)
+        .unwrap();
+    assert_eq!(
+        l,
+        StatementKind::While(
+            Expression::OperatorExpression(
+                Box::new(Expression::Variable("x".to_string())),
+                Operator::Or,
+                Box::new(Expression::Variable("y".to_string())),
+                ),
+                vec![
+                Statement{ kind: StatementKind::Print(Expression::Value(Value::Int(30))), start: 0, end: 1 },
+                ],
+                )
+        );
+}
+
 
 #[test]
 fn test_or() {
