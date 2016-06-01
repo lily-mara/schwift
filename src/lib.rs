@@ -10,7 +10,8 @@ use std::io::prelude::*;
 use std::io;
 use std::cmp::Ordering;
 
-pub type SwResult<T> = Result<T, Error>;
+pub type SwResult<T> = Result<T, ErrorKind>;
+pub type SwErResult<T> = Result<T, Error>;
 
 peg_file! grammar("schwift.rustpeg");
 
@@ -28,10 +29,9 @@ pub enum Value {
 
 pub struct State {
     symbols: HashMap<String, Value>,
-    filename: Option<String>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
     Add,
     Subtract,
@@ -49,7 +49,13 @@ pub enum Operator {
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub struct Error {
+    place: Statement,
+    kind: ErrorKind,
+}
+
+#[derive(Debug)]
+pub enum ErrorKind {
     UnknownVariable(String),
     IndexUnindexable(Value),
     SyntaxError(grammar::ParseError),
@@ -59,7 +65,7 @@ pub enum Error {
     InvalidBinaryExpression(Value, Value, Operator),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Variable(String),
     OperatorExpression(Box<Expression>, Operator, Box<Expression>),
@@ -70,14 +76,14 @@ pub enum Expression {
     Eval(Box<Expression>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Statement {
     start: usize,
     end: usize,
     kind: StatementKind,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum StatementKind {
     Assignment(String, Expression),
     Delete(String),
@@ -119,38 +125,75 @@ macro_rules! logic {
     };
 }
 
+macro_rules! error {
+    ( $kind:expr, $place:expr ) => {
+        {
+            Err(Error::new($kind, $place))
+        }
+    };
+}
+
+macro_rules! try_error {
+    ( $error:expr, $statement:expr ) => {
+        {
+            match $error {
+                Ok(val) => val,
+                Err(err) => return Err(Error::new(err, $statement.clone())),
+            }
+        }
+    };
+}
+
+macro_rules! try_nop_error {
+    ( $error:expr, $statement:expr ) => {
+        {
+            match $error {
+                Ok(_) => { Ok(()) },
+                Err(err) => return Err(Error::new(err, $statement.clone())),
+            }
+        }
+    };
+}
+
 impl Error {
+    pub fn new(kind: ErrorKind, place: Statement) -> Self {
+        Error {
+            kind: kind,
+            place: place,
+        }
+    }
+
     pub fn panic_message(&self) -> String {
-        match *self {
-            Error::UnknownVariable(ref name) => {
+        match self.kind {
+            ErrorKind::UnknownVariable(ref name) => {
                 format!("There's no {} in this universe, Morty!", name)
             }
-            Error::IndexUnindexable(ref value) => {
+            ErrorKind::IndexUnindexable(ref value) => {
                 format!("I'll try and say this slowly Morty. You can't index that. It's a {}",
                         value.type_str())
             }
-            Error::SyntaxError(ref err) => {
+            ErrorKind::SyntaxError(ref err) => {
                 format!("If you're going to start trying to construct sub-programs in your \
                         programs Morty, you'd better make sure you're careful! {:?}",
                         err)
             }
-            Error::IndexOutOfBounds(ref value, ref index) => {
+            ErrorKind::IndexOutOfBounds(ref value, ref index) => {
                 format!("This isn't your mom's wine bottle Morty, you can't just keep asking for \
                         more, there's not that much here! You want {}, but you're dealing with \
                         {:?}!",
                         index,
                         value)
             }
-            Error::IOError(ref err) => {
+            ErrorKind::IOError(ref err) => {
                 format!("Looks like we're having a comm-burp-unications problem Morty: {:?}",
                         err)
             }
-            Error::UnexpectedType(ref expected, ref value) => {
+            ErrorKind::UnexpectedType(ref expected, ref value) => {
                 format!("I asked for a {}, not a {} Morty.",
                         expected,
                         value.type_str())
             }
-            Error::InvalidBinaryExpression(ref lhs, ref rhs, ref op) => {
+            ErrorKind::InvalidBinaryExpression(ref lhs, ref rhs, ref op) => {
                 format!("It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
                         op,
                         lhs.type_str(),
@@ -159,7 +202,7 @@ impl Error {
         }
     }
 
-    pub fn full_panic_message(&self, statement: &Statement, filename: &str) -> String {
+    pub fn full_panic_message(&self, filename: &str) -> String {
         let type_msg = self.panic_message();
         let quote = random_quote();
 
@@ -169,11 +212,11 @@ impl Error {
         let mut f = File::open(filename).unwrap();
         f.read_to_string(&mut source).unwrap();
 
-        assert!(statement.start < statement.end);
-        assert!(source.is_char_boundary(statement.start));
-        assert!(source.is_char_boundary(statement.end));
+        assert!(self.place.start < self.place.end);
+        assert!(source.is_char_boundary(self.place.start));
+        assert!(source.is_char_boundary(self.place.end));
 
-        let source_part = unsafe { source.slice_unchecked(statement.start, statement.end) };
+        let source_part = unsafe { source.slice_unchecked(self.place.start, self.place.end) };
 
         format!(r#"
     You made a Rickdiculous mistake:
@@ -189,8 +232,8 @@ impl Error {
                 quote)
     }
 
-    pub fn panic(&self, statement: &Statement, source: &str) {
-        println!("{}", self.full_panic_message(statement, source));
+    pub fn panic(&self, source: &str) {
+        println!("{}", self.full_panic_message(source));
         std::process::exit(1);
     }
 }
@@ -201,7 +244,7 @@ impl Expression {
             Expression::Variable(ref var_name) => {
                 match state.symbols.get(var_name) {
                     Some(value) => Ok(value.clone()),
-                    None => Err(Error::UnknownVariable(var_name.clone())),
+                    None => Err(ErrorKind::UnknownVariable(var_name.clone())),
                 }
             }
             Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
@@ -232,10 +275,10 @@ impl Expression {
                         match *value {
                             Value::List(ref list) => Ok(Value::Int(list.len() as i32)),
                             Value::Str(ref s) => Ok(Value::Int(s.len() as i32)),
-                            _ => Err(Error::IndexUnindexable(value.clone())),
+                            _ => Err(ErrorKind::IndexUnindexable(value.clone())),
                         }
                     }
-                    None => Err(Error::UnknownVariable(var_name.clone())),
+                    None => Err(ErrorKind::UnknownVariable(var_name.clone())),
                 }
             }
             Expression::Eval(ref exp) => {
@@ -243,10 +286,10 @@ impl Expression {
                 if let Value::Str(ref inner) = inner_val {
                     match grammar::expression(inner) {
                         Ok(inner_evaled) => inner_evaled.eval(state),
-                        Err(s) => Err(Error::SyntaxError(s)),
+                        Err(s) => Err(ErrorKind::SyntaxError(s)),
                     }
                 } else {
-                    Err(Error::UnexpectedType("string".to_string(), inner_val))
+                    Err(ErrorKind::UnexpectedType("string".to_string(), inner_val))
                 }
             }
         }
@@ -257,7 +300,7 @@ impl Expression {
         if let Value::Bool(x) = value {
             Ok(x)
         } else {
-            Err(Error::UnexpectedType("bool".to_string(), value))
+            Err(ErrorKind::UnexpectedType("bool".to_string(), value))
         }
     }
 
@@ -266,7 +309,7 @@ impl Expression {
         if let Value::Int(x) = value {
             Ok(x)
         } else {
-            Err(Error::UnexpectedType("int".to_string(), value))
+            Err(ErrorKind::UnexpectedType("int".to_string(), value))
         }
     }
 }
@@ -283,11 +326,11 @@ impl State {
                             if index < l.len() {
                                 Ok(l[index].clone())
                             } else {
-                                Err(Error::IndexOutOfBounds(inner_expression_value, index))
+                                Err(ErrorKind::IndexOutOfBounds(inner_expression_value, index))
                             }
                         } else {
-                            Err(Error::UnexpectedType("int".to_string(),
-                                                      inner_expression_value.clone()))
+                            Err(ErrorKind::UnexpectedType("int".to_string(),
+                                                          inner_expression_value.clone()))
                         }
                     }
                     Value::Str(ref s) => {
@@ -298,17 +341,17 @@ impl State {
                             if index < chars.len() {
                                 Ok(Value::Str(chars[index].to_string()))
                             } else {
-                                Err(Error::IndexOutOfBounds(inner_expression_value, index))
+                                Err(ErrorKind::IndexOutOfBounds(inner_expression_value, index))
                             }
                         } else {
-                            Err(Error::UnexpectedType("int".to_string(),
-                                                      inner_expression_value.clone()))
+                            Err(ErrorKind::UnexpectedType("int".to_string(),
+                                                          inner_expression_value.clone()))
                         }
                     }
-                    _ => Err(Error::IndexUnindexable(symbol.clone())),
+                    _ => Err(ErrorKind::IndexUnindexable(symbol.clone())),
                 }
             }
-            None => Err(Error::UnknownVariable(list_name.to_string())),
+            None => Err(ErrorKind::UnknownVariable(list_name.to_string())),
         }
     }
 
@@ -321,7 +364,7 @@ impl State {
     fn delete(&mut self, name: &str) -> SwResult<()> {
         match self.symbols.remove(name) {
             Some(_) => Ok(()),
-            None => Err(Error::UnknownVariable(name.to_string())),
+            None => Err(ErrorKind::UnknownVariable(name.to_string())),
         }
     }
 
@@ -336,7 +379,7 @@ impl State {
 
         match io::stdin().read_line(&mut input) {
             Ok(_) => {}
-            Err(e) => return Err(Error::IOError(e)),
+            Err(e) => return Err(ErrorKind::IOError(e)),
         }
 
         input = input.trim().to_string();
@@ -356,7 +399,7 @@ impl State {
     fn get_value(&mut self, name: &str) -> SwResult<&mut Value> {
         match self.symbols.get_mut(name) {
             Some(value) => Ok(value),
-            None => Err(Error::UnknownVariable(name.to_string())),
+            None => Err(ErrorKind::UnknownVariable(name.to_string())),
         }
     }
 
@@ -364,7 +407,7 @@ impl State {
         let value = try!(self.get_value(name));
         match *value {
             Value::List(ref mut l) => Ok(l),
-            _ => Err(Error::IndexUnindexable(value.clone())),
+            _ => Err(ErrorKind::IndexUnindexable(value.clone())),
         }
     }
 
@@ -378,10 +421,10 @@ impl State {
                 if list.len() < index {
                     Ok(&mut list[index])
                 } else {
-                    Err(Error::IndexOutOfBounds(value_for_errors, index))
+                    Err(ErrorKind::IndexOutOfBounds(value_for_errors, index))
                 }
             }
-            _ => Err(Error::IndexUnindexable(value_for_errors)),
+            _ => Err(ErrorKind::IndexUnindexable(value_for_errors)),
         }
     }
 
@@ -407,78 +450,101 @@ impl State {
                 list.remove(index);
                 Ok(())
             } else {
-                Err(Error::IndexOutOfBounds(Value::List(list.clone()), index))
+                Err(ErrorKind::IndexOutOfBounds(Value::List(list.clone()), index))
             }
         } else {
-            Err(Error::UnexpectedType("int".to_string(), index_value))
+            Err(ErrorKind::UnexpectedType("int".to_string(), index_value))
         }
     }
 
     fn exec_if(&mut self,
+               statement: &Statement,
                bool: &Expression,
                if_body: &[Statement],
                else_body: &Option<Vec<Statement>>)
-               -> SwResult<()> {
-        let x = try!(bool.eval(self));
+               -> SwErResult<()> {
+        let x = match bool.eval(self) {
+            Ok(b) => b,
+            Err(e) => {
+                return Err(Error {
+                    kind: e,
+                    place: statement.clone(),
+                })
+            }
+        };
+
         match x {
             Value::Bool(b) => {
                 if b {
-                    self.run(if_body);
+                    try!(self.run(if_body));
                 } else {
                     match *else_body {
-                        Option::Some(ref s) => self.run(s),
+                        Option::Some(ref s) => try!(self.run(s)),
                         Option::None => {}
                     }
                 }
                 Ok(())
             }
-            _ => Err(Error::UnexpectedType("bool".to_string(), x.clone())),
+            _ => {
+                error!(ErrorKind::UnexpectedType("bool".to_string(), x.clone()),
+                       statement.clone())
+            }
         }
     }
 
-    fn exec_while(&mut self, bool: &Expression, body: &[Statement]) -> SwResult<()> {
-        let mut condition = try!(bool.try_bool(self));
+    fn exec_while(&mut self,
+                  statement: &Statement,
+                  bool: &Expression,
+                  body: &[Statement])
+                  -> SwErResult<()> {
+        let mut condition = try_error!(bool.try_bool(self), statement);
 
         while condition {
-            self.run(body);
-            condition = try!(bool.try_bool(self));
+            try!(self.run(body));
+            condition = try_error!(bool.try_bool(self), statement);
         }
 
         Ok(())
     }
 
-    pub fn execute(&mut self, statement: &Statement) -> SwResult<()> {
+    #[allow(needless_return)]
+    pub fn execute(&mut self, statement: &Statement) -> SwErResult<()> {
         match statement.kind {
-            StatementKind::Input(ref s) => self.input(s.to_string()),
+            StatementKind::Input(ref s) => try_nop_error!(self.input(s.to_string()), statement),
             StatementKind::ListAssign(ref s, ref index_exp, ref assign_exp) => {
-                self.list_assign(s, index_exp, assign_exp)
+                try_nop_error!(self.list_assign(s, index_exp, assign_exp), statement)
             }
-            StatementKind::ListAppend(ref s, ref append_exp) => self.list_append(s, append_exp),
-            StatementKind::ListDelete(ref name, ref idx) => self.list_delete(name, idx),
+            StatementKind::ListAppend(ref s, ref append_exp) => {
+                try_nop_error!(self.list_append(s, append_exp), statement)
+            }
+            StatementKind::ListDelete(ref name, ref idx) => {
+                try_nop_error!(self.list_delete(name, idx), statement)
+            }
             StatementKind::ListNew(ref s) => {
                 self.symbols.insert(s.clone(), Value::List(Vec::new()));
                 Ok(())
             }
             StatementKind::If(ref bool, ref if_body, ref else_body) => {
-                self.exec_if(bool, if_body, else_body)
+                self.exec_if(statement, bool, if_body, else_body)
             }
-            StatementKind::While(ref bool, ref body) => self.exec_while(bool, body),
-            StatementKind::Assignment(ref name, ref value) => self.assign(name.clone(), value),
-            StatementKind::Delete(ref name) => self.delete(name),
-            StatementKind::Print(ref exp) => self.print(exp),
+            StatementKind::While(ref bool, ref body) => self.exec_while(statement, bool, body),
+            StatementKind::Assignment(ref name, ref value) => {
+                try_nop_error!(self.assign(name.clone(), value), statement)
+            }
+            StatementKind::Delete(ref name) => try_nop_error!(self.delete(name), statement),
+            StatementKind::Print(ref exp) => try_nop_error!(self.print(exp), statement),
         }
     }
 
-    pub fn run(&mut self, statements: &[Statement]) {
-        let filename = self.filename.clone();
-        let ufilename = filename.unwrap();
-
+    pub fn run(&mut self, statements: &[Statement]) -> SwErResult<()> {
         for statement in statements {
             match self.execute(statement) {
-                Ok(_) => {}
-                Err(e) => e.panic(statement, &ufilename),
+                Err(e) => return Err(e),
+                Ok(()) => {}
             }
         }
+
+        Ok(())
     }
 
     pub fn new() -> Self {
@@ -488,10 +554,7 @@ impl State {
 
 impl Default for State {
     fn default() -> Self {
-        State {
-            symbols: HashMap::new(),
-            filename: None,
-        }
+        State { symbols: HashMap::new() }
     }
 }
 
@@ -515,21 +578,21 @@ impl Value {
         match *self {
             Value::Float(f) => Ok(f),
             Value::Int(i) => Ok(i as f32),
-            _ => Err(Error::UnexpectedType("float".to_string(), self.clone())),
+            _ => Err(ErrorKind::UnexpectedType("float".to_string(), self.clone())),
         }
     }
 
     fn assert_bool(&self) -> SwResult<bool> {
         match *self {
             Value::Bool(b) => Ok(b),
-            _ => Err(Error::UnexpectedType("bool".to_string(), self.clone())),
+            _ => Err(ErrorKind::UnexpectedType("bool".to_string(), self.clone())),
         }
     }
 
     pub fn not(&mut self) -> SwResult<Value> {
         match *self {
             Value::Bool(b) => Ok(Value::Bool(!b)),
-            _ => Err(Error::UnexpectedType("bool".to_string(), self.clone())),
+            _ => Err(ErrorKind::UnexpectedType("bool".to_string(), self.clone())),
         }
     }
 
@@ -572,7 +635,9 @@ impl Value {
                 new_buf.push_str(s2);
                 Ok(Value::Str(new_buf))
             }
-            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Add)),
+            _ => {
+                Err(ErrorKind::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Add))
+            }
         }
     }
 
@@ -583,7 +648,9 @@ impl Value {
             (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f - i as f32)),
             (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 - f)),
             _ => {
-                Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Subtract))
+                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
+                                                       other.clone(),
+                                                       Operator::Subtract))
             }
         }
     }
@@ -602,7 +669,9 @@ impl Value {
                 Ok(Value::Str(new_buf))
             }
             _ => {
-                Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Multiply))
+                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
+                                                       other.clone(),
+                                                       Operator::Multiply))
             }
         }
     }
@@ -613,7 +682,11 @@ impl Value {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 / i2)),
             (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f / i as f32)),
             (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 / f)),
-            _ => Err(Error::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Divide)),
+            _ => {
+                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
+                                                       other.clone(),
+                                                       Operator::Divide))
+            }
         }
     }
 
@@ -621,9 +694,9 @@ impl Value {
         match (self, other) {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 << i2)),
             _ => {
-                Err(Error::InvalidBinaryExpression(self.clone(),
-                                                   other.clone(),
-                                                   Operator::ShiftLeft))
+                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
+                                                       other.clone(),
+                                                       Operator::ShiftLeft))
             }
         }
     }
@@ -632,9 +705,9 @@ impl Value {
         match (self, other) {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 >> i2)),
             _ => {
-                Err(Error::InvalidBinaryExpression(self.clone(),
-                                                   other.clone(),
-                                                   Operator::ShiftRight))
+                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
+                                                       other.clone(),
+                                                       Operator::ShiftRight))
             }
         }
     }
@@ -700,7 +773,10 @@ pub fn compile(filename: &str) -> Result<Vec<Statement>, grammar::ParseError> {
 
 pub fn run_program(filename: &str) {
     let mut s = State::new();
-    s.filename = Some(filename.to_string());
     let tokens = compile(filename);
-    s.run(&tokens.unwrap());
+
+    match s.run(&tokens.unwrap()) {
+        Ok(()) => {}
+        Err(e) => e.panic(filename),
+    }
 }
