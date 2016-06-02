@@ -1,4 +1,5 @@
-use super::{Value, Operator, ErrorKind, State, grammar, SwResult};
+use super::{Operator, ErrorKind, State, grammar, SwResult};
+use super::value::Value;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {

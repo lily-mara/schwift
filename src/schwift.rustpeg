@@ -1,7 +1,8 @@
-use super::{ Value, Operator };
+use super::{ Operator };
 use super::statement::Statement;
 use super::statement::StatementKind;
 use super::expression::Expression;
+use super::value::Value;
 
 #[pub]
 string -> Value

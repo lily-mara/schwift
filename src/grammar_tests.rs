@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use super::{Value, statement};
+use super::statement;
 use super::grammar;
 use statement::StatementKind as Kind;
 use statement::Statement;
