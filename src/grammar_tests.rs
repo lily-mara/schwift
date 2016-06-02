@@ -3,7 +3,7 @@ use super::{Value, statement};
 use super::grammar;
 use statement::StatementKind as Kind;
 use statement::Statement;
-use super::Expression as Exp;
+use super::expression::Expression as Exp;
 use super::Operator as Op;
 
 fn statement(kind: Kind) -> Statement {
