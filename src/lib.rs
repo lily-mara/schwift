@@ -1,5 +1,6 @@
 #![feature(plugin)]
 #![plugin(peg_syntax_ext, clippy)]
+#![cfg_attr(test, plugin(stainless))]
 
 extern crate rand;
 
@@ -17,6 +18,9 @@ peg_file! grammar("schwift.rustpeg");
 
 #[cfg(test)]
 mod grammar_tests;
+
+#[cfg(test)]
+mod test;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -154,6 +158,125 @@ macro_rules! try_nop_error {
             }
         }
     };
+}
+
+impl Into<Expression> for i32 {
+    fn into(self) -> Expression {
+        Expression::Value(Value::Int(self))
+    }
+}
+
+impl Into<Expression> for f32 {
+    fn into(self) -> Expression {
+        Expression::Value(Value::Float(self))
+    }
+}
+
+impl Into<Expression> for bool {
+    fn into(self) -> Expression {
+        Expression::Value(Value::Bool(self))
+    }
+}
+
+impl Into<Expression> for String {
+    fn into(self) -> Expression {
+        Expression::Value(Value::Str(self))
+    }
+}
+
+impl Into<Expression> for &'static str {
+    fn into(self) -> Expression {
+        Expression::Value(Value::Str(self.to_string()))
+    }
+}
+
+impl Into<Expression> for Vec<Value> {
+    fn into(self) -> Expression {
+        Expression::Value(Value::List(self))
+    }
+}
+
+impl Into<Value> for i32 {
+    fn into(self) -> Value {
+        Value::Int(self)
+    }
+}
+
+impl Into<Value> for f32 {
+    fn into(self) -> Value {
+        Value::Float(self)
+    }
+}
+
+impl Into<Value> for bool {
+    fn into(self) -> Value {
+        Value::Bool(self)
+    }
+}
+
+impl Into<Value> for String {
+    fn into(self) -> Value {
+        Value::Str(self)
+    }
+}
+
+impl Into<Value> for &'static str {
+    fn into(self) -> Value {
+        Value::Str(self.to_string())
+    }
+}
+
+impl Into<Value> for Vec<Value> {
+    fn into(self) -> Value {
+        Value::List(self)
+    }
+}
+
+impl Into<Expression> for Value {
+    fn into(self) -> Expression {
+        Expression::Value(self)
+    }
+}
+
+// impl <T> Into<Expression> for T where T: Into<Value> {
+// fn into(self) -> Expression {
+// Expression::Value(self.into())
+// }
+// }
+
+// impl <F, T> Into<T> for F where T: std::convert::Into<F> {
+// fn into(self) -> T {
+// self.into()
+// }
+// }
+
+impl StatementKind {
+    pub fn assignment<S, E>(name: S, expr: E) -> StatementKind
+        where S: Into<String>,
+              E: Into<Expression>
+    {
+        StatementKind::Assignment(name.into(), expr.into())
+    }
+}
+
+impl Statement {
+    #[cfg(not(test))]
+    pub fn new(kind: StatementKind, start: usize, end: usize) -> Statement {
+        Statement {
+            kind: kind,
+            start: start,
+            end: end,
+        }
+    }
+
+    #[cfg(test)]
+    pub fn new(kind: StatementKind) -> Statement {
+        Statement {
+            kind: kind,
+            start: 0,
+            end: 0,
+        }
+    }
 }
 
 #[cfg(test)]

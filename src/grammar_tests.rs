@@ -1,7 +1,8 @@
 use super::{Value, StatementKind, Expression, Operator, Statement};
 use super::grammar;
+use StatementKind as Kind;
 
-fn statement(kind: StatementKind) -> Statement {
+fn statement(kind: Kind) -> Statement {
     Statement {
         kind: kind,
         start: 0,
@@ -12,38 +13,37 @@ fn statement(kind: StatementKind) -> Statement {
 #[test]
 fn test_raw_int() {
     let l = grammar::int("3").unwrap();
-    assert_eq!(l, 3)
+    assert_eq!(l, 3.into())
 }
 
 #[test]
 fn test_raw_string() {
     let l = grammar::string("\"hello!\"").unwrap();
-    assert_eq!(l, Value::Str("hello!".to_string()))
+    assert_eq!(l, "hello!".into())
 }
 
 #[test]
 fn test_expression_string() {
     let l = grammar::expression("\"hello!\"").unwrap();
-    assert_eq!(l, Expression::Value(Value::Str("hello!".to_string())));
+    assert_eq!(l, "hello!".into());
 }
 
 #[test]
 fn test_list_instantiation() {
     let l = grammar::list_instantiation("foobar on a cob").unwrap();
-    assert_eq!(l, StatementKind::ListNew("foobar".to_string()));
+    assert_eq!(l, Kind::ListNew("foobar".to_string()));
 }
 
 #[test]
 fn test_list_instantiation_statement() {
     let l = grammar::statement_kind("foobar on a cob").unwrap();
-    assert_eq!(l, StatementKind::ListNew("foobar".to_string()));
+    assert_eq!(l, Kind::ListNew("foobar".to_string()));
 }
 
 #[test]
 fn test_list_append_statement() {
     let l = grammar::statement_kind("foobar assimilate 10").unwrap();
-    assert_eq!(l,
-               StatementKind::ListAppend("foobar".to_string(), Expression::Value(Value::Int(10))));
+    assert_eq!(l, Kind::ListAppend("foobar".to_string(), 10.into()));
 
 }
 
@@ -51,16 +51,13 @@ fn test_list_append_statement() {
 fn test_list_assign() {
     let l = grammar::statement_kind("foobar[30] squanch 10").unwrap();
     assert_eq!(l,
-               StatementKind::ListAssign("foobar".to_string(),
-                                         Expression::Value(Value::Int(30)),
-                                         Expression::Value(Value::Int(10))));
+               Kind::ListAssign("foobar".to_string(), 30.into(), 10.into()));
 }
 
 #[test]
 fn test_printing() {
     let l = grammar::statement_kind("show me what you got \"Hello\"").unwrap();
-    assert_eq!(l,
-               StatementKind::Print(Expression::Value(Value::Str("Hello".to_string()))));
+    assert_eq!(l, Kind::Print("Hello".into()));
 }
 
 #[test]
@@ -85,13 +82,13 @@ fn test_nested_while() {
  >:"#)
         .unwrap();
 
-    let print = statement(StatementKind::Print(Expression::Value(Value::Int(30))));
+    let print = statement(Kind::Print(30.into()));
     let y = Expression::Variable("y".to_string());
 
     assert_eq!(l,
-               StatementKind::While(Expression::Variable("x".to_string()),
-                                    vec![statement(StatementKind::While(y,
-                                                                        vec![
+               Kind::While(Expression::Variable("x".to_string()),
+                           vec![statement(Kind::While(y,
+                                                      vec![
                 print,
                ]))]));
 }
@@ -104,9 +101,9 @@ fn test_while() {
  >:"#)
         .unwrap();
     assert_eq!(l,
-               StatementKind::While(Expression::Variable("x".to_string()),
-                                    vec![
-               statement(StatementKind::Print(Expression::Value(Value::Int(30)))),
+               Kind::While(Expression::Variable("x".to_string()),
+                           vec![
+               statement(Kind::Print(30.into())),
                ]));
 }
 
@@ -125,10 +122,8 @@ fn test_block() {
  >:"#)
         .unwrap();
 
-    assert_eq!(l.len(), 2);
-    assert_eq!(l[0].kind,
-               StatementKind::Print(Expression::Value(Value::Int(10))));
-    assert_eq!(l[1].kind, StatementKind::Input("x".to_string()));
+    assert_eq!(l,
+               vec![Kind::Print(10.into()), Kind::Input("x".to_string())]);
 }
 
 
@@ -140,14 +135,13 @@ show me what you got 10
     >:"#)
         .unwrap();
     assert_eq!(l.len(), 1);
-    assert_eq!(l[0].kind,
-               StatementKind::Print(Expression::Value(Value::Int(10))));
+    assert_eq!(l[0].kind, Kind::Print(10.into()));
 }
 
 #[test]
 fn test_input() {
     let l = grammar::statement_kind(r"portal gun x").unwrap();
-    assert_eq!(l, StatementKind::Input("x".to_string()));
+    assert_eq!(l, Kind::Input("x".to_string()));
 }
 
 #[test]
@@ -167,10 +161,10 @@ fn test_index_and_addition() {
         Expression::OperatorExpression(
             Box::new(Expression::ListIndex(
                 "x".to_string(),
-                Box::new(Expression::Value(Value::Int(10)))
+                Box::new(10.into())
             )),
             Operator::Add,
-            Box::new(Expression::Value(Value::Int(30)))
+            Box::new(30.into())
         )
     );
 }
@@ -178,8 +172,7 @@ fn test_index_and_addition() {
 #[test]
 fn test_list_deletion() {
     let l = grammar::statement_kind(r"squanch x[10]").unwrap();
-    assert_eq!(l,
-               StatementKind::ListDelete("x".to_string(), Expression::Value(Value::Int(10))));
+    assert_eq!(l, Kind::ListDelete("x".to_string(), 10.into()));
 }
 
 #[test]
@@ -189,13 +182,13 @@ fn test_while_compound_condition() {
  >:"#)
         .unwrap();
 
-    let thirty = StatementKind::Print(Expression::Value(Value::Int(30)));
+    let thirty = Kind::Print(30.into());
     let x = Box::new(Expression::Variable("x".to_string()));
     let y = Box::new(Expression::Variable("y".to_string()));
 
     assert_eq!(l,
-               StatementKind::While(Expression::OperatorExpression(x, Operator::Or, y),
-                                    vec![statement(thirty)]));
+               Kind::While(Expression::OperatorExpression(x, Operator::Or, y),
+                           vec![statement(thirty)]));
 }
 
 
@@ -278,7 +271,7 @@ fn test_multiple_operator_expressions_parenthesis() {
                 Box::new(Expression::Variable("y".to_string())),
             )),
             Operator::Multiply,
-            Box::new(Expression::Value(Value::Int(5))),
+            Box::new(5.into()),
         )
     );
 }
@@ -286,23 +279,16 @@ fn test_multiple_operator_expressions_parenthesis() {
 #[test]
 fn test_eval_static_string() {
     let l = grammar::expression(r#"{"(1 + 3)"}"#).unwrap();
-    assert_eq!(l,
-               Expression::Eval(Box::new(Expression::Value(Value::Str(r"(1 + 3)".to_string())))));
+    assert_eq!(l, Expression::Eval(Box::new("(1 + 3)".into())));
 }
 
 #[test]
 fn test_eval_add_strings() {
     let l = grammar::expression(r#"{("(1 " + "+ 3)")}"#).unwrap();
-    assert_eq!(
-        l,
-        Expression::Eval(
-            Box::new(Expression::OperatorExpression(
-                Box::new(Expression::Value(Value::Str("(1 ".to_string()))),
-                Operator::Add,
-                Box::new(Expression::Value(Value::Str("+ 3)".to_string()))),
-            ))
-        )
-    );
+    assert_eq!(l,
+               Expression::Eval(Box::new(Expression::OperatorExpression(Box::new("(1 ".into()),
+                                                                        Operator::Add,
+                                                                        Box::new("+ 3)".into())))));
 }
 
 #[test]
@@ -312,7 +298,7 @@ fn test_eval_add_string_to_variable() {
         l,
         Expression::Eval(
             Box::new(Expression::OperatorExpression(
-                Box::new(Expression::Value(Value::Str("(1 ".to_string()))),
+                Box::new("(1 ".into()),
                 Operator::Add,
                 Box::new(Expression::Variable("x".to_string())),
             ))
@@ -332,12 +318,11 @@ fn test_catch() {
     >:"#)
         .unwrap();
 
-    let addition = Expression::OperatorExpression(Box::new(Expression::Value(Value::Str("hello"
-                                                      .to_string()))),
+    let addition = Expression::OperatorExpression(Box::new("hello".into()),
                                                   Operator::Add,
-                                                  Box::new(Expression::Value(Value::Int(10))));
-    let x = statement(StatementKind::Assignment("x".to_string(), addition));
-    let error = statement(StatementKind::Print(Expression::Value(Value::Str("ERROR".to_string()))));
+                                                  Box::new(10.into()));
+    let x = statement(Kind::Assignment("x".to_string(), addition));
+    let error = statement(Kind::Print("ERROR".into()));
 
-    assert_eq!(l, StatementKind::Catch(vec![x], vec![error]));
+    assert_eq!(l, Kind::Catch(vec![x], vec![error]));
 }
