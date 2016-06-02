@@ -84,13 +84,16 @@ fn test_nested_while() {
  >:
  >:"#)
         .unwrap();
+
+    let print = statement(StatementKind::Print(Expression::Value(Value::Int(30))));
+    let y = Expression::Variable("y".to_string());
+
     assert_eq!(l,
                StatementKind::While(Expression::Variable("x".to_string()),
-                                    vec![statement(StatementKind::While(Expression::Variable("y".to_string()),
-               vec![
-               statement(StatementKind::Print(Expression::Value(Value::Int(30)))),
-               ]
-               ))]));
+                                    vec![statement(StatementKind::While(y,
+                                                                        vec![
+                print,
+               ]))]));
 }
 
 
@@ -185,19 +188,14 @@ fn test_while_compound_condition() {
  show me what you got 30
  >:"#)
         .unwrap();
-    assert_eq!(
-        l,
-        StatementKind::While(
-            Expression::OperatorExpression(
-                Box::new(Expression::Variable("x".to_string())),
-                Operator::Or,
-                Box::new(Expression::Variable("y".to_string())),
-                ),
-                vec![
-                Statement{ kind: StatementKind::Print(Expression::Value(Value::Int(30))), start: 0, end: 1 },
-                ],
-                )
-        );
+
+    let thirty = StatementKind::Print(Expression::Value(Value::Int(30)));
+    let x = Box::new(Expression::Variable("x".to_string()));
+    let y = Box::new(Expression::Variable("y".to_string()));
+
+    assert_eq!(l,
+               StatementKind::While(Expression::OperatorExpression(x, Operator::Or, y),
+                                    vec![statement(thirty)]));
 }
 
 
@@ -320,4 +318,26 @@ fn test_eval_add_string_to_variable() {
             ))
         )
     );
+}
+
+#[test]
+fn test_catch() {
+    let l = grammar::statement_kind(r#"normal plan :<
+        x squanch ("hello" + 10)
+    >: plan for failure :<
+        show me what you got "ERROR"
+
+
+
+    >:"#)
+        .unwrap();
+
+    let addition = Expression::OperatorExpression(Box::new(Expression::Value(Value::Str("hello"
+                                                      .to_string()))),
+                                                  Operator::Add,
+                                                  Box::new(Expression::Value(Value::Int(10))));
+    let x = statement(StatementKind::Assignment("x".to_string(), addition));
+    let error = statement(StatementKind::Print(Expression::Value(Value::Str("ERROR".to_string()))));
+
+    assert_eq!(l, StatementKind::Catch(vec![x], vec![error]));
 }
