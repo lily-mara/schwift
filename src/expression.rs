@@ -1,6 +1,7 @@
-use super::{Operator, State, grammar};
+use super::{Operator, grammar};
 use super::value::Value;
 use super::error::{ErrorKind, SwResult};
+use super::state::State;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
@@ -138,12 +139,7 @@ impl Expression {
 
     pub fn evaluate(&self, state: &State) -> SwResult<Value> {
         match *self {
-            Expression::Variable(ref var_name) => {
-                match state.symbols.get(var_name) {
-                    Some(value) => Ok(value.clone()),
-                    None => Err(ErrorKind::UnknownVariable(var_name.clone())),
-                }
-            }
+            Expression::Variable(ref name) => state.get(name),
             Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
                 let left = try!(left_exp.evaluate(state));
                 let right = try!(right_exp.evaluate(state));
@@ -167,15 +163,15 @@ impl Expression {
             Expression::ListIndex(ref var_name, ref e) => state.list_index(var_name, e),
             Expression::Not(ref e) => try!(e.evaluate(state)).not(),
             Expression::ListLength(ref var_name) => {
-                match state.symbols.get(var_name) {
-                    Some(value) => {
-                        match *value {
+                match state.get(var_name) {
+                    Ok(value) => {
+                        match value {
                             Value::List(ref list) => Ok(Value::Int(list.len() as i32)),
                             Value::Str(ref s) => Ok(Value::Int(s.len() as i32)),
                             _ => Err(ErrorKind::IndexUnindexable(value.clone())),
                         }
                     }
-                    None => Err(ErrorKind::UnknownVariable(var_name.clone())),
+                    error => error,
                 }
             }
             Expression::Eval(ref exp) => {
