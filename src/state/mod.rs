@@ -6,14 +6,11 @@ use super::value::Value;
 use super::error::{SwResult, SwErResult, Error, ErrorKind};
 use super::statement::{Statement, StatementKind};
 
-#[cfg(not(test))]
+#[cfg(test)]
+mod test;
+
 pub struct State {
     symbols: HashMap<String, Value>,
-}
-
-#[cfg(test)]
-pub struct State {
-    pub symbols: HashMap<String, Value>,
 }
 
 macro_rules! error {

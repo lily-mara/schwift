@@ -12,9 +12,6 @@ peg_file! grammar("schwift.rustpeg");
 #[cfg(test)]
 mod grammar_tests;
 
-#[cfg(test)]
-mod test;
-
 pub mod statement;
 pub mod expression;
 pub mod value;
