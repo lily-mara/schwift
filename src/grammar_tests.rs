@@ -1,15 +1,13 @@
-use super::{Value, StatementKind, Expression, Operator, Statement};
+#[allow(unused_imports)]
+use super::{Value, statement};
 use super::grammar;
-use StatementKind as Kind;
-use Expression as Exp;
-use Operator as Op;
+use statement::StatementKind as Kind;
+use statement::Statement;
+use super::Expression as Exp;
+use super::Operator as Op;
 
 fn statement(kind: Kind) -> Statement {
-    Statement {
-        kind: kind,
-        start: 0,
-        end: 1,
-    }
+    Statement::tnew(kind)
 }
 
 #[test]

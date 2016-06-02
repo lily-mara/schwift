@@ -22,6 +22,10 @@ mod grammar_tests;
 #[cfg(test)]
 mod test;
 
+pub mod statement;
+
+use statement::*;
+
 #[derive(Debug, Clone)]
 pub enum Value {
     Str(String),
@@ -78,28 +82,6 @@ pub enum Expression {
     ListLength(String),
     Not(Box<Expression>),
     Eval(Box<Expression>),
-}
-
-#[derive(Debug, Clone)]
-pub struct Statement {
-    start: usize,
-    end: usize,
-    kind: StatementKind,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum StatementKind {
-    Assignment(String, Expression),
-    Delete(String),
-    Print(Expression),
-    ListNew(String),
-    ListAppend(String, Expression),
-    ListAssign(String, Expression, Expression),
-    ListDelete(String, Expression),
-    If(Expression, Vec<Statement>, Option<Vec<Statement>>),
-    While(Expression, Vec<Statement>),
-    Input(String),
-    Catch(Vec<Statement>, Vec<Statement>),
 }
 
 pub const QUOTES: [&'static str; 9] =
@@ -238,119 +220,6 @@ impl Into<Expression> for Value {
     }
 }
 
-impl StatementKind {
-    pub fn assignment<S, E>(name: S, expr: E) -> StatementKind
-        where S: Into<String>,
-              E: Into<Expression>
-    {
-        StatementKind::Assignment(name.into(), expr.into())
-    }
-
-    pub fn list_append<S, E>(name: S, expr: E) -> StatementKind
-        where S: Into<String>,
-              E: Into<Expression>
-    {
-        StatementKind::ListAppend(name.into(), expr.into())
-    }
-
-    pub fn list_delete<S, E>(name: S, expr: E) -> StatementKind
-        where S: Into<String>,
-              E: Into<Expression>
-    {
-        StatementKind::ListDelete(name.into(), expr.into())
-    }
-
-    pub fn if_block<E>(condition: E,
-                       if_body: Vec<Statement>,
-                       else_body: Option<Vec<Statement>>)
-                       -> StatementKind
-        where E: Into<Expression>
-    {
-        StatementKind::If(condition.into(), if_body, else_body)
-    }
-
-    pub fn while_block<E>(condition: E, body: Vec<Statement>) -> StatementKind
-        where E: Into<Expression>
-    {
-        StatementKind::While(condition.into(), body)
-    }
-
-    pub fn input<S>(name: S) -> StatementKind
-        where S: Into<String>
-    {
-        StatementKind::Input(name.into())
-    }
-
-    pub fn catch(try: Vec<Statement>, catch: Vec<Statement>) -> StatementKind {
-        StatementKind::Catch(try, catch)
-    }
-
-    pub fn list_assign<S, E, R>(name: S, index: E, assign: R) -> StatementKind
-        where S: Into<String>,
-              E: Into<Expression>,
-              R: Into<Expression>
-    {
-        StatementKind::ListAssign(name.into(), index.into(), assign.into())
-    }
-
-    pub fn delete<S>(name: S) -> StatementKind
-        where S: Into<String>
-    {
-        StatementKind::Delete(name.into())
-    }
-
-    pub fn print<E>(expr: E) -> StatementKind
-        where E: Into<Expression>
-    {
-        StatementKind::Print(expr.into())
-    }
-
-    pub fn new_list<S>(name: S) -> StatementKind
-        where S: Into<String>
-    {
-        StatementKind::ListNew(name.into())
-    }
-}
-
-impl Statement {
-    #[cfg(not(test))]
-    pub fn new(kind: StatementKind, start: usize, end: usize) -> Statement {
-        Statement {
-            kind: kind,
-            start: start,
-            end: end,
-        }
-    }
-
-    #[cfg(test)]
-    pub fn new(kind: StatementKind) -> Statement {
-        Statement {
-            kind: kind,
-            start: 0,
-            end: 0,
-        }
-    }
-}
-
-#[cfg(test)]
-impl std::cmp::PartialEq<StatementKind> for Statement {
-    fn eq(&self, kind: &StatementKind) -> bool {
-        self.kind == *kind
-    }
-}
-
-impl std::cmp::PartialEq<Statement> for Statement {
-    #[cfg(test)]
-    fn eq(&self, other: &Statement) -> bool {
-        self.kind == other.kind
-    }
-
-    #[cfg(not(test))]
-    fn eq(&self, other: &Statement) -> bool {
-        self.kind == other.kind && self.start == other.start && self.end == other.end
-    }
-}
-
 impl Error {
     pub fn new(kind: ErrorKind, place: Statement) -> Self {
         Error {
@@ -404,15 +273,7 @@ impl Error {
 
         println!("{}", filename);
 
-        let mut source = String::new();
-        let mut f = File::open(filename).unwrap();
-        f.read_to_string(&mut source).unwrap();
-
-        assert!(self.place.start < self.place.end);
-        assert!(source.is_char_boundary(self.place.start));
-        assert!(source.is_char_boundary(self.place.end));
-
-        let source_part = unsafe { source.slice_unchecked(self.place.start, self.place.end) };
+        let source_part = self.place.get_source(filename).unwrap();
 
         format!(r#"
     You made a Rickdiculous mistake:

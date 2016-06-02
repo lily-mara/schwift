@@ -1,4 +1,6 @@
-use super::{ Value, Operator, Statement, StatementKind, Expression };
+use super::{ Value, Operator, Expression };
+use super::statement::Statement;
+use super::statement::StatementKind;
 
 #[pub]
 string -> Value
@@ -188,7 +190,7 @@ statement_kind -> StatementKind
 
 #[pub]
 statement -> Statement
-    = s:statement_kind { Statement{start: start_pos, end: pos, kind: s} }
+    = s:statement_kind { Statement::new(s, start_pos, pos) }
 
 #[pub]
 list_assign -> StatementKind
