@@ -1,6 +1,15 @@
 pub use super::state::State;
 pub use statement::StatementKind as Kind;
 pub use statement::Statement;
+pub use super::value::Value;
+pub use super::expression::Expression;
+pub use super::error::ErrorKind as EKind;
+
+pub fn exp<F>(x: F) -> Expression
+    where F: Into<Value>
+{
+    x.into().into()
+}
 
 describe! state {
     before_each {
@@ -21,5 +30,16 @@ describe! state {
         let delete = Statement::tnew(Kind::delete("x"));
         state.execute(&delete).unwrap();
         assert_eq!(state.symbols.get("x"), None);
+    }
+
+    describe! get {
+        it "should return value if it is present" {
+            state.assign("x".to_string(), &exp(10)).unwrap();
+            assert_eq!(state.get("x").unwrap(), 10.into());
+        }
+
+        it "should return undefined error if not present" {
+            assert_eq!(state.get("x"), Err(EKind::UnknownVariable("x".to_string())));
+        }
     }
 }

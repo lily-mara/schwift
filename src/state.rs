@@ -94,7 +94,7 @@ impl State {
         }
     }
 
-    fn assign(&mut self, str: String, exp: &Expression) -> SwResult<()> {
+    pub fn assign(&mut self, str: String, exp: &Expression) -> SwResult<()> {
         let v = try!(exp.evaluate(self));
         self.symbols.insert(str, v);
         Ok(())

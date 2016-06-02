@@ -40,6 +40,26 @@ pub enum ErrorKind {
     InvalidBinaryExpression(Value, Value, Operator),
 }
 
+impl PartialEq for ErrorKind {
+    fn eq(&self, other: &ErrorKind) -> bool {
+        match (self, other) {
+            (&ErrorKind::UnknownVariable(ref s), &ErrorKind::UnknownVariable(ref o)) => s == o,
+            (&ErrorKind::IndexUnindexable(ref s), &ErrorKind::IndexUnindexable(ref o)) => s == o,
+            (&ErrorKind::SyntaxError(ref s), &ErrorKind::SyntaxError(ref o)) => s == o,
+            (&ErrorKind::IndexOutOfBounds(ref sv, si),
+             &ErrorKind::IndexOutOfBounds(ref ov, oi)) => sv == ov && si == oi,
+            (&ErrorKind::IOError(_), &ErrorKind::IOError(_)) => true,
+            (&ErrorKind::UnexpectedType(ref ss, ref sv),
+             &ErrorKind::UnexpectedType(ref os, ref ov)) => ss == os && sv == ov,
+            (&ErrorKind::InvalidBinaryExpression(ref sv1, ref sv2, ref so),
+             &ErrorKind::InvalidBinaryExpression(ref ov1, ref ov2, ref oo)) => {
+                sv1 == ov1 && sv2 == ov2 && so == oo
+            }
+            _ => false,
+        }
+    }
+}
+
 impl Error {
     pub fn new(kind: ErrorKind, place: Statement) -> Self {
         Error {
