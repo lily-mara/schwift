@@ -238,24 +238,77 @@ impl Into<Expression> for Value {
     }
 }
 
-// impl <T> Into<Expression> for T where T: Into<Value> {
-// fn into(self) -> Expression {
-// Expression::Value(self.into())
-// }
-// }
-
-// impl <F, T> Into<T> for F where T: std::convert::Into<F> {
-// fn into(self) -> T {
-// self.into()
-// }
-// }
-
 impl StatementKind {
     pub fn assignment<S, E>(name: S, expr: E) -> StatementKind
         where S: Into<String>,
               E: Into<Expression>
     {
         StatementKind::Assignment(name.into(), expr.into())
+    }
+
+    pub fn list_append<S, E>(name: S, expr: E) -> StatementKind
+        where S: Into<String>,
+              E: Into<Expression>
+    {
+        StatementKind::ListAppend(name.into(), expr.into())
+    }
+
+    pub fn list_delete<S, E>(name: S, expr: E) -> StatementKind
+        where S: Into<String>,
+              E: Into<Expression>
+    {
+        StatementKind::ListDelete(name.into(), expr.into())
+    }
+
+    pub fn if_block<E>(condition: E,
+                       if_body: Vec<Statement>,
+                       else_body: Option<Vec<Statement>>)
+                       -> StatementKind
+        where E: Into<Expression>
+    {
+        StatementKind::If(condition.into(), if_body, else_body)
+    }
+
+    pub fn while_block<E>(condition: E, body: Vec<Statement>) -> StatementKind
+        where E: Into<Expression>
+    {
+        StatementKind::While(condition.into(), body)
+    }
+
+    pub fn input<S>(name: S) -> StatementKind
+        where S: Into<String>
+    {
+        StatementKind::Input(name.into())
+    }
+
+    pub fn catch(try: Vec<Statement>, catch: Vec<Statement>) -> StatementKind {
+        StatementKind::Catch(try, catch)
+    }
+
+    pub fn list_assign<S, E, R>(name: S, index: E, assign: R) -> StatementKind
+        where S: Into<String>,
+              E: Into<Expression>,
+              R: Into<Expression>
+    {
+        StatementKind::ListAssign(name.into(), index.into(), assign.into())
+    }
+
+    pub fn delete<S>(name: S) -> StatementKind
+        where S: Into<String>
+    {
+        StatementKind::Delete(name.into())
+    }
+
+    pub fn print<E>(expr: E) -> StatementKind
+        where E: Into<Expression>
+    {
+        StatementKind::Print(expr.into())
+    }
+
+    pub fn new_list<S>(name: S) -> StatementKind
+        where S: Into<String>
+    {
+        StatementKind::ListNew(name.into())
     }
 }
 
@@ -382,7 +435,51 @@ impl Error {
 }
 
 impl Expression {
-    pub fn eval(&self, state: &State) -> SwResult<Value> {
+    pub fn variable<S>(name: S) -> Expression
+        where S: Into<String>
+    {
+        Expression::Variable(name.into())
+    }
+
+    pub fn list_length<S>(name: S) -> Expression
+        where S: Into<String>
+    {
+        Expression::ListLength(name.into())
+    }
+
+    pub fn operator<L, R>(left: L, op: Operator, right: R) -> Expression
+        where L: Into<Expression>,
+              R: Into<Expression>
+    {
+        Expression::OperatorExpression(Box::new(left.into()), op, Box::new(right.into()))
+    }
+
+    pub fn not<E>(expr: E) -> Expression
+        where E: Into<Expression>
+    {
+        Expression::Not(Box::new(expr.into()))
+    }
+
+    pub fn eval<E>(expr: E) -> Expression
+        where E: Into<Expression>
+    {
+        Expression::Eval(Box::new(expr.into()))
+    }
+
+    pub fn list_index<S, E>(name: S, index: E) -> Expression
+        where S: Into<String>,
+              E: Into<Expression>
+    {
+        Expression::ListIndex(name.into(), Box::new(index.into()))
+    }
+
+    pub fn value<V>(val: V) -> Expression
+        where V: Into<Value>
+    {
+        Expression::Value(val.into())
+    }
+
+    pub fn evaluate(&self, state: &State) -> SwResult<Value> {
         match *self {
             Expression::Variable(ref var_name) => {
                 match state.symbols.get(var_name) {
@@ -391,8 +488,8 @@ impl Expression {
                 }
             }
             Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
-                let left = try!(left_exp.eval(state));
-                let right = try!(right_exp.eval(state));
+                let left = try!(left_exp.evaluate(state));
+                let right = try!(right_exp.evaluate(state));
                 match *operator {
                     Operator::Add => left.add(&right),
                     Operator::Subtract => left.subtract(&right),
@@ -411,7 +508,7 @@ impl Expression {
             }
             Expression::Value(ref v) => Ok(v.clone()),
             Expression::ListIndex(ref var_name, ref e) => state.list_index(var_name, e),
-            Expression::Not(ref e) => try!(e.eval(state)).not(),
+            Expression::Not(ref e) => try!(e.evaluate(state)).not(),
             Expression::ListLength(ref var_name) => {
                 match state.symbols.get(var_name) {
                     Some(value) => {
@@ -425,10 +522,10 @@ impl Expression {
                 }
             }
             Expression::Eval(ref exp) => {
-                let inner_val = try!(exp.eval(state));
+                let inner_val = try!(exp.evaluate(state));
                 if let Value::Str(ref inner) = inner_val {
                     match grammar::expression(inner) {
-                        Ok(inner_evaled) => inner_evaled.eval(state),
+                        Ok(inner_evaled) => inner_evaled.evaluate(state),
                         Err(s) => Err(ErrorKind::SyntaxError(s)),
                     }
                 } else {
@@ -439,7 +536,7 @@ impl Expression {
     }
 
     pub fn try_bool(&self, state: &State) -> SwResult<bool> {
-        let value = try!(self.eval(state));
+        let value = try!(self.evaluate(state));
         if let Value::Bool(x) = value {
             Ok(x)
         } else {
@@ -448,7 +545,7 @@ impl Expression {
     }
 
     pub fn try_int(&self, state: &State) -> SwResult<i32> {
-        let value = try!(self.eval(state));
+        let value = try!(self.evaluate(state));
         if let Value::Int(x) = value {
             Ok(x)
         } else {
@@ -459,7 +556,7 @@ impl Expression {
 
 impl State {
     fn list_index(&self, list_name: &str, exp: &Expression) -> SwResult<Value> {
-        let inner_expression_value = try!(exp.eval(self));
+        let inner_expression_value = try!(exp.evaluate(self));
         match self.symbols.get(list_name) {
             Some(symbol) => {
                 match *symbol {
@@ -499,7 +596,7 @@ impl State {
     }
 
     fn assign(&mut self, str: String, exp: &Expression) -> SwResult<()> {
-        let v = try!(exp.eval(self));
+        let v = try!(exp.evaluate(self));
         self.symbols.insert(str, v);
         Ok(())
     }
@@ -512,7 +609,7 @@ impl State {
     }
 
     fn print(&mut self, exp: &Expression) -> SwResult<()> {
-        let x = try!(exp.eval(self));
+        let x = try!(exp.evaluate(self));
         x.println();
         Ok(())
     }
@@ -532,7 +629,7 @@ impl State {
     }
 
     fn list_append(&mut self, list_name: &str, append_exp: &Expression) -> SwResult<()> {
-        let to_append = try!(append_exp.eval(self));
+        let to_append = try!(append_exp.evaluate(self));
         let list = try!(self.get_list(list_name));
 
         list.push(to_append);
@@ -576,7 +673,7 @@ impl State {
                    index_exp: &Expression,
                    assign_exp: &Expression)
                    -> SwResult<()> {
-        let to_assign = try!(assign_exp.eval(self));
+        let to_assign = try!(assign_exp.evaluate(self));
         let element = try!(self.get_list_element(list_name, index_exp));
 
         *element = to_assign;
@@ -584,7 +681,7 @@ impl State {
     }
 
     fn list_delete(&mut self, list_name: &str, index_exp: &Expression) -> SwResult<()> {
-        let index_value = try!(index_exp.eval(self));
+        let index_value = try!(index_exp.evaluate(self));
         let list = try!(self.get_list(list_name));
 
         if let Value::Int(i) = index_value {
@@ -606,7 +703,7 @@ impl State {
                if_body: &[Statement],
                else_body: &Option<Vec<Statement>>)
                -> SwErResult<()> {
-        let x = match bool.eval(self) {
+        let x = match bool.evaluate(self) {
             Ok(b) => b,
             Err(e) => {
                 return Err(Error {
