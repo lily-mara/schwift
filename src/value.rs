@@ -1,5 +1,6 @@
-use super::{SwResult, ErrorKind, Operator};
+use super::Operator;
 use std::cmp::Ordering;
+use super::error::{ErrorKind, SwResult};
 use std;
 
 #[derive(Debug, Clone)]
