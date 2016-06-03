@@ -1,6 +1,7 @@
 use super::Operator;
 use std::cmp::Ordering;
 use super::error::{ErrorKind, SwResult};
+use super::statement::Statement;
 use std;
 
 #[derive(Debug, Clone)]
@@ -10,6 +11,7 @@ pub enum Value {
     Float(f32),
     Bool(bool),
     List(Vec<Value>),
+    Function(Vec<String>, Vec<Statement>),
 }
 
 impl Value {
@@ -20,6 +22,7 @@ impl Value {
             Value::Bool(i) => print!("{}", i),
             Value::Str(ref i) => print!("{}", i),
             Value::List(ref i) => print!("{:?}", i),
+            Value::Function(ref args, ref body) => print!("{:?}", body),
         }
     }
 
@@ -173,6 +176,7 @@ impl Value {
             Value::Bool(_) => "bool",
             Value::List(_) => "list",
             Value::Float(_) => "float",
+            Value::Function(_, _) => "function",
         }
     }
 }

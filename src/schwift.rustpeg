@@ -159,6 +159,10 @@ assignment -> StatementKind
     = i:identifier whitespace "squanch" whitespace e:expression { StatementKind::Assignment(i, e) }
 
 #[pub]
+return_s -> StatementKind
+    = "return" whitespace e:expression { StatementKind::Return(e) }
+
+#[pub]
 deletion -> StatementKind
     = "squanch" whitespace i:identifier { StatementKind::Delete(i) }
 
@@ -187,8 +191,16 @@ newline
     = "\n"
 
 #[pub]
+params -> Vec<String>
+    = "(" is:identifier ** comma ")" { is }
+
+#[pub]
+function -> StatementKind
+    = n:identifier optional_whitespace p:params b:block { StatementKind::Function(n, p, b) }
+
+#[pub]
 statement_kind -> StatementKind
-    = list_statements / deletion / assignment / printing / if_statement / while_loop / input / catch
+    = function_call_s / list_statements / deletion / assignment / printing / if_statement / while_loop / input / catch / function / return_s
 
 #[pub]
 statement -> Statement
@@ -204,7 +216,7 @@ printing -> StatementKind
 
 #[pub]
 expression -> Expression
-    = eval_expression / operator_expression / parenthesis_expression / expression1
+    = function_call_e / eval_expression / operator_expression / parenthesis_expression / expression1
 
 #[pub]
 list_length -> Expression
@@ -213,6 +225,21 @@ list_length -> Expression
 #[pub]
 not -> Expression
     = "!" optional_whitespace e:expression { Expression::Not(Box::new(e)) }
+
+#[pub]
+args -> Vec<Expression>
+    = "(" exprs:expression ** comma ")" { exprs }
+
+comma
+    = "," optional_whitespace
+
+#[pub]
+function_call_e -> Expression
+    = i:identifier a:args { Expression::FunctionCall(i, a) }
+
+#[pub]
+function_call_s -> StatementKind
+    = i:identifier a:args { StatementKind::FunctionCall(i, a) }
 
 #[pub]
 expression1 -> Expression

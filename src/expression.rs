@@ -12,6 +12,7 @@ pub enum Expression {
     ListLength(String),
     Not(Box<Expression>),
     Eval(Box<Expression>),
+    FunctionCall(String, Vec<Expression>),
 }
 
 impl Into<Expression> for i32 {
@@ -137,7 +138,7 @@ impl Expression {
         Expression::Value(val.into())
     }
 
-    pub fn evaluate(&self, state: &State) -> SwResult<Value> {
+    pub fn evaluate(&self, state: &mut State) -> SwResult<Value> {
         match *self {
             Expression::Variable(ref name) => state.get(name),
             Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
@@ -185,10 +186,11 @@ impl Expression {
                     Err(ErrorKind::UnexpectedType("string".to_string(), inner_val))
                 }
             }
+            Expression::FunctionCall(ref name, ref args) => state.call_function(name, args),
         }
     }
 
-    pub fn try_bool(&self, state: &State) -> SwResult<bool> {
+    pub fn try_bool(&self, state: &mut State) -> SwResult<bool> {
         let value = try!(self.evaluate(state));
         if let Value::Bool(x) = value {
             Ok(x)
@@ -197,7 +199,7 @@ impl Expression {
         }
     }
 
-    pub fn try_int(&self, state: &State) -> SwResult<i32> {
+    pub fn try_int(&self, state: &mut State) -> SwResult<i32> {
         let value = try!(self.evaluate(state));
         if let Value::Int(x) = value {
             Ok(x)

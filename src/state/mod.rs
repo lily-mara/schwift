@@ -11,6 +11,7 @@ mod test;
 
 pub struct State {
     symbols: HashMap<String, Value>,
+    last_return: Option<Value>,
 }
 
 macro_rules! error {
@@ -44,7 +45,7 @@ macro_rules! try_nop_error {
 }
 
 impl State {
-    pub fn list_index(&self, list_name: &str, exp: &Expression) -> SwResult<Value> {
+    pub fn list_index(&mut self, list_name: &str, exp: &Expression) -> SwResult<Value> {
         let inner_expression_value = try!(exp.evaluate(self));
         match self.symbols.get(list_name) {
             Some(symbol) => {
@@ -81,6 +82,37 @@ impl State {
                 }
             }
             None => Err(ErrorKind::UnknownVariable(list_name.to_string())),
+        }
+    }
+
+    pub fn call_function(&mut self, name: &str, args: &[Expression]) -> SwResult<Value> {
+
+        match try!(self.get(name)) {
+            Value::Function(ref params, ref body) => {
+                if args.len() != params.len() {
+                    return Err(ErrorKind::InvalidArguments(name.to_string(),
+                                                           args.len(),
+                                                           params.len()));
+                }
+
+                for (name, arg) in params.iter().zip(args) {
+                    try!(self.assign(name.to_string(), arg));
+                }
+
+                match self.run(body) {
+                    Ok(()) => {}
+                    Err(e) => return Err(e.kind),
+                }
+
+                let ret = match self.last_return {
+                    Some(ref val) => val.clone(),
+                    None => return Err(ErrorKind::UnknownVariable("df".to_string())),
+                };
+
+                self.last_return = None;
+                Ok(ret)
+            }
+            val => Err(ErrorKind::UnexpectedType("function".to_string(), val.clone())),
         }
     }
 
@@ -272,6 +304,23 @@ impl State {
             StatementKind::Delete(ref name) => try_nop_error!(self.delete(name), statement),
             StatementKind::Print(ref exp) => try_nop_error!(self.print(exp), statement),
             StatementKind::Catch(ref try, ref catch) => self.catch(try, catch),
+            StatementKind::Function(ref name, ref args, ref body) => {
+                self.symbols.insert(name.clone(), Value::Function(args.clone(), body.clone()));
+                Ok(())
+            }
+            StatementKind::Return(ref expr) => {
+                let val = try_error!(expr.evaluate(self), statement);
+                self.last_return = Some(val);
+
+                Ok(())
+            }
+
+            StatementKind::FunctionCall(ref name, ref args) => {
+                match self.call_function(name, args) {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(Error::new(e, statement.clone())),
+                }
+            }
         }
     }
 
@@ -293,6 +342,9 @@ impl State {
 
 impl Default for State {
     fn default() -> Self {
-        State { symbols: HashMap::new() }
+        State {
+            symbols: HashMap::new(),
+            last_return: None,
+        }
     }
 }

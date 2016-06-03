@@ -25,8 +25,8 @@ pub const QUOTES: [&'static str; 9] =
 
 #[derive(Debug)]
 pub struct Error {
-    place: Statement,
-    kind: ErrorKind,
+    pub place: Statement,
+    pub kind: ErrorKind,
 }
 
 #[derive(Debug)]
@@ -38,6 +38,7 @@ pub enum ErrorKind {
     IOError(io::Error),
     UnexpectedType(String, Value),
     InvalidBinaryExpression(Value, Value, Operator),
+    InvalidArguments(String, usize, usize),
 }
 
 impl PartialEq for ErrorKind {
@@ -46,6 +47,10 @@ impl PartialEq for ErrorKind {
             (&ErrorKind::UnknownVariable(ref s), &ErrorKind::UnknownVariable(ref o)) => s == o,
             (&ErrorKind::IndexUnindexable(ref s), &ErrorKind::IndexUnindexable(ref o)) => s == o,
             (&ErrorKind::SyntaxError(ref s), &ErrorKind::SyntaxError(ref o)) => s == o,
+            (&ErrorKind::InvalidArguments(ref sn, ss1, ss2),
+             &ErrorKind::InvalidArguments(ref on, os1, os2)) => {
+                sn == on && ss1 == os1 && ss2 == os2
+            }
             (&ErrorKind::IndexOutOfBounds(ref sv, si),
              &ErrorKind::IndexOutOfBounds(ref ov, oi)) => sv == ov && si == oi,
             (&ErrorKind::IOError(_), &ErrorKind::IOError(_)) => true,
@@ -103,6 +108,13 @@ impl Error {
                         op,
                         lhs.type_str(),
                         rhs.type_str())
+            }
+            ErrorKind::InvalidArguments(ref name, expected, actual) => {
+                format!("I'm confused Morty, a minute ago you said that {} takes {} paramaters, \
+                         but you just tried to give it {}. WHICH IS IT MORTY?",
+                        name,
+                        expected,
+                        actual)
             }
         }
     }

@@ -267,3 +267,10 @@ fn test_catch() {
 
     assert_eq!(l, Kind::catch(vec![x], vec![error]));
 }
+
+#[test]
+fn test_args() {
+    let l = grammar::args(r#"(x, "bar")"#).unwrap();
+
+    assert_eq!(l, vec![Exp::variable("x"), Exp::value("bar")]);
+}

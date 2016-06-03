@@ -25,6 +25,9 @@ pub enum StatementKind {
     While(Expression, Vec<Statement>),
     Input(String),
     Catch(Vec<Statement>, Vec<Statement>),
+    Function(String, Vec<String>, Vec<Statement>),
+    Return(Expression),
+    FunctionCall(String, Vec<Expression>),
 }
 
 impl StatementKind {
@@ -33,6 +36,12 @@ impl StatementKind {
               E: Into<Expression>
     {
         StatementKind::Assignment(name.into(), expr.into())
+    }
+
+    pub fn return_it<E>(expr: E) -> StatementKind
+        where E: Into<Expression>
+    {
+        StatementKind::Return(expr.into())
     }
 
     pub fn list_append<S, E>(name: S, expr: E) -> StatementKind
