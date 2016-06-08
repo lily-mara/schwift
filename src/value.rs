@@ -14,7 +14,56 @@ pub enum Value {
     Function(Vec<String>, Vec<Statement>),
 }
 
+impl From<i32> for Value {
+    fn from(from: i32) -> Value {
+        Value::Int(from)
+    }
+}
+
+impl From<f32> for Value {
+    fn from(from: f32) -> Value {
+        Value::Float(from)
+    }
+}
+
+impl From<bool> for Value {
+    fn from(from: bool) -> Value {
+        Value::Bool(from)
+    }
+}
+
+impl From<String> for Value {
+    fn from(from: String) -> Value {
+        Value::Str(from)
+    }
+}
+
+impl From<&'static str> for Value {
+    fn from(from: &'static str) -> Value {
+        Value::Str(from.into())
+    }
+}
+
+impl<T> From<Vec<T>> for Value
+    where T: Into<Value>
+{
+    fn from(from: Vec<T>) -> Value {
+        let mut buf = vec![];
+        for i in from {
+            buf.push(i.into());
+        }
+
+        Value::List(buf)
+    }
+}
+
 impl Value {
+    pub fn new<T>(val: T) -> Self
+        where T: Into<Value>
+    {
+        val.into()
+    }
+
     pub fn print(&self) {
         match *self {
             Value::Int(i) => print!("{}", i),
@@ -22,7 +71,7 @@ impl Value {
             Value::Bool(i) => print!("{}", i),
             Value::Str(ref i) => print!("{}", i),
             Value::List(ref i) => print!("{:?}", i),
-            Value::Function(ref args, ref body) => print!("{:?}", body),
+            Value::Function(_, ref body) => print!("{:?}", body),
         }
     }
 

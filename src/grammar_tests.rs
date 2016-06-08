@@ -4,6 +4,7 @@ use super::grammar;
 use statement::StatementKind as Kind;
 use statement::Statement;
 use super::expression::Expression as Exp;
+use super::value::Value;
 use super::Operator as Op;
 
 fn statement(kind: Kind) -> Statement {
@@ -13,37 +14,37 @@ fn statement(kind: Kind) -> Statement {
 #[test]
 fn test_raw_int() {
     let l = grammar::int("3").unwrap();
-    assert_eq!(l, 3.into())
+    assert_eq!(l, 3)
 }
 
 #[test]
 fn test_raw_string() {
     let l = grammar::string("\"hello!\"").unwrap();
-    assert_eq!(l, "hello!".into())
+    assert_eq!(l, Value::new("hello!"))
 }
 
 #[test]
 fn test_expression_string() {
     let l = grammar::expression("\"hello!\"").unwrap();
-    assert_eq!(l, "hello!".into());
+    assert_eq!(l, Exp::new("hello!"));
 }
 
 #[test]
 fn test_list_instantiation() {
     let l = grammar::list_instantiation("foobar on a cob").unwrap();
-    assert_eq!(l, Kind::ListNew("foobar".to_string()));
+    assert_eq!(l, Kind::new_list("foobar"));
 }
 
 #[test]
 fn test_list_instantiation_statement() {
     let l = grammar::statement_kind("foobar on a cob").unwrap();
-    assert_eq!(l, Kind::ListNew("foobar".to_string()));
+    assert_eq!(l, Kind::new_list("foobar"));
 }
 
 #[test]
 fn test_list_append_statement() {
     let l = grammar::statement_kind("foobar assimilate 10").unwrap();
-    assert_eq!(l, Kind::ListAppend("foobar".to_string(), 10.into()));
+    assert_eq!(l, Kind::list_append("foobar", 10));
 
 }
 
@@ -163,7 +164,7 @@ fn test_while_compound_condition() {
  >:"#)
         .unwrap();
 
-    let thirty = Kind::Print(30.into());
+    let thirty = Kind::print(30);
     let x = Exp::variable("x");
     let y = Exp::variable("y");
 

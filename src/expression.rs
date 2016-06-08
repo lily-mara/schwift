@@ -15,85 +15,21 @@ pub enum Expression {
     FunctionCall(String, Vec<Expression>),
 }
 
-impl Into<Expression> for i32 {
-    fn into(self) -> Expression {
-        Expression::Value(Value::Int(self))
-    }
-}
-
-impl Into<Expression> for f32 {
-    fn into(self) -> Expression {
-        Expression::Value(Value::Float(self))
-    }
-}
-
-impl Into<Expression> for bool {
-    fn into(self) -> Expression {
-        Expression::Value(Value::Bool(self))
-    }
-}
-
-impl Into<Expression> for String {
-    fn into(self) -> Expression {
-        Expression::Value(Value::Str(self))
-    }
-}
-
-impl Into<Expression> for &'static str {
-    fn into(self) -> Expression {
-        Expression::Value(Value::Str(self.to_string()))
-    }
-}
-
-impl Into<Expression> for Vec<Value> {
-    fn into(self) -> Expression {
-        Expression::Value(Value::List(self))
-    }
-}
-
-impl Into<Value> for i32 {
-    fn into(self) -> Value {
-        Value::Int(self)
-    }
-}
-
-impl Into<Value> for f32 {
-    fn into(self) -> Value {
-        Value::Float(self)
-    }
-}
-
-impl Into<Value> for bool {
-    fn into(self) -> Value {
-        Value::Bool(self)
-    }
-}
-
-impl Into<Value> for String {
-    fn into(self) -> Value {
-        Value::Str(self)
-    }
-}
-
-impl Into<Value> for &'static str {
-    fn into(self) -> Value {
-        Value::Str(self.to_string())
-    }
-}
-
-impl Into<Value> for Vec<Value> {
-    fn into(self) -> Value {
-        Value::List(self)
-    }
-}
-
-impl Into<Expression> for Value {
-    fn into(self) -> Expression {
-        Expression::Value(self)
+impl<T> From<T> for Expression
+    where T: Into<Value>
+{
+    fn from(fr: T) -> Expression {
+        Expression::Value(fr.into())
     }
 }
 
 impl Expression {
+    pub fn new<T>(from: T) -> Expression
+        where T: Into<Expression>
+    {
+        from.into()
+    }
+
     pub fn variable<S>(name: S) -> Expression
         where S: Into<String>
     {
