@@ -1,8 +1,12 @@
 #![feature(plugin)]
 #![plugin(peg_syntax_ext, clippy)]
 #![cfg_attr(test, plugin(stainless))]
+#![allow(let_unit_value)]
 
 extern crate rand;
+
+#[cfg(feature="flame")]
+extern crate flame;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -17,9 +21,11 @@ pub mod expression;
 pub mod value;
 pub mod error;
 pub mod state;
+mod utils;
 
 use statement::*;
 use state::*;
+use utils::perf;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
@@ -39,6 +45,7 @@ pub enum Operator {
 }
 
 pub fn compile(filename: &str) -> Result<Vec<Statement>, grammar::ParseError> {
+    let _perf = perf("compile");
     let mut f = match File::open(filename) {
         Result::Ok(i) => i,
         Result::Err(_) => panic!("Failed to open file {}", filename),
@@ -52,6 +59,7 @@ pub fn compile(filename: &str) -> Result<Vec<Statement>, grammar::ParseError> {
 }
 
 pub fn run_program(filename: &str) {
+    let _perf = perf("run_program");
     let mut s = State::new();
     let tokens = compile(filename);
 
@@ -59,4 +67,6 @@ pub fn run_program(filename: &str) {
         Ok(()) => {}
         Err(e) => e.panic(filename),
     }
+
+    utils::export();
 }

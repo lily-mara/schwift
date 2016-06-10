@@ -4,6 +4,7 @@ use std::io;
 use std::fs::File;
 use std::cmp;
 use std::io::prelude::*;
+use super::utils::perf;
 
 #[derive(Debug, Clone)]
 pub struct Statement {
@@ -35,12 +36,14 @@ impl StatementKind {
         where S: Into<String>,
               E: Into<Expression>
     {
+        let _perf = perf("StatementKind::assignment");
         StatementKind::Assignment(name.into(), expr.into())
     }
 
     pub fn return_it<E>(expr: E) -> StatementKind
         where E: Into<Expression>
     {
+        let _perf = perf("StatementKind::return_it");
         StatementKind::Return(expr.into())
     }
 
@@ -48,6 +51,7 @@ impl StatementKind {
         where S: Into<String>,
               E: Into<Expression>
     {
+        let _perf = perf("StatementKind::list_append");
         StatementKind::ListAppend(name.into(), expr.into())
     }
 
@@ -55,6 +59,7 @@ impl StatementKind {
         where S: Into<String>,
               E: Into<Expression>
     {
+        let _perf = perf("StatementKind::list_delete");
         StatementKind::ListDelete(name.into(), expr.into())
     }
 
@@ -64,22 +69,26 @@ impl StatementKind {
                        -> StatementKind
         where E: Into<Expression>
     {
+        let _perf = perf("StatementKind::if_block");
         StatementKind::If(condition.into(), if_body, else_body)
     }
 
     pub fn while_block<E>(condition: E, body: Vec<Statement>) -> StatementKind
         where E: Into<Expression>
     {
+        let _perf = perf("StatementKind::while_block");
         StatementKind::While(condition.into(), body)
     }
 
     pub fn input<S>(name: S) -> StatementKind
         where S: Into<String>
     {
+        let _perf = perf("StatementKind::input");
         StatementKind::Input(name.into())
     }
 
     pub fn catch(try: Vec<Statement>, catch: Vec<Statement>) -> StatementKind {
+        let _perf = perf("StatementKind::catch");
         StatementKind::Catch(try, catch)
     }
 
@@ -88,30 +97,35 @@ impl StatementKind {
               E: Into<Expression>,
               R: Into<Expression>
     {
+        let _perf = perf("StatementKind::list_assign");
         StatementKind::ListAssign(name.into(), index.into(), assign.into())
     }
 
     pub fn delete<S>(name: S) -> StatementKind
         where S: Into<String>
     {
+        let _perf = perf("StatementKind::delete");
         StatementKind::Delete(name.into())
     }
 
     pub fn print<E>(expr: E) -> StatementKind
         where E: Into<Expression>
     {
+        let _perf = perf("StatementKind::print");
         StatementKind::Print(expr.into())
     }
 
     pub fn new_list<S>(name: S) -> StatementKind
         where S: Into<String>
     {
+        let _perf = perf("StatementKind::new_list");
         StatementKind::ListNew(name.into())
     }
 }
 
 impl Statement {
     pub fn new(kind: StatementKind, start: usize, end: usize) -> Statement {
+        let _perf = perf("Statement::new");
         Statement {
             kind: kind,
             start: start,
@@ -121,6 +135,7 @@ impl Statement {
 
     #[cfg(test)]
     pub fn tnew(kind: StatementKind) -> Statement {
+        let _perf = perf("Statement::tnew");
         Statement {
             kind: kind,
             start: 0,
@@ -129,6 +144,7 @@ impl Statement {
     }
 
     pub fn get_source(&self, filename: &str) -> io::Result<String> {
+        let _perf = perf("Statement::get_source");
         let mut source = String::new();
         let mut f = try!(File::open(filename));
         try!(f.read_to_string(&mut source));
@@ -144,6 +160,7 @@ impl Statement {
 #[cfg(test)]
 impl cmp::PartialEq<StatementKind> for Statement {
     fn eq(&self, kind: &StatementKind) -> bool {
+        let _perf = perf("Statement::eq StatementKind");
         self.kind == *kind
     }
 }
@@ -151,11 +168,13 @@ impl cmp::PartialEq<StatementKind> for Statement {
 impl cmp::PartialEq<Statement> for Statement {
     #[cfg(test)]
     fn eq(&self, other: &Statement) -> bool {
+        let _perf = perf("Statement::eq Statement");
         self.kind == other.kind
     }
 
     #[cfg(not(test))]
     fn eq(&self, other: &Statement) -> bool {
+        let _perf = perf("Statement::eq Statement");
         self.kind == other.kind && self.start == other.start && self.end == other.end
     }
 }
