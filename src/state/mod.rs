@@ -58,7 +58,7 @@ impl State {
                             if index < l.len() {
                                 Ok(l[index].clone())
                             } else {
-                                Err(ErrorKind::IndexOutOfBounds(inner_expression_value, index))
+                                Err(ErrorKind::IndexOutOfBounds(symbol.clone(), index))
                             }
                         } else {
                             Err(ErrorKind::UnexpectedType("int".to_string(),
@@ -198,7 +198,7 @@ impl State {
 
         match *value {
             Value::List(ref mut list) => {
-                if list.len() < index {
+                if index < list.len() {
                     Ok(&mut list[index])
                 } else {
                     Err(ErrorKind::IndexOutOfBounds(value_for_errors, index))

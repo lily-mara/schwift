@@ -91,12 +91,12 @@ impl Error {
                         programs Morty, you'd better make sure you're careful! {:?}",
                         err)
             }
-            ErrorKind::IndexOutOfBounds(ref value, ref index) => {
+            ErrorKind::IndexOutOfBounds(ref list, ref index) => {
                 format!("This isn't your mom's wine bottle Morty, you can't just keep asking for \
-                        more, there's not that much here! You want {}, but you're dealing with \
-                        {:?}!",
+                         more, there's not that much here! You want {}, but your cob only has {} \
+                         kernels on it!",
                         index,
-                        value)
+                        list.len().unwrap())
             }
             ErrorKind::IOError(ref err) => {
                 format!("Looks like we're having a comm-burp-unications problem Morty: {:?}",

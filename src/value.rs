@@ -72,6 +72,16 @@ impl Value {
         val.into()
     }
 
+    pub fn len(&self) -> SwResult<usize> {
+        let _perf = perf("Value::len");
+        use self::Value::*;
+        match *self {
+            Str(ref s) => Ok(s.chars().count()),
+            List(ref l) => Ok(l.len()),
+            _ => Err(ErrorKind::UnexpectedType("string or list".to_string(), self.clone())),
+        }
+    }
+
     pub fn print(&self) {
         let _perf = perf("Value::print");
         match *self {
