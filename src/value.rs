@@ -82,6 +82,16 @@ impl Value {
         }
     }
 
+    pub fn is_empty(&self) -> SwResult<bool> {
+        let _perf = perf("Value::len");
+        use self::Value::*;
+        match *self {
+            Str(ref s) => Ok(s.is_empty()),
+            List(ref l) => Ok(l.is_empty()),
+            _ => Err(ErrorKind::UnexpectedType("string or list".to_string(), self.clone())),
+        }
+    }
+
     pub fn print(&self) {
         let _perf = perf("Value::print");
         match *self {
