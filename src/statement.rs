@@ -18,6 +18,7 @@ pub enum StatementKind {
     Assignment(String, Expression),
     Delete(String),
     Print(Expression),
+    PrintNoNl(Expression),
     ListNew(String),
     ListAppend(String, Expression),
     ListAssign(String, Expression, Expression),

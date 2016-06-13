@@ -196,11 +196,11 @@ params -> Vec<String>
 
 #[pub]
 function -> StatementKind
-    = n:identifier optional_whitespace p:params b:block { StatementKind::Function(n, p, b) }
+    = n:identifier optional_whitespace p:params optional_whitespace b:block { StatementKind::Function(n, p, b) }
 
 #[pub]
 statement_kind -> StatementKind
-    = function_call_s / list_statements / deletion / assignment / printing / if_statement / while_loop / input / catch / function / return_s
+    = function / list_statements / deletion / assignment / print_no_nl / printing / if_statement / while_loop / input / catch / function_call_s / return_s
 
 #[pub]
 statement -> Statement
@@ -213,6 +213,10 @@ list_assign -> StatementKind
 #[pub]
 printing -> StatementKind
     = "show me what you got" whitespace e:expression { StatementKind::Print(e) }
+
+#[pub]
+print_no_nl -> StatementKind
+    = "show me what you got!" whitespace e:expression { StatementKind::PrintNoNl(e) }
 
 #[pub]
 expression -> Expression

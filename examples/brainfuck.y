@@ -1,5 +1,7 @@
-show me what you got "Please input your brainfuck program: "
+show me what you got! "Please input your brainfuck program: "
 portal gun input
+
+show me what you got ""
 
 size squanch (input squanch - 1)
 count squanch 0
@@ -35,7 +37,7 @@ while (count less size) :<
 	>:
 
 	if (char == ".") :<
-		show me what you got memory[memPointer]
+		show me what you got! ascii(memory[memPointer])
 	>:
 
 	if (char == ",") :<
@@ -79,3 +81,5 @@ while (count less size) :<
 
 	count squanch (count + 1)
 >:
+
+show me what you got ""

@@ -149,6 +149,13 @@ impl State {
         Ok(())
     }
 
+    fn print_no_nl(&mut self, exp: &Expression) -> SwResult<()> {
+        let _perf = perf("State::print_no_nl");
+        let x = try!(exp.evaluate(self));
+        x.print();
+        Ok(())
+    }
+
     fn input(&mut self, name: String) -> SwResult<()> {
         let _perf = perf("State::input");
         let mut input = String::new();
@@ -321,6 +328,7 @@ impl State {
             }
             StatementKind::Delete(ref name) => try_nop_error!(self.delete(name), statement),
             StatementKind::Print(ref exp) => try_nop_error!(self.print(exp), statement),
+            StatementKind::PrintNoNl(ref exp) => try_nop_error!(self.print_no_nl(exp), statement),
             StatementKind::Catch(ref try, ref catch) => self.catch(try, catch),
             StatementKind::Function(ref name, ref args, ref body) => {
                 self.symbols.insert(name.clone(), Value::Function(args.clone(), body.clone()));

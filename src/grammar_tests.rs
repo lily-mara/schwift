@@ -275,3 +275,57 @@ fn test_args() {
 
     assert_eq!(l, vec![Exp::variable("x"), Exp::value("bar")]);
 }
+
+#[test]
+fn test_function_def() {
+    let l = grammar::function(r#"foo (x, y) :<
+        show me what you got (x + y)
+    >:"#)
+        .unwrap();
+
+    let addition = Exp::operator(Exp::variable("x"), Op::Add, Exp::variable("y"));
+    let print = vec![Statement::new(Kind::print(addition), 0, 1)];
+
+    let func = Statement::new(Kind::Function("foo".to_string(),
+                                             vec!["x".to_string(), "y".to_string()],
+                                             print),
+                              0,
+                              1);
+
+    assert_eq!(func, l);
+}
+
+#[test]
+fn test_function_no_space_in_name_and_params() {
+    let l = grammar::function(r#"foo(x, y) :<
+        show me what you got (x + y)
+    >:"#)
+        .unwrap();
+
+    let addition = Exp::operator(Exp::variable("x"), Op::Add, Exp::variable("y"));
+    let print = vec![Statement::new(Kind::print(addition), 0, 1)];
+
+    let func = Statement::new(Kind::Function("foo".to_string(),
+                                             vec!["x".to_string(), "y".to_string()],
+                                             print),
+                              0,
+                              1);
+
+    assert_eq!(func, l);
+}
+
+#[test]
+fn test_function_no_spaces_in_def() {
+    let l = grammar::file(r#"foo(x):<
+        show me what you got x
+    >:"#)
+        .unwrap();
+
+    let print = vec![Statement::new(Kind::print(Exp::variable("x")), 0, 1)];
+
+    let func = Statement::new(Kind::Function("foo".to_string(), vec!["x".to_string()], print),
+                              0,
+                              1);
+
+    assert_eq!(func, l[0]);
+}
