@@ -27,6 +27,9 @@ use statement::*;
 use state::*;
 use utils::perf;
 
+const BUILTINS_FILE: &'static str = "builtins.y";
+const BUILTINS: &'static str = include_str!("builtins.y");
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
     Add,
@@ -61,6 +64,17 @@ pub fn compile(filename: &str) -> Result<Vec<Statement>, grammar::ParseError> {
 pub fn run_program(filename: &str) {
     let _perf = perf("run_program");
     let mut s = State::new();
+
+    {
+        let _perf = perf("start_builtins");
+        let tokens = grammar::file(BUILTINS);
+
+        match s.run(&tokens.unwrap()) {
+            Ok(()) => {}
+            Err(e) => e.panic(BUILTINS_FILE),
+        }
+    }
+
     let tokens = compile(filename);
 
     match s.run(&tokens.unwrap()) {
