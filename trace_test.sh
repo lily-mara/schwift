@@ -1,2 +1,2 @@
 #!/bin/sh
-cargo test 2> /dev/null | ./parse_trace.py
+cargo test --features peg/trace 2> /dev/null | ./parse_trace.py
