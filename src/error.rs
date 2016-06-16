@@ -40,26 +40,30 @@ pub enum ErrorKind {
     UnexpectedType(String, Value),
     InvalidBinaryExpression(Value, Value, Operator),
     InvalidArguments(String, usize, usize),
+    NoReturn(String),
 }
 
 impl PartialEq for ErrorKind {
     fn eq(&self, other: &ErrorKind) -> bool {
         let _perf = perf("ErrorKind::eq");
+
+        use self::ErrorKind::*;
+
         match (self, other) {
-            (&ErrorKind::UnknownVariable(ref s), &ErrorKind::UnknownVariable(ref o)) => s == o,
-            (&ErrorKind::IndexUnindexable(ref s), &ErrorKind::IndexUnindexable(ref o)) => s == o,
-            (&ErrorKind::SyntaxError(ref s), &ErrorKind::SyntaxError(ref o)) => s == o,
-            (&ErrorKind::InvalidArguments(ref sn, ss1, ss2),
-             &ErrorKind::InvalidArguments(ref on, os1, os2)) => {
+            (&UnknownVariable(ref s), &UnknownVariable(ref o)) => s == o,
+            (&IndexUnindexable(ref s), &IndexUnindexable(ref o)) => s == o,
+            (&SyntaxError(ref s), &SyntaxError(ref o)) => s == o,
+            (&NoReturn(ref s), &NoReturn(ref o)) => s == o,
+            (&InvalidArguments(ref sn, ss1, ss2), &InvalidArguments(ref on, os1, os2)) => {
                 sn == on && ss1 == os1 && ss2 == os2
             }
-            (&ErrorKind::IndexOutOfBounds(ref sv, si),
-             &ErrorKind::IndexOutOfBounds(ref ov, oi)) => sv == ov && si == oi,
-            (&ErrorKind::IOError(_), &ErrorKind::IOError(_)) => true,
-            (&ErrorKind::UnexpectedType(ref ss, ref sv),
-             &ErrorKind::UnexpectedType(ref os, ref ov)) => ss == os && sv == ov,
-            (&ErrorKind::InvalidBinaryExpression(ref sv1, ref sv2, ref so),
-             &ErrorKind::InvalidBinaryExpression(ref ov1, ref ov2, ref oo)) => {
+            (&IndexOutOfBounds(ref sv, si), &IndexOutOfBounds(ref ov, oi)) => sv == ov && si == oi,
+            (&IOError(_), &IOError(_)) => true,
+            (&UnexpectedType(ref ss, ref sv), &UnexpectedType(ref os, ref ov)) => {
+                ss == os && sv == ov
+            }
+            (&InvalidBinaryExpression(ref sv1, ref sv2, ref so),
+             &InvalidBinaryExpression(ref ov1, ref ov2, ref oo)) => {
                 sv1 == ov1 && sv2 == ov2 && so == oo
             }
             _ => false,
@@ -78,42 +82,48 @@ impl Error {
 
     pub fn panic_message(&self) -> String {
         let _perf = perf("Error::panic_message");
+
+        use self::ErrorKind::*;
+
         match self.kind {
-            ErrorKind::UnknownVariable(ref name) => {
-                format!("There's no {} in this universe, Morty!", name)
+            UnknownVariable(ref name) => format!("There's no {} in this universe, Morty!", name),
+            NoReturn(ref fn_name) => {
+                format!("Morty, your function has to return a value! {} just runs and dies like \
+                         an animal!",
+                        fn_name)
             }
-            ErrorKind::IndexUnindexable(ref value) => {
+            IndexUnindexable(ref value) => {
                 format!("I'll try and say this slowly Morty. You can't index that. It's a {}",
                         value.type_str())
             }
-            ErrorKind::SyntaxError(ref err) => {
+            SyntaxError(ref err) => {
                 format!("If you're going to start trying to construct sub-programs in your \
                         programs Morty, you'd better make sure you're careful! {:?}",
                         err)
             }
-            ErrorKind::IndexOutOfBounds(ref list, ref index) => {
+            IndexOutOfBounds(ref list, ref index) => {
                 format!("This isn't your mom's wine bottle Morty, you can't just keep asking for \
                          more, there's not that much here! You want {}, but your cob only has {} \
                          kernels on it!",
                         index,
                         list.len().unwrap())
             }
-            ErrorKind::IOError(ref err) => {
+            IOError(ref err) => {
                 format!("Looks like we're having a comm-burp-unications problem Morty: {:?}",
                         err)
             }
-            ErrorKind::UnexpectedType(ref expected, ref value) => {
+            UnexpectedType(ref expected, ref value) => {
                 format!("I asked for a {}, not a {} Morty.",
                         expected,
                         value.type_str())
             }
-            ErrorKind::InvalidBinaryExpression(ref lhs, ref rhs, ref op) => {
+            InvalidBinaryExpression(ref lhs, ref rhs, ref op) => {
                 format!("It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
                         op,
                         lhs.type_str(),
                         rhs.type_str())
             }
-            ErrorKind::InvalidArguments(ref name, expected, actual) => {
+            InvalidArguments(ref name, expected, actual) => {
                 format!("I'm confused Morty, a minute ago you said that {} takes {} paramaters, \
                          but you just tried to give it {}. WHICH IS IT MORTY?",
                         name,

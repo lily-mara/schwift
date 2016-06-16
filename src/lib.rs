@@ -75,9 +75,9 @@ pub fn run_program(filename: &str) {
         }
     }
 
-    let tokens = compile(filename);
+    let tokens = compile(filename).unwrap();
 
-    match s.run(&tokens.unwrap()) {
+    match s.run(&tokens) {
         Ok(()) => {}
         Err(e) => e.panic(filename),
     }

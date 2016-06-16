@@ -109,7 +109,7 @@ impl State {
 
                 let ret = match self.last_return {
                     Some(ref val) => val.clone(),
-                    None => return Err(ErrorKind::UnknownVariable("df".to_string())),
+                    None => return Err(ErrorKind::NoReturn(name.to_string())),
                 };
 
                 self.last_return = None;
