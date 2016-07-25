@@ -47,7 +47,44 @@ pub enum Operator {
     Or,
 }
 
-pub fn compile(filename: &str) -> Result<Vec<Statement>, grammar::ParseError> {
+fn get_line<'a>(file: &'a str, err: &grammar::ParseError) -> &'a str {
+    let mut count = 0usize;
+    let mut last_newline = 0usize;
+
+    for i in 0..file.len() {
+        if file.is_char_boundary(i) {
+            let symbol = unsafe { file.slice_unchecked(i, i + 1) };
+
+            if symbol == "\n" {
+                count += 1;
+
+                if count == err.line {
+                    unsafe {
+                        return file.slice_unchecked(last_newline, i);
+                    }
+                }
+
+                last_newline = i + 1;
+            }
+        }
+    }
+
+    panic!("Got grammar error with invalid line number {}", err.line);
+}
+
+fn place_carat(err: &grammar::ParseError) -> String {
+    let mut s = String::new();
+
+    for _ in 0..err.column - 1 {
+        s.push(' ');
+    }
+
+    s.push('^');
+
+    s
+}
+
+pub fn compile(filename: &str) -> Vec<Statement> {
     let _perf = perf("compile");
     let mut f = match File::open(filename) {
         Result::Ok(i) => i,
@@ -58,7 +95,19 @@ pub fn compile(filename: &str) -> Result<Vec<Statement>, grammar::ParseError> {
         Result::Ok(_) => {}
         Result::Err(_) => panic!("Failed to read file {}", filename),
     };
-    grammar::file(&s)
+
+    match grammar::file(&s) {
+        Ok(statements) => statements,
+        Err(ref e) => {
+            println!("SYNTAX ERROR: {}:{}\n{}\n{}",
+                     filename,
+                     e.line,
+                     get_line(&s, e),
+                     place_carat(e));
+            std::process::exit(1);
+
+        }
+    }
 }
 
 pub fn run_program(filename: &str) {
@@ -67,15 +116,15 @@ pub fn run_program(filename: &str) {
 
     {
         let _perf = perf("start_builtins");
-        let tokens = grammar::file(BUILTINS);
+        let tokens = grammar::file(BUILTINS).unwrap();
 
-        match s.run(&tokens.unwrap()) {
+        match s.run(&tokens) {
             Ok(()) => {}
             Err(e) => e.panic(BUILTINS_FILE),
         }
     }
 
-    let tokens = compile(filename).unwrap();
+    let tokens = compile(filename);
 
     match s.run(&tokens) {
         Ok(()) => {}
