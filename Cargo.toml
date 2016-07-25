@@ -5,10 +5,10 @@ version = "0.1.0"
 
 [dependencies]
 clap = "2.5.2"
-clippy = "0.0.76"
+clippy = "0.0.79"
 flame = "0.1.6"
 git_hooks = "0.1.3"
-peg = "0.3.11"
+peg = "0.3.14"
 rand = "0.3"
 rustc-serialize = "0.3.19"
-stainless = "0.1.5"
+stainless = "0.1.6"

@@ -7,7 +7,7 @@ use super::utils::perf;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Variable(String),
-    OperatorExpression(Box<Expression>, Operator, Box<Expression>),
+    OpExp(Box<Expression>, Operator, Box<Expression>),
     Value(Value),
     ListIndex(String, Box<Expression>),
     ListLength(String),
@@ -52,7 +52,7 @@ impl Expression {
               R: Into<Expression>
     {
         let _perf = perf("Expression::operator");
-        Expression::OperatorExpression(Box::new(left.into()), op, Box::new(right.into()))
+        Expression::OpExp(Box::new(left.into()), op, Box::new(right.into()))
     }
 
     pub fn not<E>(expr: E) -> Expression
@@ -88,7 +88,7 @@ impl Expression {
         let _perf = perf("Expression::evaluate");
         match *self {
             Expression::Variable(ref name) => state.get(name),
-            Expression::OperatorExpression(ref left_exp, ref operator, ref right_exp) => {
+            Expression::OpExp(ref left_exp, ref operator, ref right_exp) => {
                 let left = try!(left_exp.evaluate(state));
                 let right = try!(right_exp.evaluate(state));
                 match *operator {

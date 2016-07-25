@@ -12,14 +12,14 @@ fn statement(kind: Kind) -> Statement {
 }
 
 #[test]
-fn test_raw_int() {
-    let l = grammar::int("3").unwrap();
-    assert_eq!(l, 3)
+fn test_int() {
+    let l = grammar::value("3").unwrap();
+    assert_eq!(l, Value::new(3))
 }
 
 #[test]
-fn test_raw_string() {
-    let l = grammar::string("\"hello!\"").unwrap();
+fn test_string() {
+    let l = grammar::value("\"hello!\"").unwrap();
     assert_eq!(l, Value::new("hello!"))
 }
 
@@ -31,7 +31,7 @@ fn test_expression_string() {
 
 #[test]
 fn test_list_instantiation() {
-    let l = grammar::list_instantiation("foobar on a cob").unwrap();
+    let l = grammar::statement_kind("foobar on a cob").unwrap();
     assert_eq!(l, Kind::new_list("foobar"));
 }
 
@@ -74,7 +74,7 @@ fn test_not() {
 
 #[test]
 fn test_nested_while() {
-    let l = grammar::while_loop(r#"while x :<
+    let l = grammar::statement_kind(r#"while x :<
  while y :<
  show me what you got 30
  >:
@@ -92,7 +92,7 @@ fn test_nested_while() {
 
 #[test]
 fn test_while() {
-    let l = grammar::while_loop(r#"while x :<
+    let l = grammar::statement_kind(r#"while x :<
  show me what you got 30
  >:"#)
         .unwrap();
@@ -159,7 +159,7 @@ fn test_list_deletion() {
 
 #[test]
 fn test_while_compound_condition() {
-    let l = grammar::while_loop(r#"while (x or y) :<
+    let l = grammar::statement_kind(r#"while (x or y) :<
  show me what you got 30
  >:"#)
         .unwrap();
@@ -278,7 +278,7 @@ fn test_args() {
 
 #[test]
 fn test_function_def() {
-    let l = grammar::function(r#"foo (x, y) :<
+    let l = grammar::statement_kind(r#"foo (x, y) :<
         show me what you got (x + y)
     >:"#)
         .unwrap();
@@ -297,7 +297,7 @@ fn test_function_def() {
 
 #[test]
 fn test_function_no_space_in_name_and_params() {
-    let l = grammar::function(r#"foo(x, y) :<
+    let l = grammar::statement_kind(r#"foo(x, y) :<
         show me what you got (x + y)
     >:"#)
         .unwrap();

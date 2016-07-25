@@ -4,187 +4,61 @@ use super::statement::StatementKind;
 use super::expression::Expression;
 use super::value::Value;
 
-#[pub]
-string -> Value
-    = "\"" s:string_inquotes "\"" { Value::Str(s) }
-
-#[pub]
 string_inquotes -> String
     = [^"]* { match_str.to_string() }
 
-#[pub]
 int -> i32
     = "-"? [0-9]+ { match_str.parse::<i32>().unwrap() }
 
-#[pub]
 float -> f32
     = [0-9]+ "." [0-9]+ { match_str.parse::<f32>().unwrap() }
 
 #[pub]
-v_int -> Value
-    = i:int { Value::Int(i) }
-
-#[pub]
-v_float -> Value
-    = f:float { Value::Float(f) }
-
-#[pub]
-truth -> Value
-    = "rick" { Value::Bool(true) }
-
-#[pub]
-falsehood -> Value
-    = "morty" { Value::Bool(false) }
-
-#[pub]
-boolean -> Value
-    = truth / falsehood
-
-#[pub]
-list_instantiation -> StatementKind
-    = i:identifier whitespace "on a cob" { StatementKind::ListNew(i) }
-
-#[pub]
-list_append -> StatementKind
-    = i:identifier whitespace "assimilate" whitespace e:expression { StatementKind::ListAppend(i, e) }
-
-#[pub]
-list_statements -> StatementKind
-    = list_instantiation / list_append / list_assign / list_deletion
-
-#[pub]
-list_index -> Expression
-    = i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { Expression::ListIndex(i, Box::new(e)) }
-
-#[pub]
 value -> Value
-    = v_float / v_int / string / boolean
+    = f:float { Value::Float(f) }
+    / i:int { Value::Int(i) }
+    / "\"" s:string_inquotes "\"" { Value::Str(s) }
+    / "rick" { Value::Bool(true) }
+    / "morty" { Value::Bool(false) }
 
-#[pub]
 identifier -> String
-    = [a-zA-Z] [a-zA-Z0-9_]* { match_str.to_string() }
-
-#[pub]
-plus -> Operator
-    = "+" { Operator::Add }
-
-#[pub]
-minus -> Operator
-    = "-" { Operator::Subtract }
-
-#[pub]
-times -> Operator
-    = "*" { Operator::Multiply }
-
-#[pub]
-divide -> Operator
-    = "/" { Operator::Divide }
-
-#[pub]
-equality -> Operator
-    = "==" { Operator::Equality }
-
-#[pub]
-gt -> Operator
-    = "more" { Operator::GreaterThan }
-
-#[pub]
-lt -> Operator
-    = "less" { Operator::LessThan }
-
-#[pub]
-gte -> Operator
-    = "moresquanch" { Operator::GreaterThanEqual }
-
-#[pub]
-lte -> Operator
-    = "lesssquanch" { Operator::LessThanEqual }
-
-#[pub]
-shl -> Operator
-    = "<schwift" { Operator::ShiftLeft }
-
-#[pub]
-shr -> Operator
-    = "schwift>" { Operator::ShiftRight }
-
-or -> Operator
-    = "or" { Operator::Or }
-
-and -> Operator
-    = "and" { Operator::And }
+    = [a-zA-Z_] [a-zA-Z0-9_]* { match_str.to_string() }
 
 #[pub]
 operator -> Operator
-    = plus / minus / times / divide / equality / gte / lte / gt / lt / shr / shl / or / and
+    = "+" { Operator::Add }
+    / "-" { Operator::Subtract }
+    / "*" { Operator::Multiply }
+    / "/" { Operator::Divide }
+    / "==" { Operator::Equality }
+    / "moresquanch" { Operator::GreaterThanEqual }
+    / "lesssquanch" { Operator::LessThanEqual }
+    / "more" { Operator::GreaterThan }
+    / "less" { Operator::LessThan }
+    / "schwift>" { Operator::ShiftRight }
+    / "<schwift" { Operator::ShiftLeft }
+    / "or" { Operator::Or }
+    / "and" { Operator::And }
 
-#[pub]
-whitespace
+WS
     = [ \t]+
 
-#[pub]
-if_statement -> StatementKind
-    = if_else / bare_if
+ws
+    = [ \t]*
 
-#[pub]
-bare_if -> StatementKind
-    = "if" whitespace e:expression whitespace s:block { StatementKind::If(e, s, Option::None) }
-
-#[pub]
-if_else -> StatementKind
-    = "if" whitespace e:expression whitespace i_bod:block optional_whitespace "else" whitespace e_bod:block { StatementKind::If(e, i_bod, Option::Some(e_bod)) }
-
-#[pub]
-while_loop -> StatementKind
-    = "while" whitespace e:expression whitespace b:block { StatementKind::While(e, b) }
-
-#[pub]
-catch -> StatementKind
-    = "normal plan" optional_whitespace try:block optional_whitespace "plan for failure" optional_whitespace catch:block { StatementKind::Catch(try, catch) }
+comma
+    = ws "," ws
 
 #[pub]
 block -> Vec<Statement>
-    = ":<" optional_whitespace newline* l:line* optional_whitespace ">:" { l }
+    = ":<" ws newline* l:line* ws ">:" { l }
 
-#[pub]
-statement_ws -> Statement
-    = optional_whitespace s:statement optional_whitespace { s }
-
-#[pub]
-statements_ws -> Vec<Statement>
-    = s:statement_ws ** newline { s }
-
-#[pub]
-assignment -> StatementKind
-    = i:identifier whitespace "squanch" whitespace e:expression { StatementKind::Assignment(i, e) }
-
-#[pub]
-return_s -> StatementKind
-    = "return" whitespace e:expression { StatementKind::Return(e) }
-
-#[pub]
-deletion -> StatementKind
-    = "squanch" whitespace i:identifier { StatementKind::Delete(i) }
-
-#[pub]
-list_deletion -> StatementKind
-    = "squanch" whitespace i:identifier optional_whitespace "[" optional_whitespace e:expression optional_whitespace "]" { StatementKind::ListDelete(i, e) }
-
-#[pub]
 line -> Statement
-    = optional_whitespace s:statement optional_whitespace newline* { s }
-
-#[pub]
-input -> StatementKind
-    = "portal gun" whitespace i:identifier { StatementKind::Input(i) }
+    = ws s:statement ws newline* { s }
 
 #[pub]
 file -> Vec<Statement>
     = l:line+ { l }
-
-#[pub]
-optional_whitespace
-    = [ \t]*
 
 #[pub]
 newline
@@ -195,75 +69,43 @@ params -> Vec<String>
     = "(" is:identifier ** comma ")" { is }
 
 #[pub]
-function -> StatementKind
-    = n:identifier optional_whitespace p:params optional_whitespace b:block { StatementKind::Function(n, p, b) }
-
-#[pub]
 statement_kind -> StatementKind
-    = function / list_statements / deletion / assignment / print_no_nl / printing / if_statement / while_loop / input / catch / function_call_s / return_s
+    = "squanch" WS i:identifier ws "[" ws e:expression ws "]" { StatementKind::ListDelete(i, e) }
+    / i:identifier WS "on a cob" { StatementKind::ListNew(i) }
+    / i:identifier WS "assimilate" WS e:expression { StatementKind::ListAppend(i, e) }
+    / i:identifier ws "[" ws v:expression ws "]" WS "squanch" WS e:expression { StatementKind::ListAssign(i, v, e) }
+    / n:identifier ws p:params ws b:block { StatementKind::Function(n, p, b) }
+    / "squanch" WS i:identifier { StatementKind::Delete(i) }
+    / i:identifier WS "squanch" WS e:expression { StatementKind::Assignment(i, e) }
+    / "show me what you got!" WS e:expression { StatementKind::PrintNoNl(e) }
+    / "show me what you got" WS e:expression { StatementKind::Print(e) }
+    / "if" WS e:expression WS s:block { StatementKind::If(e, s, Option::None) }
+    / "if" WS e:expression WS i_bod:block ws "else" WS e_bod:block { StatementKind::If(e, i_bod, Option::Some(e_bod)) }
+    / "while" WS e:expression WS b:block { StatementKind::While(e, b) }
+    / "portal gun" WS i:identifier { StatementKind::Input(i) }
+    / "normal plan" ws try:block ws "plan for failure" ws catch:block { StatementKind::Catch(try, catch) }
+    / i:identifier a:args { StatementKind::FunctionCall(i, a) }
+    / "return" WS e:expression { StatementKind::Return(e) }
 
 #[pub]
 statement -> Statement
     = s:statement_kind { Statement::new(s, start_pos, pos) }
 
 #[pub]
-list_assign -> StatementKind
-    = i:identifier optional_whitespace "[" optional_whitespace v:expression optional_whitespace"]" whitespace "squanch" whitespace e:expression { StatementKind::ListAssign(i, v, e) }
-
-#[pub]
-printing -> StatementKind
-    = "show me what you got" whitespace e:expression { StatementKind::Print(e) }
-
-#[pub]
-print_no_nl -> StatementKind
-    = "show me what you got!" whitespace e:expression { StatementKind::PrintNoNl(e) }
-
-#[pub]
 expression -> Expression
-    = function_call_e / eval_expression / operator_expression / parenthesis_expression / expression1
-
-#[pub]
-list_length -> Expression
-    = i:identifier whitespace "squanch" { Expression::ListLength(i) }
-
-#[pub]
-not -> Expression
-    = "!" optional_whitespace e:expression { Expression::Not(Box::new(e)) }
+    = i:identifier a:args { Expression::FunctionCall(i, a) }
+    / "{" ws e:expression ws "}" { Expression::Eval(Box::new(e)) }
+    / "(" ws e1:expression ws o:operator ws e2:expression ws ")" { Expression::OpExp(Box::new(e1), o, Box::new(e2)) }
+    / "(" ws e:expression1 ws ")" { e }
+    / expression1
 
 #[pub]
 args -> Vec<Expression>
     = "(" exprs:expression ** comma ")" { exprs }
 
-comma
-    = "," optional_whitespace
-
-#[pub]
-function_call_e -> Expression
-    = i:identifier a:args { Expression::FunctionCall(i, a) }
-
-#[pub]
-function_call_s -> StatementKind
-    = i:identifier a:args { StatementKind::FunctionCall(i, a) }
-
-#[pub]
 expression1 -> Expression
-    = list_index / value_expression / list_length / variable_expression / not
-
-#[pub]
-eval_expression -> Expression
-    = "{" optional_whitespace e:expression optional_whitespace "}" { Expression::Eval(Box::new(e)) }
-
-#[pub]
-operator_expression -> Expression
-    = "(" optional_whitespace e1:expression optional_whitespace o:operator optional_whitespace e2:expression optional_whitespace ")" { Expression::OperatorExpression(Box::new(e1), o, Box::new(e2)) }
-
-parenthesis_expression -> Expression
-    = "(" optional_whitespace e:expression1 optional_whitespace ")" { e }
-
-#[pub]
-value_expression -> Expression
-    = v:value { Expression::Value(v) }
-
-#[pub]
-variable_expression -> Expression
-    = i:identifier { Expression::Variable(i) }
+    = i:identifier ws "[" ws e:expression ws "]" { Expression::ListIndex(i, Box::new(e)) }
+    / v:value { Expression::Value(v) }
+    / i:identifier WS "squanch" { Expression::ListLength(i) }
+    / i:identifier { Expression::Variable(i) }
+    / "!" ws e:expression { Expression::Not(Box::new(e)) }
