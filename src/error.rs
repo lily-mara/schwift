@@ -50,9 +50,9 @@ impl PartialEq for ErrorKind {
         use self::ErrorKind::*;
 
         match (self, other) {
-            (&UnknownVariable(ref s), &UnknownVariable(ref o)) => s == o,
             (&IndexUnindexable(ref s), &IndexUnindexable(ref o)) => s == o,
             (&SyntaxError(ref s), &SyntaxError(ref o)) => s == o,
+            (&UnknownVariable(ref s), &UnknownVariable(ref o)) |
             (&NoReturn(ref s), &NoReturn(ref o)) => s == o,
             (&InvalidArguments(ref sn, ss1, ss2), &InvalidArguments(ref on, os1, os2)) => {
                 sn == on && ss1 == os1 && ss2 == os2
