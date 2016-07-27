@@ -110,9 +110,11 @@ pub fn compile(filename: &str) -> Vec<Statement> {
     }
 }
 
-pub fn run_program(filename: &str) {
+pub fn run_program(filename: &str, args: &[&str]) {
     let _perf = perf("run_program");
     let mut s = State::new();
+
+    s.parse_args(&args);
 
     {
         let _perf = perf("start_builtins");

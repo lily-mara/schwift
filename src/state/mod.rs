@@ -362,6 +362,20 @@ impl State {
         Ok(())
     }
 
+    pub fn parse_args(&mut self, args: &[&str]) {
+        let _perf = perf("State::parse_args");
+        let mut value_args = Vec::new();
+
+        for arg in args {
+            match super::grammar::value(arg) {
+                Ok(val) => value_args.push(val),
+                Err(_) => value_args.push(Value::Str((*arg).into())),
+            }
+        }
+
+        self.symbols.insert("argv".into(), value_args.into());
+    }
+
     pub fn new() -> Self {
         let _perf = perf("State::new");
         State::default()
