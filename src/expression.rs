@@ -87,7 +87,7 @@ impl Expression {
     pub fn evaluate(&self, state: &mut State) -> SwResult<Value> {
         let _perf = perf("Expression::evaluate");
         match *self {
-            Expression::Variable(ref name) => state.get(name),
+            Expression::Variable(ref name) => state.get(name).map(|x| x.clone()),
             Expression::OpExp(ref left_exp, ref operator, ref right_exp) => {
                 let left = try!(left_exp.evaluate(state));
                 let right = try!(right_exp.evaluate(state));
@@ -111,15 +111,11 @@ impl Expression {
             Expression::ListIndex(ref var_name, ref e) => state.list_index(var_name, e),
             Expression::Not(ref e) => try!(e.evaluate(state)).not(),
             Expression::ListLength(ref var_name) => {
-                match state.get(var_name) {
-                    Ok(value) => {
-                        match value {
-                            Value::List(ref list) => Ok(Value::Int(list.len() as i32)),
-                            Value::Str(ref s) => Ok(Value::Int(s.len() as i32)),
-                            _ => Err(ErrorKind::IndexUnindexable(value.clone())),
-                        }
-                    }
-                    error => error,
+                let value = try!(state.get(var_name));
+                match *value {
+                    Value::List(ref list) => Ok(Value::Int(list.len() as i32)),
+                    Value::Str(ref s) => Ok(Value::Int(s.len() as i32)),
+                    _ => Err(ErrorKind::IndexUnindexable(value.clone())),
                 }
             }
             Expression::Eval(ref exp) => {

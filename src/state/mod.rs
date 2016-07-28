@@ -90,7 +90,17 @@ impl State {
     pub fn call_function(&mut self, name: &str, args: &[Expression]) -> SwResult<Value> {
         let _perf = perf("State::call_function");
 
-        match try!(self.get(name)) {
+        let mut call_args = Vec::new();
+
+        for x in args {
+            call_args.push(try!(x.evaluate(self)));
+        }
+
+        if let Value::NativeFunction(ref funk) = *try!(self.get(name)) {
+            return funk.call(&call_args);
+        }
+
+        match try!(self.get(name)).clone() {
             Value::Function(ref params, ref body) => {
                 if args.len() != params.len() {
                     return Err(ErrorKind::InvalidArguments(name.to_string(),
@@ -98,8 +108,8 @@ impl State {
                                                            params.len()));
                 }
 
-                for (name, arg) in params.iter().zip(args) {
-                    try!(self.assign(name.to_string(), arg));
+                for (name, arg) in params.iter().zip(call_args) {
+                    self.symbols.insert(name.to_string(), arg);
                 }
 
                 match self.run(body) {
@@ -119,10 +129,10 @@ impl State {
         }
     }
 
-    pub fn get(&self, name: &str) -> SwResult<Value> {
+    pub fn get(&self, name: &str) -> SwResult<&Value> {
         let _perf = perf("State::get");
         match self.symbols.get(name) {
-            Some(val) => Ok(val.clone()),
+            Some(val) => Ok(val),
             None => Err(ErrorKind::UnknownVariable(name.to_string())),
         }
     }
@@ -374,6 +384,13 @@ impl State {
         }
 
         self.symbols.insert("argv".into(), value_args.into());
+    }
+
+    pub fn insert<S, V>(&mut self, name: S, value: V)
+        where S: Into<String>,
+              V: Into<Value>
+    {
+        self.symbols.insert(name.into(), value.into());
     }
 
     pub fn new() -> Self {

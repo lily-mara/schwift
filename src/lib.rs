@@ -22,6 +22,7 @@ pub mod value;
 pub mod error;
 pub mod state;
 mod utils;
+mod native;
 
 use statement::*;
 use state::*;
@@ -114,7 +115,8 @@ pub fn run_program(filename: &str, args: &[&str]) {
     let _perf = perf("run_program");
     let mut s = State::new();
 
-    s.parse_args(&args);
+    s.parse_args(args);
+    s.insert("multiply", value::Func::new(native::multiply));
 
     {
         let _perf = perf("start_builtins");

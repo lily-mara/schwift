@@ -29,7 +29,7 @@ describe! state {
     describe! get {
         it "should return value if it is present" {
             state.assign("x".to_string(), &Exp::new(10)).unwrap();
-            assert_eq!(state.get("x").unwrap(), Value::new(10));
+            assert_eq!(*state.get("x").unwrap(), Value::new(10));
         }
 
         it "should return undefined error if not present" {

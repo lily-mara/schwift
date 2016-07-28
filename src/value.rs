@@ -4,6 +4,13 @@ use super::error::{ErrorKind, SwResult};
 use super::statement::Statement;
 use super::utils::perf;
 use std;
+use std::{fmt, clone};
+
+pub type _Func = fn(&[Value]) -> SwResult<Value>;
+
+pub struct Func {
+    f: _Func,
+}
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -13,6 +20,51 @@ pub enum Value {
     Bool(bool),
     List(Vec<Value>),
     Function(Vec<String>, Vec<Statement>),
+    NativeFunction(Func),
+}
+
+impl fmt::Debug for Func {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[Native function]")
+    }
+}
+
+impl clone::Clone for Func {
+    fn clone(&self) -> Self {
+        panic!("You cannot clone a native function.")
+    }
+}
+
+impl Func {
+    pub fn new(f: _Func) -> Self {
+        Func { f: f }
+    }
+
+    pub fn call(&self, args: &[Value]) -> SwResult<Value> {
+        let f = self.f;
+        f(args)
+    }
+}
+
+impl From<_Func> for Value {
+    fn from(from: _Func) -> Value {
+        let _perf = perf("Value::From native func");
+        Value::NativeFunction(Func { f: from })
+    }
+}
+
+impl From<_Func> for Func {
+    fn from(from: _Func) -> Func {
+        let _perf = perf("Value::From native func");
+        Func { f: from }
+    }
+}
+
+impl From<Func> for Value {
+    fn from(from: Func) -> Value {
+        let _perf = perf("Value::From native func");
+        Value::NativeFunction(from)
+    }
 }
 
 impl From<i32> for Value {
@@ -101,6 +153,7 @@ impl Value {
             Value::Str(ref i) => print!("{}", i),
             Value::List(ref i) => print!("{:?}", i),
             Value::Function(_, ref body) => print!("{:?}", body),
+            Value::NativeFunction(_) => print!("[Native function]"),
         }
     }
 
@@ -273,6 +326,7 @@ impl Value {
             Value::List(_) => "list",
             Value::Float(_) => "float",
             Value::Function(_, _) => "function",
+            Value::NativeFunction(_) => "native function",
         }
     }
 }
