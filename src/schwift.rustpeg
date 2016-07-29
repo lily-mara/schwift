@@ -13,11 +13,14 @@ int -> i32
 float -> f32
     = [0-9]+ "." [0-9]+ { match_str.parse::<f32>().unwrap() }
 
+string -> String
+    = "\"" s:string_inquotes "\"" { s }
+
 #[pub]
 value -> Value
     = f:float { Value::Float(f) }
     / i:int { Value::Int(i) }
-    / "\"" s:string_inquotes "\"" { Value::Str(s) }
+    / s:string { Value::Str(s) }
     / "rick" { Value::Bool(true) }
     / "morty" { Value::Bool(false) }
 
@@ -86,6 +89,7 @@ statement_kind -> StatementKind
     / "normal plan" ws try:block ws "plan for failure" ws catch:block { StatementKind::Catch(try, catch) }
     / i:identifier a:args { StatementKind::FunctionCall(i, a) }
     / "return" WS e:expression { StatementKind::Return(e) }
+    / "microverse" WS lib:string WS funcs:block { StatementKind::DylibLoad(lib, funcs) }
 
 #[pub]
 statement -> Statement

@@ -6,10 +6,17 @@ use super::utils::perf;
 use std;
 use std::{fmt, clone};
 
+#[cfg(unix)]
+use super::lib::os::unix::Symbol;
+
+#[cfg(windows)]
+use super::lib::os::windows::Symbol;
+
 pub type _Func = fn(&[Value]) -> SwResult<Value>;
+pub type _FuncSymbol = Symbol<_Func>;
 
 pub struct Func {
-    f: _Func,
+    f: _FuncSymbol,
 }
 
 #[derive(Debug, Clone)]
@@ -36,25 +43,25 @@ impl clone::Clone for Func {
 }
 
 impl Func {
-    pub fn new(f: _Func) -> Self {
+    pub fn new(f: _FuncSymbol) -> Self {
         Func { f: f }
     }
 
     pub fn call(&self, args: &[Value]) -> SwResult<Value> {
-        let f = self.f;
+        let f = &self.f;
         f(args)
     }
 }
 
-impl From<_Func> for Value {
-    fn from(from: _Func) -> Value {
+impl From<_FuncSymbol> for Value {
+    fn from(from: _FuncSymbol) -> Value {
         let _perf = perf("Value::From native func");
         Value::NativeFunction(Func { f: from })
     }
 }
 
-impl From<_Func> for Func {
-    fn from(from: _Func) -> Func {
+impl From<_FuncSymbol> for Func {
+    fn from(from: _FuncSymbol) -> Func {
         let _perf = perf("Value::From native func");
         Func { f: from }
     }

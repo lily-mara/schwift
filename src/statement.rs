@@ -30,6 +30,7 @@ pub enum StatementKind {
     Function(String, Vec<String>, Vec<Statement>),
     Return(Expression),
     FunctionCall(String, Vec<Expression>),
+    DylibLoad(String, Vec<Statement>),
 }
 
 impl StatementKind {
@@ -39,6 +40,14 @@ impl StatementKind {
     {
         let _perf = perf("StatementKind::assignment");
         StatementKind::Assignment(name.into(), expr.into())
+    }
+
+    pub fn dylib_load<S, E>(lib_path: S, functions: Vec<Statement>) -> StatementKind
+        where S: Into<String>
+    {
+
+        let _perf = perf("StatementKind::DylibLoad");
+        StatementKind::DylibLoad(lib_path.into(), functions)
     }
 
     pub fn return_it<E>(expr: E) -> StatementKind

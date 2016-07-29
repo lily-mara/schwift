@@ -6,6 +6,8 @@ use super::value::Value;
 use super::error::{SwResult, SwErResult, Error, ErrorKind};
 use super::statement::{Statement, StatementKind};
 use super::utils::perf;
+use super::lib;
+use super::value;
 
 #[cfg(test)]
 mod test;
@@ -13,6 +15,7 @@ mod test;
 pub struct State {
     symbols: HashMap<String, Value>,
     last_return: Option<Value>,
+    libraries: Vec<lib::Library>,
 }
 
 macro_rules! error {
@@ -357,6 +360,9 @@ impl State {
                     Err(e) => Err(Error::new(e, statement.clone())),
                 }
             }
+            StatementKind::DylibLoad(ref lib_path, ref functions) => {
+                try_nop_error!(self.dylib_load(lib_path, functions), statement)
+            }
         }
     }
 
@@ -368,6 +374,29 @@ impl State {
                 Ok(()) => {}
             }
         }
+
+        Ok(())
+    }
+
+    fn dylib_load(&mut self, lib_path: &str, functions: &[Statement]) -> SwResult<()> {
+        let dylib = try!(lib::Library::new(lib_path));
+        for statement in functions {
+            try!(match statement.kind {
+                StatementKind::FunctionCall(ref name, _) => {
+                    let func = unsafe {
+                        let wrapped_func: lib::Symbol<value::_Func> =
+                            try!(dylib.get(name.as_bytes()));
+                        wrapped_func.into_raw()
+                    };
+                    self.insert(name.as_str(), value::Func::new(func));
+
+                    Ok(())
+                }
+                _ => Err(ErrorKind::NonFunctionCallInDylib(statement.clone())),
+            });
+        }
+
+        self.libraries.push(dylib);
 
         Ok(())
     }
@@ -405,6 +434,7 @@ impl Default for State {
         State {
             symbols: HashMap::new(),
             last_return: None,
+            libraries: Vec::new(),
         }
     }
 }

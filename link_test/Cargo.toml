@@ -1,0 +1,11 @@
+[package]
+name = "link_test"
+version = "0.1.0"
+authors = ["Nate Mara <nathan.mara@kroger.com>"]
+
+[dependencies.schwift]
+path = ".."
+
+[lib]
+name = "foo"
+crate-type = ["dylib"]

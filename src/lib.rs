@@ -1,9 +1,11 @@
-#![feature(plugin)]
+#![feature(plugin, alloc_system)]
 #![plugin(peg_syntax_ext, clippy)]
 #![cfg_attr(test, plugin(stainless))]
 #![allow(let_unit_value)]
 
 extern crate rand;
+extern crate libloading as lib;
+extern crate alloc_system;
 
 #[cfg(feature="flame")]
 extern crate flame;
@@ -22,7 +24,6 @@ pub mod value;
 pub mod error;
 pub mod state;
 mod utils;
-mod native;
 
 use statement::*;
 use state::*;
@@ -116,7 +117,17 @@ pub fn run_program(filename: &str, args: &[&str]) {
     let mut s = State::new();
 
     s.parse_args(args);
-    s.insert("multiply", value::Func::new(native::multiply));
+
+    let dylib = lib::Library::new("./link_test/target/debug/libfoo.dylib")
+        .expect("Failed to load library");
+    unsafe {
+        let wrapped_func: lib::Symbol<value::_Func> = dylib.get(b"matrix")
+            .expect("Failed to load function");
+
+        let func: value::_FuncSymbol = wrapped_func.into_raw();
+
+        s.insert("matrix", value::Func::new(func));
+    }
 
     {
         let _perf = perf("start_builtins");

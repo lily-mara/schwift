@@ -41,6 +41,13 @@ pub enum ErrorKind {
     InvalidBinaryExpression(Value, Value, Operator),
     InvalidArguments(String, usize, usize),
     NoReturn(String),
+    NonFunctionCallInDylib(Statement),
+}
+
+impl From<io::Error> for ErrorKind {
+    fn from(err: io::Error) -> Self {
+        ErrorKind::IOError(err)
+    }
 }
 
 impl PartialEq for ErrorKind {
@@ -58,6 +65,7 @@ impl PartialEq for ErrorKind {
                 sn == on && ss1 == os1 && ss2 == os2
             }
             (&IndexOutOfBounds(ref sv, si), &IndexOutOfBounds(ref ov, oi)) => sv == ov && si == oi,
+            (&NonFunctionCallInDylib(ref s), &NonFunctionCallInDylib(ref o)) => s == o,
             (&IOError(_), &IOError(_)) => true,
             (&UnexpectedType(ref ss, ref sv), &UnexpectedType(ref os, ref ov)) => {
                 ss == os && sv == ov
@@ -129,6 +137,10 @@ impl Error {
                         name,
                         expected,
                         actual)
+            }
+            NonFunctionCallInDylib(_) => {
+                format!("Is this a miniverse, or a microverse, or a teeny-verse? All I know is \
+                         you fucked up.")
             }
         }
     }
