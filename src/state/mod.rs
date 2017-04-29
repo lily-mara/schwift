@@ -5,7 +5,6 @@ use super::expression::Expression;
 use super::value::Value;
 use super::error::{SwResult, SwErResult, Error, ErrorKind};
 use super::statement::{Statement, StatementKind};
-use super::utils::perf;
 use super::lib;
 use super::value;
 
@@ -50,7 +49,6 @@ macro_rules! try_nop_error {
 
 impl State {
     pub fn list_index(&mut self, list_name: &str, exp: &Expression) -> SwResult<Value> {
-        let _perf = perf("State::list_index");
         let inner_expression_value = try!(exp.evaluate(self));
         match self.symbols.get(list_name) {
             Some(symbol) => {
@@ -91,7 +89,6 @@ impl State {
     }
 
     pub fn call_function(&mut self, name: &str, args: &[Expression]) -> SwResult<Value> {
-        let _perf = perf("State::call_function");
 
         let mut call_args = Vec::new();
 
@@ -133,7 +130,6 @@ impl State {
     }
 
     pub fn get(&self, name: &str) -> SwResult<&Value> {
-        let _perf = perf("State::get");
         match self.symbols.get(name) {
             Some(val) => Ok(val),
             None => Err(ErrorKind::UnknownVariable(name.to_string())),
@@ -141,14 +137,12 @@ impl State {
     }
 
     pub fn assign(&mut self, str: String, exp: &Expression) -> SwResult<()> {
-        let _perf = perf("State::assign");
         let v = try!(exp.evaluate(self));
         self.symbols.insert(str, v);
         Ok(())
     }
 
     fn delete(&mut self, name: &str) -> SwResult<()> {
-        let _perf = perf("State::delete");
         match self.symbols.remove(name) {
             Some(_) => Ok(()),
             None => Err(ErrorKind::UnknownVariable(name.to_string())),
@@ -156,21 +150,18 @@ impl State {
     }
 
     fn print(&mut self, exp: &Expression) -> SwResult<()> {
-        let _perf = perf("State::print");
         let x = try!(exp.evaluate(self));
         x.println();
         Ok(())
     }
 
     fn print_no_nl(&mut self, exp: &Expression) -> SwResult<()> {
-        let _perf = perf("State::print_no_nl");
         let x = try!(exp.evaluate(self));
         x.print();
         Ok(())
     }
 
     fn input(&mut self, name: String) -> SwResult<()> {
-        let _perf = perf("State::input");
         let mut input = String::new();
 
         match io::stdin().read_line(&mut input) {
@@ -185,7 +176,6 @@ impl State {
     }
 
     fn list_append(&mut self, list_name: &str, append_exp: &Expression) -> SwResult<()> {
-        let _perf = perf("State::list_append");
         let to_append = try!(append_exp.evaluate(self));
         let list = try!(self.get_list(list_name));
 
@@ -194,7 +184,6 @@ impl State {
     }
 
     fn get_value(&mut self, name: &str) -> SwResult<&mut Value> {
-        let _perf = perf("State::get_value");
         match self.symbols.get_mut(name) {
             Some(value) => Ok(value),
             None => Err(ErrorKind::UnknownVariable(name.to_string())),
@@ -202,7 +191,6 @@ impl State {
     }
 
     fn get_list(&mut self, name: &str) -> SwResult<&mut Vec<Value>> {
-        let _perf = perf("State::get_list");
         let value = try!(self.get_value(name));
         match *value {
             Value::List(ref mut l) => Ok(l),
@@ -211,7 +199,6 @@ impl State {
     }
 
     fn get_list_element(&mut self, name: &str, index_exp: &Expression) -> SwResult<&mut Value> {
-        let _perf = perf("State::get_list_element");
         let index = try!(index_exp.try_int(self)) as usize;
         let value = try!(self.get_value(name));
         let value_for_errors = value.clone();
@@ -233,7 +220,6 @@ impl State {
                    index_exp: &Expression,
                    assign_exp: &Expression)
                    -> SwResult<()> {
-        let _perf = perf("State::list_assign");
         let to_assign = try!(assign_exp.evaluate(self));
         let element = try!(self.get_list_element(list_name, index_exp));
 
@@ -242,7 +228,6 @@ impl State {
     }
 
     fn list_delete(&mut self, list_name: &str, index_exp: &Expression) -> SwResult<()> {
-        let _perf = perf("State::list_delete");
         let index_value = try!(index_exp.evaluate(self));
         let list = try!(self.get_list(list_name));
 
@@ -265,7 +250,6 @@ impl State {
                if_body: &[Statement],
                else_body: &Option<Vec<Statement>>)
                -> SwErResult<()> {
-        let _perf = perf("State::exec_if");
         let x = match bool.evaluate(self) {
             Ok(b) => b,
             Err(e) => return error!(e, statement.clone()),
@@ -295,7 +279,6 @@ impl State {
                   bool: &Expression,
                   body: &[Statement])
                   -> SwErResult<()> {
-        let _perf = perf("State::exec_while");
         let mut condition = try_error!(bool.try_bool(self), statement);
 
         while condition {
@@ -307,7 +290,6 @@ impl State {
     }
 
     fn catch(&mut self, try: &[Statement], catch: &[Statement]) -> SwErResult<()> {
-        let _perf = perf("State::catch");
         match self.run(try) {
             Ok(()) => Ok(()),
             Err(_) => self.run(catch),
@@ -316,7 +298,6 @@ impl State {
 
     #[allow(needless_return)]
     pub fn execute(&mut self, statement: &Statement) -> SwErResult<()> {
-        let _perf = perf("State::execute");
         match statement.kind {
             StatementKind::Input(ref s) => try_nop_error!(self.input(s.to_string()), statement),
             StatementKind::ListAssign(ref s, ref index_exp, ref assign_exp) => {
@@ -367,7 +348,6 @@ impl State {
     }
 
     pub fn run(&mut self, statements: &[Statement]) -> SwErResult<()> {
-        let _perf = perf("State::run");
         for statement in statements {
             match self.execute(statement) {
                 Err(e) => return Err(e),
@@ -402,14 +382,13 @@ impl State {
     }
 
     pub fn parse_args(&mut self, args: &[&str]) {
-        let _perf = perf("State::parse_args");
         let mut value_args = Vec::new();
 
         for arg in args {
-            match super::grammar::value(arg) {
-                Ok(val) => value_args.push(val),
-                Err(_) => value_args.push(Value::Str((*arg).into())),
-            }
+            value_args.push(super::grammar::value(arg)
+                .unwrap_or_else(
+                    |x| { Value::Str((*arg).into()) }
+                ));
         }
 
         self.symbols.insert("argv".into(), value_args.into());
@@ -423,14 +402,12 @@ impl State {
     }
 
     pub fn new() -> Self {
-        let _perf = perf("State::new");
         State::default()
     }
 }
 
 impl Default for State {
     fn default() -> Self {
-        let _perf = perf("State::default");
         State {
             symbols: HashMap::new(),
             last_return: None,

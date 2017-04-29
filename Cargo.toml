@@ -6,7 +6,6 @@ version = "0.1.0"
 [dependencies]
 clap = "2.5.2"
 clippy = "0.0.79"
-flame = "0.1.6"
 peg = "0.3.14"
 rand = "0.3"
 rustc-serialize = "0.3.19"

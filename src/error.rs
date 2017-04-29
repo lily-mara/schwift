@@ -5,7 +5,6 @@ use super::statement::Statement;
 use super::Operator;
 use std::process;
 use rand::{thread_rng, Rng};
-use super::utils::{perf, export};
 
 pub type SwResult<T> = Result<T, ErrorKind>;
 pub type SwErResult<T> = Result<T, Error>;
@@ -52,7 +51,6 @@ impl From<io::Error> for ErrorKind {
 
 impl PartialEq for ErrorKind {
     fn eq(&self, other: &ErrorKind) -> bool {
-        let _perf = perf("ErrorKind::eq");
 
         use self::ErrorKind::*;
 
@@ -81,7 +79,6 @@ impl PartialEq for ErrorKind {
 
 impl Error {
     pub fn new(kind: ErrorKind, place: Statement) -> Self {
-        let _perf = perf("Error::new");
         Error {
             kind: kind,
             place: place,
@@ -89,7 +86,6 @@ impl Error {
     }
 
     pub fn panic_message(&self) -> String {
-        let _perf = perf("Error::panic_message");
 
         use self::ErrorKind::*;
 
@@ -146,7 +142,6 @@ impl Error {
     }
 
     pub fn full_panic_message(&self, filename: &str) -> String {
-        let _perf = perf("Error::full_panic_message");
         let type_msg = self.panic_message();
         let quote = random_quote();
 
@@ -169,15 +164,12 @@ impl Error {
     }
 
     pub fn panic(&self, source: &str) {
-        let _perf = perf("Error::panic");
         println!("{}", self.full_panic_message(source));
-        export();
         process::exit(1);
     }
 }
 
 fn random_quote() -> &'static str {
-    let _perf = perf("random_quote");
     let mut rng = thread_rng();
     rng.choose(&QUOTES).unwrap()
 }

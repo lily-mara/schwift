@@ -2,7 +2,6 @@ use super::{Operator, grammar};
 use super::value::Value;
 use super::error::{ErrorKind, SwResult};
 use super::state::State;
-use super::utils::perf;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
@@ -20,7 +19,6 @@ impl<T> From<T> for Expression
     where T: Into<Value>
 {
     fn from(fr: T) -> Expression {
-        let _perf = perf("Expression::from<T: Value>");
         Expression::Value(fr.into())
     }
 }
@@ -29,21 +27,18 @@ impl Expression {
     pub fn new<T>(from: T) -> Expression
         where T: Into<Expression>
     {
-        let _perf = perf("Expression::new");
         from.into()
     }
 
     pub fn variable<S>(name: S) -> Expression
         where S: Into<String>
     {
-        let _perf = perf("Expression::variable");
         Expression::Variable(name.into())
     }
 
     pub fn list_length<S>(name: S) -> Expression
         where S: Into<String>
     {
-        let _perf = perf("Expression::list_length");
         Expression::ListLength(name.into())
     }
 
@@ -51,21 +46,18 @@ impl Expression {
         where L: Into<Expression>,
               R: Into<Expression>
     {
-        let _perf = perf("Expression::operator");
         Expression::OpExp(Box::new(left.into()), op, Box::new(right.into()))
     }
 
     pub fn not<E>(expr: E) -> Expression
         where E: Into<Expression>
     {
-        let _perf = perf("Expression::not");
         Expression::Not(Box::new(expr.into()))
     }
 
     pub fn eval<E>(expr: E) -> Expression
         where E: Into<Expression>
     {
-        let _perf = perf("Expression::eval");
         Expression::Eval(Box::new(expr.into()))
     }
 
@@ -73,19 +65,16 @@ impl Expression {
         where S: Into<String>,
               E: Into<Expression>
     {
-        let _perf = perf("Expression::list_index");
         Expression::ListIndex(name.into(), Box::new(index.into()))
     }
 
     pub fn value<V>(val: V) -> Expression
         where V: Into<Value>
     {
-        let _perf = perf("Expression::value");
         Expression::Value(val.into())
     }
 
     pub fn evaluate(&self, state: &mut State) -> SwResult<Value> {
-        let _perf = perf("Expression::evaluate");
         match *self {
             Expression::Variable(ref name) => state.get(name).map(|x| x.clone()),
             Expression::OpExp(ref left_exp, ref operator, ref right_exp) => {
@@ -134,7 +123,6 @@ impl Expression {
     }
 
     pub fn try_bool(&self, state: &mut State) -> SwResult<bool> {
-        let _perf = perf("Expression::try_bool");
         let value = try!(self.evaluate(state));
         if let Value::Bool(x) = value {
             Ok(x)
@@ -144,7 +132,6 @@ impl Expression {
     }
 
     pub fn try_int(&self, state: &mut State) -> SwResult<i32> {
-        let _perf = perf("Expression::try_int");
         let value = try!(self.evaluate(state));
         if let Value::Int(x) = value {
             Ok(x)

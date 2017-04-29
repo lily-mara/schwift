@@ -23,11 +23,9 @@ pub mod expression;
 pub mod value;
 pub mod error;
 pub mod state;
-mod utils;
 
 use statement::*;
 use state::*;
-use utils::perf;
 
 const BUILTINS_FILE: &'static str = "builtins.y";
 const BUILTINS: &'static str = include_str!("builtins.y");
@@ -87,7 +85,6 @@ fn place_carat(err: &grammar::ParseError) -> String {
 }
 
 pub fn compile(filename: &str) -> Vec<Statement> {
-    let _perf = perf("compile");
     let mut f = match File::open(filename) {
         Result::Ok(i) => i,
         Result::Err(_) => panic!("Failed to open file {}", filename),
@@ -113,30 +110,15 @@ pub fn compile(filename: &str) -> Vec<Statement> {
 }
 
 pub fn run_program(filename: &str, args: &[&str]) {
-    let _perf = perf("run_program");
     let mut s = State::new();
 
     s.parse_args(args);
 
-    let dylib = lib::Library::new("./link_test/target/debug/libfoo.dylib")
-        .expect("Failed to load library");
-    unsafe {
-        let wrapped_func: lib::Symbol<value::_Func> = dylib.get(b"matrix")
-            .expect("Failed to load function");
+    let tokens = grammar::file(BUILTINS).unwrap();
 
-        let func: value::_FuncSymbol = wrapped_func.into_raw();
-
-        s.insert("matrix", value::Func::new(func));
-    }
-
-    {
-        let _perf = perf("start_builtins");
-        let tokens = grammar::file(BUILTINS).unwrap();
-
-        match s.run(&tokens) {
-            Ok(()) => {}
-            Err(e) => e.panic(BUILTINS_FILE),
-        }
+    match s.run(&tokens) {
+        Ok(()) => {}
+        Err(e) => e.panic(BUILTINS_FILE),
     }
 
     let tokens = compile(filename);
@@ -145,6 +127,4 @@ pub fn run_program(filename: &str, args: &[&str]) {
         Ok(()) => {}
         Err(e) => e.panic(filename),
     }
-
-    utils::export();
 }
