@@ -127,4 +127,6 @@ pub fn run_program(filename: &str, args: &[&str]) {
         Ok(()) => {}
         Err(e) => e.panic(filename),
     }
+
+    std::mem::forget(s);
 }
