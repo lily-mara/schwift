@@ -201,17 +201,11 @@ impl State {
     fn get_list_element(&mut self, name: &str, index_exp: &Expression) -> SwResult<&mut Value> {
         let index = try!(index_exp.try_int(self)) as usize;
         let value = try!(self.get_value(name));
-        let value_for_errors = value.clone();
 
         match *value {
-            Value::List(ref mut list) => {
-                if index < list.len() {
-                    Ok(&mut list[index])
-                } else {
-                    Err(ErrorKind::IndexOutOfBounds(value_for_errors, index))
-                }
-            }
-            _ => Err(ErrorKind::IndexUnindexable(value_for_errors)),
+            Value::List(ref mut list) if index < list.len() => Ok(&mut list[index]),
+            Value::List(_) => Err(ErrorKind::IndexOutOfBounds(value.clone(), index)),
+            _ => Err(ErrorKind::IndexUnindexable(value.clone())),
         }
     }
 
