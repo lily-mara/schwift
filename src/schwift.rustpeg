@@ -82,8 +82,8 @@ statement_kind -> StatementKind
     / i:identifier WS "squanch" WS e:expression { StatementKind::Assignment(i, e) }
     / "show me what you got!" WS e:expression { StatementKind::PrintNoNl(e) }
     / "show me what you got" WS e:expression { StatementKind::Print(e) }
-    / "if" WS e:expression WS s:block { StatementKind::If(e, s, Option::None) }
     / "if" WS e:expression WS i_bod:block ws "else" WS e_bod:block { StatementKind::If(e, i_bod, Option::Some(e_bod)) }
+    / "if" WS e:expression WS s:block { StatementKind::If(e, s, Option::None) }
     / "while" WS e:expression WS b:block { StatementKind::While(e, b) }
     / "portal gun" WS i:identifier { StatementKind::Input(i) }
     / "normal plan" ws try:block ws "plan for failure" ws catch:block { StatementKind::Catch(try, catch) }
