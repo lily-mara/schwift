@@ -387,7 +387,7 @@ impl State {
         for arg in args {
             value_args.push(super::grammar::value(arg)
                 .unwrap_or_else(
-                    |x| { Value::Str((*arg).into()) }
+                    |_| Value::Str((*arg).into())
                 ));
         }
 

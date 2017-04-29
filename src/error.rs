@@ -135,8 +135,9 @@ impl Error {
                         actual)
             }
             NonFunctionCallInDylib(_) => {
-                format!("Is this a miniverse, or a microverse, or a teeny-verse? All I know is \
-                         you fucked up.")
+                "Is this a miniverse, or a microverse, or a teeny-verse? All I know is \
+                         you fucked up."
+                    .into()
             }
         }
     }
