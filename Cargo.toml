@@ -10,8 +10,5 @@ peg = "0.3.14"
 rand = "0.3"
 libloading = "0.3.0"
 
-[dev-dependencies]
-stainless = "0.1.6"
-
 [profile.release]
 debug = true

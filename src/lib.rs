@@ -1,6 +1,5 @@
 #![feature(plugin, alloc_system)]
 #![plugin(peg_syntax_ext, clippy)]
-#![cfg_attr(test, plugin(stainless))]
 #![allow(let_unit_value)]
 
 extern crate rand;
