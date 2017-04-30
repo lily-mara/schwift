@@ -38,12 +38,12 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Value::*;
         match *self {
-            Str(ref x) => write!(f, "\"{}\"", x),
+            Str(ref x) => write!(f, "{}", x),
             Int(x) => write!(f, "{}", x),
             Float(x) => write!(f, "{}", x),
             Bool(x) if x => write!(f, "rick"),
             Bool(_) => write!(f, "morty"),
-            List(ref x) => write!(f, "{}", util::slice_format(x)),
+            List(ref x) => write!(f, "{}", util::slice_value_format(x)),
             Function(ref params, _) => write!(f, "[Function {}]", util::slice_format(params)),
             NativeFunction(_) => write!(f, "[Native Function]"),
         }

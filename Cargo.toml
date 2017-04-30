@@ -2,13 +2,16 @@
 authors = ["natemara <natemara@gmail.com>"]
 name = "schwift"
 version = "0.1.0"
+build = "build.rs"
 
 [dependencies]
 clap = "2.5.2"
-clippy = "0.0.79"
-peg = "0.3.14"
 rand = "0.3"
 libloading = "0.3.0"
 
+[build-dependencies]
+peg = { version = "0.5" }
+
 [profile.release]
 debug = true
+

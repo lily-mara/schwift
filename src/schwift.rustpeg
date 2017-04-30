@@ -5,13 +5,13 @@ use super::expression::Expression;
 use super::value::{ Value, FloatT, IntT };
 
 string_inquotes -> String
-    = [^"]* { match_str.to_string() }
+    = s:$([^"]*) { s.to_string() }
 
 int -> IntT
-    = "-"? [0-9]+ { match_str.parse::<IntT>().unwrap() }
+    = n:$("-"? [0-9]+) { n.parse::<IntT>().unwrap() }
 
 float -> FloatT
-    = [0-9]+ "." [0-9]+ { match_str.parse::<FloatT>().unwrap() }
+    = n:$([0-9]+ "." [0-9]+) { n.parse::<FloatT>().unwrap() }
 
 string -> String
     = "\"" s:string_inquotes "\"" { s }
@@ -25,7 +25,7 @@ value -> Value
     / "morty" { Value::Bool(false) }
 
 identifier -> String
-    = [a-zA-Z_] [a-zA-Z0-9_]* { match_str.to_string() }
+    = s:$([a-zA-Z_] [a-zA-Z0-9_]*) { s.to_string() }
 
 #[pub]
 operator -> Operator
@@ -93,7 +93,7 @@ statement_kind -> StatementKind
 
 #[pub]
 statement -> Statement
-    = s:statement_kind { Statement::new(s, start_pos, pos) }
+    = start:#position s:statement_kind end:#position { Statement::new(s, start, end) }
 
 #[pub]
 expression -> Expression

@@ -1,18 +1,14 @@
-#![feature(plugin, alloc_system)]
-#![plugin(peg_syntax_ext, clippy)]
-#![allow(let_unit_value)]
+#![allow(let_unit_value,unknown_lints)]
 
 extern crate rand;
 extern crate libloading as lib;
-extern crate alloc_system;
-
-#[cfg(feature="flame")]
-extern crate flame;
 
 use std::fs::File;
 use std::io::prelude::*;
 
-peg_file! grammar("schwift.rustpeg");
+mod grammar {
+    include!(concat!(env!("OUT_DIR"), "/schwift.rs"));
+}
 
 #[cfg(test)]
 mod grammar_tests;
