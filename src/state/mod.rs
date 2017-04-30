@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::io;
+use std::collections;
 
 use super::expression::Expression;
 use super::value::Value;
@@ -8,11 +8,13 @@ use super::statement::{Statement, StatementKind};
 use super::lib;
 use super::value;
 
+type Map<K, V> = collections::BTreeMap<K, V>;
+
 #[cfg(test)]
 mod test;
 
 pub struct State {
-    symbols: HashMap<String, Value>,
+    symbols: Map<String, Value>,
     last_return: Option<Value>,
     libraries: Vec<lib::Library>,
 }
@@ -403,7 +405,7 @@ impl State {
 impl Default for State {
     fn default() -> Self {
         State {
-            symbols: HashMap::new(),
+            symbols: Map::new(),
             last_return: None,
             libraries: Vec::new(),
         }
