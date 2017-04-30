@@ -139,8 +139,8 @@ impl Statement {
 
     pub fn get_source(&self, filename: &str) -> io::Result<String> {
         let mut source = String::new();
-        let mut f = try!(File::open(filename));
-        try!(f.read_to_string(&mut source));
+        let mut f = File::open(filename)?;
+        f.read_to_string(&mut source)?;
 
         assert!(self.start < self.end);
         assert!(source.is_char_boundary(self.start));

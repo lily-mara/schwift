@@ -51,7 +51,7 @@ macro_rules! try_nop_error {
 
 impl State {
     pub fn list_index(&mut self, list_name: &str, exp: &Expression) -> SwResult<Value> {
-        let inner_expression_value = try!(exp.evaluate(self));
+        let inner_expression_value = exp.evaluate(self)?;
         match self.symbols.get(list_name) {
             Some(symbol) => {
                 match *symbol {
@@ -95,14 +95,14 @@ impl State {
         let mut call_args = Vec::new();
 
         for x in args {
-            call_args.push(try!(x.evaluate(self)));
+            call_args.push(x.evaluate(self)?);
         }
 
-        if let Value::NativeFunction(ref funk) = *try!(self.get(name)) {
+        if let Value::NativeFunction(ref funk) = *self.get(name)? {
             return funk.call(&call_args);
         }
 
-        match try!(self.get(name)).clone() {
+        match self.get(name)?.clone() {
             Value::Function(ref params, ref body) => {
                 if args.len() != params.len() {
                     return Err(ErrorKind::InvalidArguments(name.to_string(),
@@ -139,7 +139,7 @@ impl State {
     }
 
     pub fn assign(&mut self, str: String, exp: &Expression) -> SwResult<()> {
-        let v = try!(exp.evaluate(self));
+        let v = exp.evaluate(self)?;
         self.symbols.insert(str, v);
         Ok(())
     }
@@ -152,13 +152,13 @@ impl State {
     }
 
     fn print(&mut self, exp: &Expression) -> SwResult<()> {
-        let x = try!(exp.evaluate(self));
+        let x = exp.evaluate(self)?;
         x.println();
         Ok(())
     }
 
     fn print_no_nl(&mut self, exp: &Expression) -> SwResult<()> {
-        let x = try!(exp.evaluate(self));
+        let x = exp.evaluate(self)?;
         x.print();
         Ok(())
     }
@@ -178,8 +178,8 @@ impl State {
     }
 
     fn list_append(&mut self, list_name: &str, append_exp: &Expression) -> SwResult<()> {
-        let to_append = try!(append_exp.evaluate(self));
-        let list = try!(self.get_list(list_name));
+        let to_append = append_exp.evaluate(self)?;
+        let list = self.get_list(list_name)?;
 
         list.push(to_append);
         Ok(())
@@ -193,7 +193,7 @@ impl State {
     }
 
     fn get_list(&mut self, name: &str) -> SwResult<&mut Vec<Value>> {
-        let value = try!(self.get_value(name));
+        let value = self.get_value(name)?;
         match *value {
             Value::List(ref mut l) => Ok(l),
             _ => Err(ErrorKind::IndexUnindexable(value.clone())),
@@ -201,8 +201,8 @@ impl State {
     }
 
     fn get_list_element(&mut self, name: &str, index_exp: &Expression) -> SwResult<&mut Value> {
-        let index = try!(index_exp.try_int(self)) as usize;
-        let value = try!(self.get_value(name));
+        let index = index_exp.try_int(self)? as usize;
+        let value = self.get_value(name)?;
 
         match *value {
             Value::List(ref mut list) if index < list.len() => Ok(&mut list[index]),
@@ -216,16 +216,16 @@ impl State {
                    index_exp: &Expression,
                    assign_exp: &Expression)
                    -> SwResult<()> {
-        let to_assign = try!(assign_exp.evaluate(self));
-        let element = try!(self.get_list_element(list_name, index_exp));
+        let to_assign = assign_exp.evaluate(self)?;
+        let element = self.get_list_element(list_name, index_exp)?;
 
         *element = to_assign;
         Ok(())
     }
 
     fn list_delete(&mut self, list_name: &str, index_exp: &Expression) -> SwResult<()> {
-        let index_value = try!(index_exp.evaluate(self));
-        let list = try!(self.get_list(list_name));
+        let index_value = index_exp.evaluate(self)?;
+        let list = self.get_list(list_name)?;
 
         if let Value::Int(i) = index_value {
             let index = i as usize;
@@ -254,10 +254,10 @@ impl State {
         match x {
             Value::Bool(b) => {
                 if b {
-                    try!(self.run(if_body));
+                    self.run(if_body)?;
                 } else {
                     match *else_body {
-                        Option::Some(ref s) => try!(self.run(s)),
+                        Option::Some(ref s) => self.run(s)?,
                         Option::None => {}
                     }
                 }
@@ -278,7 +278,7 @@ impl State {
         let mut condition = try_error!(bool.try_bool(self), statement);
 
         while condition {
-            try!(self.run(body));
+            self.run(body)?;
             condition = try_error!(bool.try_bool(self), statement);
         }
 
@@ -355,21 +355,18 @@ impl State {
     }
 
     fn dylib_load(&mut self, lib_path: &str, functions: &[Statement]) -> SwResult<()> {
-        let dylib = try!(lib::Library::new(lib_path));
+        let dylib = lib::Library::new(lib_path)?;
         for statement in functions {
-            try!(match statement.kind {
+            match statement.kind {
                 StatementKind::FunctionCall(ref name, _) => {
                     let func = unsafe {
-                        let wrapped_func: lib::Symbol<value::_Func> =
-                            try!(dylib.get(name.as_bytes()));
+                        let wrapped_func: lib::Symbol<value::_Func> = dylib.get(name.as_bytes())?;
                         wrapped_func.into_raw()
                     };
                     self.insert(name.as_str(), value::Func::new(func));
-
-                    Ok(())
                 }
-                _ => Err(ErrorKind::NonFunctionCallInDylib(statement.clone())),
-            });
+                _ => return Err(ErrorKind::NonFunctionCallInDylib(statement.clone())),
+            }
         }
 
         self.libraries.push(dylib);

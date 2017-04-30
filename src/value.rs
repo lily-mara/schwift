@@ -197,27 +197,27 @@ impl Value {
     }
 
     pub fn less_than(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(try!(self.assert_f32()) < try!(other.assert_f32())))
+        Ok(Value::Bool(self.assert_f32()? < other.assert_f32()?))
     }
 
     pub fn greater_than(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(try!(self.assert_f32()) > try!(other.assert_f32())))
+        Ok(Value::Bool(self.assert_f32()? > other.assert_f32()?))
     }
 
     pub fn greater_than_equal(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(try!(self.assert_f32()) >= try!(other.assert_f32())))
+        Ok(Value::Bool(self.assert_f32()? >= other.assert_f32()?))
     }
 
     pub fn less_than_equal(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(try!(self.assert_f32()) <= try!(other.assert_f32())))
+        Ok(Value::Bool(self.assert_f32()? <= other.assert_f32()?))
     }
 
     pub fn and(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(try!(self.assert_bool()) && try!(other.assert_bool())))
+        Ok(Value::Bool(self.assert_bool()? && other.assert_bool()?))
     }
 
     pub fn or(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(try!(self.assert_bool()) || try!(other.assert_bool())))
+        Ok(Value::Bool(self.assert_bool()? || other.assert_bool()?))
     }
 
     pub fn equals(&self, other: &Value) -> Value {

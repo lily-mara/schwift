@@ -78,8 +78,8 @@ impl Expression {
         match *self {
             Expression::Variable(ref name) => state.get(name).map(|x| x.clone()),
             Expression::OpExp(ref left_exp, ref operator, ref right_exp) => {
-                let left = try!(left_exp.evaluate(state));
-                let right = try!(right_exp.evaluate(state));
+                let left = left_exp.evaluate(state)?;
+                let right = right_exp.evaluate(state)?;
                 match *operator {
                     Operator::Add => left.add(&right),
                     Operator::Subtract => left.subtract(&right),
@@ -98,9 +98,9 @@ impl Expression {
             }
             Expression::Value(ref v) => Ok(v.clone()),
             Expression::ListIndex(ref var_name, ref e) => state.list_index(var_name, e),
-            Expression::Not(ref e) => try!(e.evaluate(state)).not(),
+            Expression::Not(ref e) => e.evaluate(state)?.not(),
             Expression::ListLength(ref var_name) => {
-                let value = try!(state.get(var_name));
+                let value = state.get(var_name)?;
                 match *value {
                     Value::List(ref list) => Ok(Value::Int(list.len() as IntT)),
                     Value::Str(ref s) => Ok(Value::Int(s.len() as IntT)),
@@ -108,7 +108,7 @@ impl Expression {
                 }
             }
             Expression::Eval(ref exp) => {
-                let inner_val = try!(exp.evaluate(state));
+                let inner_val = exp.evaluate(state)?;
                 if let Value::Str(ref inner) = inner_val {
                     match grammar::expression(inner) {
                         Ok(inner_evaled) => inner_evaled.evaluate(state),
@@ -123,7 +123,7 @@ impl Expression {
     }
 
     pub fn try_bool(&self, state: &mut State) -> SwResult<bool> {
-        let value = try!(self.evaluate(state));
+        let value = self.evaluate(state)?;
         if let Value::Bool(x) = value {
             Ok(x)
         } else {
@@ -132,7 +132,7 @@ impl Expression {
     }
 
     pub fn try_int(&self, state: &mut State) -> SwResult<IntT> {
-        let value = try!(self.evaluate(state));
+        let value = self.evaluate(state)?;
         if let Value::Int(x) = value {
             Ok(x)
         } else {
