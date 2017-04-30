@@ -2,16 +2,16 @@ use super::{ Operator };
 use super::statement::Statement;
 use super::statement::StatementKind;
 use super::expression::Expression;
-use super::value::Value;
+use super::value::{ Value, FloatT, IntT };
 
 string_inquotes -> String
     = [^"]* { match_str.to_string() }
 
-int -> i32
-    = "-"? [0-9]+ { match_str.parse::<i32>().unwrap() }
+int -> IntT
+    = "-"? [0-9]+ { match_str.parse::<IntT>().unwrap() }
 
-float -> f32
-    = [0-9]+ "." [0-9]+ { match_str.parse::<f32>().unwrap() }
+float -> FloatT
+    = [0-9]+ "." [0-9]+ { match_str.parse::<FloatT>().unwrap() }
 
 string -> String
     = "\"" s:string_inquotes "\"" { s }

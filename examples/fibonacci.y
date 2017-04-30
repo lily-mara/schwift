@@ -1,18 +1,23 @@
-a squanch 0
-b squanch 1
+if (argv squanch less 1) :<
+	show me what you got "Usage: fibonacci.y [number]"
+	show me what you got "Prints the first [number] fibonacci numbers"
+>: else :<
+	a squanch 0
+	b squanch 1
 
-count squanch 0
+	count squanch 0
 
-nums on a cob
+	nums on a cob
 
-while (count less 20) :<
-	tmp squanch b
-	b squanch (a + b)
-	a squanch tmp
+	while (count less argv[0]) :<
+		tmp squanch b
+		b squanch (a + b)
+		a squanch tmp
 
-	nums assimilate a
+		nums assimilate a
 
-	count squanch (count + 1)
+		count squanch (count + 1)
+	>:
+
+	show me what you got nums
 >:
-
-show me what you got nums

@@ -1,5 +1,5 @@
 use super::{Operator, grammar};
-use super::value::Value;
+use super::value::{Value, IntT};
 use super::error::{ErrorKind, SwResult};
 use super::state::State;
 
@@ -102,8 +102,8 @@ impl Expression {
             Expression::ListLength(ref var_name) => {
                 let value = try!(state.get(var_name));
                 match *value {
-                    Value::List(ref list) => Ok(Value::Int(list.len() as i32)),
-                    Value::Str(ref s) => Ok(Value::Int(s.len() as i32)),
+                    Value::List(ref list) => Ok(Value::Int(list.len() as IntT)),
+                    Value::Str(ref s) => Ok(Value::Int(s.len() as IntT)),
                     _ => Err(ErrorKind::IndexUnindexable(value.clone())),
                 }
             }
@@ -131,7 +131,7 @@ impl Expression {
         }
     }
 
-    pub fn try_int(&self, state: &mut State) -> SwResult<i32> {
+    pub fn try_int(&self, state: &mut State) -> SwResult<IntT> {
         let value = try!(self.evaluate(state));
         if let Value::Int(x) = value {
             Ok(x)

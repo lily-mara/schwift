@@ -2,8 +2,13 @@ use super::Operator;
 use std::cmp::Ordering;
 use super::error::{ErrorKind, SwResult};
 use super::statement::Statement;
-use std;
+use super::util;
 use std::{fmt, clone};
+
+use std::f64 as FloatValueType;
+
+pub type FloatT = f64;
+pub type IntT = i64;
 
 #[cfg(unix)]
 use super::lib::os::unix::Symbol;
@@ -21,12 +26,28 @@ pub struct Func {
 #[derive(Debug, Clone)]
 pub enum Value {
     Str(String),
-    Int(i32),
-    Float(f32),
+    Int(IntT),
+    Float(FloatT),
     Bool(bool),
     List(Vec<Value>),
     Function(Vec<String>, Vec<Statement>),
     NativeFunction(Func),
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Value::*;
+        match *self {
+            Str(ref x) => write!(f, "\"{}\"", x),
+            Int(x) => write!(f, "{}", x),
+            Float(x) => write!(f, "{}", x),
+            Bool(x) if x => write!(f, "rick"),
+            Bool(_) => write!(f, "morty"),
+            List(ref x) => write!(f, "{}", util::slice_format(x)),
+            Function(ref params, _) => write!(f, "[Function {}]", util::slice_format(params)),
+            NativeFunction(_) => write!(f, "[Native Function]"),
+        }
+    }
 }
 
 impl fmt::Debug for Func {
@@ -70,14 +91,14 @@ impl From<Func> for Value {
     }
 }
 
-impl From<i32> for Value {
-    fn from(from: i32) -> Value {
+impl From<IntT> for Value {
+    fn from(from: IntT) -> Value {
         Value::Int(from)
     }
 }
 
-impl From<f32> for Value {
-    fn from(from: f32) -> Value {
+impl From<FloatT> for Value {
+    fn from(from: FloatT) -> Value {
         Value::Float(from)
     }
 }
@@ -138,16 +159,14 @@ impl Value {
         }
     }
 
+    #[cfg(debug_assertions)]
     pub fn print(&self) {
-        match *self {
-            Value::Int(i) => print!("{}", i),
-            Value::Float(i) => print!("{}", i),
-            Value::Bool(i) => print!("{}", i),
-            Value::Str(ref i) => print!("{}", i),
-            Value::List(ref i) => print!("{:?}", i),
-            Value::Function(_, ref body) => print!("{:?}", body),
-            Value::NativeFunction(_) => print!("[Native function]"),
-        }
+        print!("{:?}", self);
+    }
+
+    #[cfg(not(debug_assertions))]
+    pub fn print(&self) {
+        print!("{}", self);
     }
 
     pub fn println(&self) {
@@ -155,10 +174,10 @@ impl Value {
         println!("");
     }
 
-    fn assert_f32(&self) -> SwResult<f32> {
+    fn assert_f32(&self) -> SwResult<FloatT> {
         match *self {
             Value::Float(f) => Ok(f),
-            Value::Int(i) => Ok(i as f32),
+            Value::Int(i) => Ok(i as FloatT),
             _ => Err(ErrorKind::UnexpectedType("float".to_string(), self.clone())),
         }
     }
@@ -210,7 +229,7 @@ impl Value {
             (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 + f2)),
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 + i2)),
             (&Value::Float(f), &Value::Int(i)) |
-            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 + f)),
+            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT + f)),
             (&Value::Str(ref s1), &Value::Str(ref s2)) => {
                 let mut new_buf = s1.clone();
                 new_buf.push_str(s2);
@@ -226,8 +245,8 @@ impl Value {
         match (self, other) {
             (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 - f2)),
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 - i2)),
-            (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f - i as f32)),
-            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 - f)),
+            (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f - i as FloatT)),
+            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT - f)),
             _ => {
                 Err(ErrorKind::InvalidBinaryExpression(self.clone(),
                                                        other.clone(),
@@ -241,7 +260,7 @@ impl Value {
             (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 * f2)),
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 * i2)),
             (&Value::Float(f), &Value::Int(i)) |
-            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 * f)),
+            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT * f)),
             (&Value::Str(ref s), &Value::Int(i)) => {
                 let mut new_buf = s.clone();
                 for _ in 0..(i - 1) {
@@ -261,8 +280,8 @@ impl Value {
         match (self, other) {
             (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 / f2)),
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 / i2)),
-            (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f / i as f32)),
-            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as f32 / f)),
+            (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f / i as FloatT)),
+            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT / f)),
             _ => {
                 Err(ErrorKind::InvalidBinaryExpression(self.clone(),
                                                        other.clone(),
@@ -312,8 +331,8 @@ impl PartialOrd for Value {
             Option::Some(Ordering::Equal)
         } else {
             let (s, o) = match (self, other) {
-                (&Value::Int(i), &Value::Float(f)) => (i as f32, f),
-                (&Value::Float(f), &Value::Int(i)) => (f, i as f32),
+                (&Value::Int(i), &Value::Float(f)) => (i as FloatT, f),
+                (&Value::Float(f), &Value::Int(i)) => (f, i as FloatT),
                 _ => return Option::None,
             };
 
@@ -330,8 +349,8 @@ impl PartialEq for Value {
             (&Value::List(ref l1), &Value::List(ref l2)) => l1 == l2,
             (&Value::Int(i1), &Value::Int(i2)) => i1 == i2,
             (&Value::Int(i), &Value::Float(f)) |
-            (&Value::Float(f), &Value::Int(i)) => (i as f32 - f).abs() < std::f32::EPSILON,
-            (&Value::Float(f1), &Value::Float(f2)) => (f1 - f2).abs() < std::f32::EPSILON,
+            (&Value::Float(f), &Value::Int(i)) => (i as FloatT - f).abs() < FloatValueType::EPSILON,
+            (&Value::Float(f1), &Value::Float(f2)) => (f1 - f2).abs() < FloatValueType::EPSILON,
             _ => false,
         }
     }

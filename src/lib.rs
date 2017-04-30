@@ -23,6 +23,7 @@ pub mod expression;
 pub mod value;
 pub mod error;
 pub mod state;
+mod util;
 
 use statement::*;
 use state::*;
