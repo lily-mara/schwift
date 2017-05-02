@@ -94,6 +94,7 @@ impl Expression {
                     Operator::ShiftRight => left.shift_right(&right),
                     Operator::And => left.and(&right),
                     Operator::Or => left.or(&right),
+                    Operator::Modulus => left.modulus(&right),
                 }
             }
             Expression::Value(ref v) => Ok(v.clone()),

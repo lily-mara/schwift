@@ -224,6 +224,18 @@ impl Value {
         Value::Bool(self.eq(other))
     }
 
+    pub fn modulus(&self, other: &Value) -> SwResult<Value> {
+        if let Value::Int(i1) = *self {
+            if let Value::Int(i2) = *other {
+                Ok((i1 % i2).into())
+            } else {
+                Err(ErrorKind::UnexpectedType("Int".into(), other.clone()))
+            }
+        } else {
+            Err(ErrorKind::UnexpectedType("Int".into(), self.clone()))
+        }
+    }
+
     pub fn add(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
             (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 + f2)),

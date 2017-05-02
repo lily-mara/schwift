@@ -329,3 +329,22 @@ fn test_function_no_spaces_in_def() {
 
     assert_eq!(func, l[0]);
 }
+
+#[test]
+fn test_modulus() {
+    let l = grammar::expression(r#"(5 % 4)"#).unwrap();
+    assert_eq!(l, Exp::operator(Exp::value(5), Op::Modulus, Exp::value(4)));
+}
+
+#[test]
+fn test_empty_after_block() {
+    let l = grammar::file(r#"
+        if rick :<
+            x squanch 100
+        >:
+
+
+    "#)
+        .unwrap();
+    assert_eq!(l[0], Statement::tnew(Kind::if_block(Exp::value(true), vec![Statement::tnew(Kind::assignment("x", Exp::value(100)))], None)));
+}

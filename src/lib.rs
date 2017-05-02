@@ -41,6 +41,7 @@ pub enum Operator {
     ShiftRight,
     And,
     Or,
+    Modulus,
 }
 
 fn get_line<'a>(file: &'a str, err: &grammar::ParseError) -> &'a str {

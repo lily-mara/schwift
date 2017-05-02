@@ -91,7 +91,6 @@ impl State {
     }
 
     pub fn call_function(&mut self, name: &str, args: &[Expression]) -> SwResult<Value> {
-
         let mut call_args = Vec::new();
 
         for x in args {
@@ -279,6 +278,9 @@ impl State {
 
         while condition {
             self.run(body)?;
+            if let Some(_) = self.last_return {
+                return Ok(());
+            }
             condition = try_error!(bool.try_bool(self), statement);
         }
 
@@ -348,6 +350,12 @@ impl State {
             match self.execute(statement) {
                 Err(e) => return Err(e),
                 Ok(()) => {}
+            }
+            if let StatementKind::Return(_) = statement.kind {
+                return Ok(());
+            }
+            if let Some(_) = self.last_return {
+                return Ok(());
             }
         }
 

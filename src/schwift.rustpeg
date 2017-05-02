@@ -34,6 +34,7 @@ operator -> Operator
     / "*" { Operator::Multiply }
     / "/" { Operator::Divide }
     / "==" { Operator::Equality }
+    / "%" { Operator::Modulus }
     / "moresquanch" { Operator::GreaterThanEqual }
     / "lesssquanch" { Operator::LessThanEqual }
     / "more" { Operator::GreaterThan }
@@ -57,15 +58,15 @@ block -> Vec<Statement>
     = ":<" ws newline* l:line* ws ">:" { l }
 
 line -> Statement
-    = ws s:statement ws newline* { s }
+    = newline* ws s:statement ws newline* { s }
 
 #[pub]
 file -> Vec<Statement>
-    = l:line+ { l }
+    = l:line+ ws { l }
 
 #[pub]
 newline
-    = "\n"
+    = ws "\n"
 
 #[pub]
 params -> Vec<String>
@@ -97,8 +98,7 @@ statement -> Statement
 
 #[pub]
 expression -> Expression
-    = i:identifier a:args { Expression::FunctionCall(i, a) }
-    / "{" ws e:expression ws "}" { Expression::Eval(Box::new(e)) }
+    = "{" ws e:expression ws "}" { Expression::Eval(Box::new(e)) }
     / "(" ws e1:expression ws o:operator ws e2:expression ws ")" { Expression::OpExp(Box::new(e1), o, Box::new(e2)) }
     / "(" ws e:expression1 ws ")" { e }
     / expression1
@@ -109,7 +109,9 @@ args -> Vec<Expression>
 
 expression1 -> Expression
     = i:identifier ws "[" ws e:expression ws "]" { Expression::ListIndex(i, Box::new(e)) }
+    / i:identifier a:args { Expression::FunctionCall(i, a) }
     / v:value { Expression::Value(v) }
     / i:identifier WS "squanch" { Expression::ListLength(i) }
     / i:identifier { Expression::Variable(i) }
     / "!" ws e:expression { Expression::Not(Box::new(e)) }
+
