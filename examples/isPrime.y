@@ -11,8 +11,8 @@ isPrime(x) :<
     return rick
 >:
 
-j squanch 80000
-while (j less 82000) :<
+j squanch 600983
+while (j less 600984) :<
     show me what you got! j
     if (isPrime(j)) :<
         show me what you got " is prime"

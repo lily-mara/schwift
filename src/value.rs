@@ -171,7 +171,7 @@ impl Value {
 
     pub fn println(&self) {
         self.print();
-        println!("");
+        println!();
     }
 
     fn assert_f32(&self) -> SwResult<FloatT> {
@@ -197,19 +197,35 @@ impl Value {
     }
 
     pub fn less_than(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(self.assert_f32()? < other.assert_f32()?))
+        if let (&Value::Int(i1), &Value::Int(i2)) = (self, other) {
+            Ok(Value::Bool(i1 < i2))
+        } else {
+            Ok(Value::Bool(self.assert_f32()? < other.assert_f32()?))
+        }
     }
 
     pub fn greater_than(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(self.assert_f32()? > other.assert_f32()?))
+        if let (&Value::Int(i1), &Value::Int(i2)) = (self, other) {
+            Ok(Value::Bool(i1 > i2))
+        } else {
+            Ok(Value::Bool(self.assert_f32()? > other.assert_f32()?))
+        }
     }
 
     pub fn greater_than_equal(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(self.assert_f32()? >= other.assert_f32()?))
+        if let (&Value::Int(i1), &Value::Int(i2)) = (self, other) {
+            Ok(Value::Bool(i1 >= i2))
+        } else {
+            Ok(Value::Bool(self.assert_f32()? >= other.assert_f32()?))
+        }
     }
 
     pub fn less_than_equal(&self, other: &Value) -> SwResult<Value> {
-        Ok(Value::Bool(self.assert_f32()? <= other.assert_f32()?))
+        if let (&Value::Int(i1), &Value::Int(i2)) = (self, other) {
+            Ok(Value::Bool(i1 <= i2))
+        } else {
+            Ok(Value::Bool(self.assert_f32()? <= other.assert_f32()?))
+        }
     }
 
     pub fn and(&self, other: &Value) -> SwResult<Value> {

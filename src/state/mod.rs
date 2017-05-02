@@ -278,7 +278,7 @@ impl State {
 
         while condition {
             self.run(body)?;
-            if let Some(_) = self.last_return {
+            if self.last_return.is_some() {
                 return Ok(());
             }
             condition = try_error!(bool.try_bool(self), statement);
@@ -354,7 +354,7 @@ impl State {
             if let StatementKind::Return(_) = statement.kind {
                 return Ok(());
             }
-            if let Some(_) = self.last_return {
+            if self.last_return.is_some() {
                 return Ok(());
             }
         }
