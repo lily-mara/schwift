@@ -1,14 +1,14 @@
 use std::io;
-use std::collections;
 
-use super::expression::Expression;
-use super::value::Value;
-use super::error::{SwResult, SwErResult, Error, ErrorKind};
-use super::statement::{Statement, StatementKind};
-use super::lib;
-use super::value;
+use ::expression::Expression;
+use ::value::Value;
+use ::error::{SwResult, SwErResult, Error, ErrorKind};
+use ::statement::{Statement, StatementKind};
+use ::lib;
+use ::value;
+use ::vec_map::VecMap;
 
-type Map<K, V> = collections::BTreeMap<K, V>;
+type Map<K, V> = VecMap<K, V>;
 
 #[cfg(test)]
 mod test;

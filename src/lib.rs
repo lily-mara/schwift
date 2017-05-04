@@ -19,6 +19,7 @@ pub mod value;
 pub mod error;
 pub mod state;
 mod util;
+mod vec_map;
 
 use statement::*;
 use state::*;
