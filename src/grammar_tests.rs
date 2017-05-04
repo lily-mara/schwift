@@ -346,5 +346,11 @@ fn test_empty_after_block() {
 
     "#)
         .unwrap();
-    assert_eq!(l[0], Statement::tnew(Kind::if_block(Exp::value(true), vec![Statement::tnew(Kind::assignment("x", Exp::value(100)))], None)));
+    assert_eq!(l[0],
+               Statement::tnew(Kind::if_block(Exp::value(true),
+                                              vec![
+                    Statement::tnew(
+                        Kind::assignment("x", Exp::value(100)))
+                ],
+                                              None)));
 }
