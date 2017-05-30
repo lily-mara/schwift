@@ -5,9 +5,9 @@ version = "0.1.0"
 build = "build.rs"
 
 [dependencies]
-clap = "2.5.2"
+clap = "2.24"
 rand = "0.3"
-libloading = "0.4.0"
+libloading = "0.4"
 
 [build-dependencies]
 peg = { version = "0.5" }
