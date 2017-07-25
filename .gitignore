@@ -1,4 +1,4 @@
 target
-*.bk
+*.rustfmt
 .idea/
 callgrind.out.*
