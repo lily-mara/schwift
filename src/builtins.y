@@ -1,6 +1,4 @@
 ascii (int) :<
-	return "ERROR"
-
 	if (int == 32) :<
 		return " "
 	>:
@@ -286,5 +284,6 @@ ascii (int) :<
 	if (int == 126) :<
 		return "~"
 	>:
->:
 
+	return "ERROR"
+>:
