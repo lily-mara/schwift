@@ -52,7 +52,7 @@ impl<K, V> VecMap<K, V>
         where K: Borrow<Q>,
               Q: PartialEq
     {
-        for (i, ref entry) in self.data.iter().enumerate() {
+        for (i, entry) in self.data.iter().enumerate() {
             if k == entry.key.borrow() {
                 return Some(i);
             }

@@ -1,4 +1,4 @@
-#![allow(let_unit_value,unknown_lints)]
+#![allow(unknown_lints)]
 
 extern crate rand;
 extern crate libloading as lib;
@@ -6,6 +6,7 @@ extern crate libloading as lib;
 use std::fs::File;
 use std::io::prelude::*;
 
+#[allow(clippy)]
 mod grammar {
     include!(concat!(env!("OUT_DIR"), "/schwift.rs"));
 }
@@ -24,8 +25,8 @@ mod vec_map;
 use statement::*;
 use state::*;
 
-const BUILTINS_FILE: &'static str = "builtins.y";
-const BUILTINS: &'static str = include_str!("builtins.y");
+const BUILTINS_FILE: & str = "builtins.y";
+const BUILTINS: & str = include_str!("builtins.y");
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
@@ -96,11 +97,13 @@ pub fn compile(filename: &str) -> Vec<Statement> {
     match grammar::file(&s) {
         Ok(statements) => statements,
         Err(ref e) => {
-            println!("SYNTAX ERROR: {}:{}\n{}\n{}",
-                     filename,
-                     e.line,
-                     get_line(&s, e),
-                     place_carat(e));
+            println!(
+                "SYNTAX ERROR: {}:{}\n{}\n{}",
+                filename,
+                e.line,
+                get_line(&s, e),
+                place_carat(e)
+            );
             std::process::exit(1);
 
         }

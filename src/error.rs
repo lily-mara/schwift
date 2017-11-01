@@ -10,7 +10,7 @@ pub type SwResult<T> = Result<T, ErrorKind>;
 pub type SwErResult<T> = Result<T, Error>;
 
 
-pub const QUOTES: [&'static str; 9] =
+pub const QUOTES: [&str; 9] =
     ["Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
      "That's planning for failure Morty, even dumber than regular planning. -Rick",
      "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty \

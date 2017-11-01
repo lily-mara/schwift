@@ -1,7 +1,0 @@
-#!/bin/sh
-
-cargo fmt
-
-for FILE in $(git diff --cached --name-only --diff-filter=ACM); do
-	git add $FILE
-done

@@ -23,7 +23,7 @@ fn should_mut_borrow_1_and_4() {
     map.insert(1, 4);
 
     match map.get_mut(&1) {
-        Some(mut value) => *value = 10,
+        Some(value) => *value = 10,
         None => panic!(),
     }
 

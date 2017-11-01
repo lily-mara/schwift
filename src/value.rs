@@ -159,12 +159,12 @@ impl Value {
         }
     }
 
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "debug_printing")]
     pub fn print(&self) {
         print!("{:?}", self);
     }
 
-    #[cfg(not(debug_assertions))]
+    #[cfg(not(feature = "debug_printing"))]
     pub fn print(&self) {
         print!("{}", self);
     }
