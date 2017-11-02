@@ -32,6 +32,7 @@ pub enum StatementKind {
     DylibLoad(String, Vec<Statement>),
 }
 
+#[cfg(test)]
 impl StatementKind {
     pub fn assignment<S, E>(name: S, expr: E) -> StatementKind
     where
@@ -88,6 +89,19 @@ impl StatementKind {
         E: Into<Expression>,
     {
         StatementKind::While(condition.into(), body)
+    }
+
+    pub fn function<Name, Args, Body>(name: Name, args: Vec<Args>, body: Vec<Body>) -> StatementKind
+    where
+        Name: Into<String>,
+        Args: Into<String>,
+        Body: Into<Statement>,
+    {
+        StatementKind::Function(
+            name.into(),
+            args.into_iter().map(|x| x.into()).collect(),
+            body.into_iter().map(|x| x.into()).collect(),
+        )
     }
 
     pub fn input<S>(name: S) -> StatementKind

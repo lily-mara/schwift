@@ -324,15 +324,7 @@ fn test_function_def() {
     let addition = Exp::operator(Exp::variable("x"), Op::Add, Exp::variable("y"));
     let print = vec![Statement::new(Kind::print(addition), 0, 1)];
 
-    let func = Statement::new(
-        Kind::Function(
-            "foo".to_string(),
-            vec!["x".to_string(), "y".to_string()],
-            print,
-        ),
-        0,
-        1,
-    );
+    let func = Statement::new(Kind::function("foo", vec!["x", "y"], print), 0, 1);
 
     assert_eq!(func, l);
 }
@@ -348,15 +340,7 @@ fn test_function_no_space_in_name_and_params() {
     let addition = Exp::operator(Exp::variable("x"), Op::Add, Exp::variable("y"));
     let print = vec![Statement::new(Kind::print(addition), 0, 1)];
 
-    let func = Statement::new(
-        Kind::Function(
-            "foo".to_string(),
-            vec!["x".to_string(), "y".to_string()],
-            print,
-        ),
-        0,
-        1,
-    );
+    let func = Statement::new(Kind::function("foo", vec!["x", "y"], print), 0, 1);
 
     assert_eq!(func, l);
 }
@@ -371,11 +355,7 @@ fn test_function_no_spaces_in_def() {
 
     let print = vec![Statement::new(Kind::print(Exp::variable("x")), 0, 1)];
 
-    let func = Statement::new(
-        Kind::Function("foo".to_string(), vec!["x".to_string()], print),
-        0,
-        1,
-    );
+    let func = Statement::new(Kind::function("foo", vec!["x"], print), 0, 1);
 
     assert_eq!(func, l[0]);
 }
@@ -383,7 +363,7 @@ fn test_function_no_spaces_in_def() {
 #[test]
 fn test_modulus() {
     let l = grammar::expression(r#"(5 % 4)"#).unwrap();
-    assert_eq!(l, Exp::operator(Exp::value(5), Op::Modulus, Exp::value(4)));
+    assert_eq!(l, Exp::operator(5, Op::Modulus, 4));
 }
 
 #[test]
@@ -400,11 +380,17 @@ fn test_empty_after_block() {
     assert_eq!(
         l[0],
         Statement::tnew(Kind::if_block(
-            Exp::value(true),
-            vec![
-                Statement::tnew(Kind::assignment("x", Exp::value(100))),
-            ],
+            true,
+            vec![Statement::tnew(Kind::assignment("x", 100))],
             None,
         ))
     );
+}
+
+#[test]
+fn test_works_on_windows_fuck_windows() {
+    let l = grammar::file("x squanch 100\r\nshow me what you got x").unwrap();
+
+    assert_eq!(l[0], Statement::tnew(Kind::assignment("x", 100)));
+    assert_eq!(l[1], Statement::tnew(Kind::print(Exp::variable("x"))));
 }
