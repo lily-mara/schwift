@@ -25,64 +25,6 @@ where
 }
 
 impl Expression {
-    pub fn new<T>(from: T) -> Expression
-    where
-        T: Into<Expression>,
-    {
-        from.into()
-    }
-
-    pub fn variable<S>(name: S) -> Expression
-    where
-        S: Into<String>,
-    {
-        Expression::Variable(name.into())
-    }
-
-    pub fn list_length<S>(name: S) -> Expression
-    where
-        S: Into<String>,
-    {
-        Expression::ListLength(name.into())
-    }
-
-    pub fn operator<L, R>(left: L, op: Operator, right: R) -> Expression
-    where
-        L: Into<Expression>,
-        R: Into<Expression>,
-    {
-        Expression::OpExp(Box::new(left.into()), op, Box::new(right.into()))
-    }
-
-    pub fn not<E>(expr: E) -> Expression
-    where
-        E: Into<Expression>,
-    {
-        Expression::Not(Box::new(expr.into()))
-    }
-
-    pub fn eval<E>(expr: E) -> Expression
-    where
-        E: Into<Expression>,
-    {
-        Expression::Eval(Box::new(expr.into()))
-    }
-
-    pub fn list_index<S, E>(name: S, index: E) -> Expression
-    where
-        S: Into<String>,
-        E: Into<Expression>,
-    {
-        Expression::ListIndex(name.into(), Box::new(index.into()))
-    }
-
-    pub fn value<V>(val: V) -> Expression
-    where
-        V: Into<Value>,
-    {
-        Expression::Value(val.into())
-    }
-
     pub fn evaluate(&self, state: &mut State) -> SwResult<Value> {
         match *self {
             Expression::Variable(ref name) => state.get(name).map(|x| x.clone()),
@@ -148,5 +90,66 @@ impl Expression {
         } else {
             Err(ErrorKind::UnexpectedType("int".to_string(), value))
         }
+    }
+}
+
+#[cfg(test)]
+impl Expression {
+    pub fn new<T>(from: T) -> Expression
+        where
+            T: Into<Expression>,
+    {
+        from.into()
+    }
+
+    pub fn variable<S>(name: S) -> Expression
+        where
+            S: Into<String>,
+    {
+        Expression::Variable(name.into())
+    }
+
+    pub fn list_length<S>(name: S) -> Expression
+        where
+            S: Into<String>,
+    {
+        Expression::ListLength(name.into())
+    }
+
+    pub fn operator<L, R>(left: L, op: Operator, right: R) -> Expression
+        where
+            L: Into<Expression>,
+            R: Into<Expression>,
+    {
+        Expression::OpExp(Box::new(left.into()), op, Box::new(right.into()))
+    }
+
+    pub fn not<E>(expr: E) -> Expression
+        where
+            E: Into<Expression>,
+    {
+        Expression::Not(Box::new(expr.into()))
+    }
+
+    pub fn eval<E>(expr: E) -> Expression
+        where
+            E: Into<Expression>,
+    {
+        Expression::Eval(Box::new(expr.into()))
+    }
+
+    pub fn list_index<S, E>(name: S, index: E) -> Expression
+        where
+            S: Into<String>,
+            E: Into<Expression>,
+    {
+        Expression::ListIndex(name.into(), Box::new(index.into()))
+    }
+
+    pub fn value<V>(val: V) -> Expression
+        where
+            V: Into<Value>,
+    {
+        Expression::Value(val.into())
     }
 }
