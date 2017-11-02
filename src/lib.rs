@@ -94,14 +94,18 @@ pub fn compile(filename: &str) -> Vec<Statement> {
         Result::Err(_) => panic!("Failed to read file {}", filename),
     };
 
-    match grammar::file(&s) {
+    parse_str(&s, filename)
+}
+
+fn parse_str(source: &str, filename: &str) -> Vec<Statement> {
+    match grammar::file(source) {
         Ok(statements) => statements,
         Err(ref e) => {
             println!(
                 "SYNTAX ERROR: {}:{}\n{}\n{}",
                 filename,
                 e.line,
-                get_line(&s, e),
+                get_line(source, e),
                 place_carat(e)
             );
             std::process::exit(1);
@@ -115,7 +119,7 @@ pub fn run_program(filename: &str, args: &[&str]) {
 
     s.parse_args(args);
 
-    let tokens = grammar::file(BUILTINS).unwrap();
+    let tokens = parse_str(BUILTINS, BUILTINS_FILE);
 
     match s.run(&tokens) {
         Ok(()) => {}
