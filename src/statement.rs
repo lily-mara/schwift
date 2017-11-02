@@ -34,56 +34,65 @@ pub enum StatementKind {
 
 impl StatementKind {
     pub fn assignment<S, E>(name: S, expr: E) -> StatementKind
-        where S: Into<String>,
-              E: Into<Expression>
+    where
+        S: Into<String>,
+        E: Into<Expression>,
     {
         StatementKind::Assignment(name.into(), expr.into())
     }
 
     pub fn dylib_load<S, E>(lib_path: S, functions: Vec<Statement>) -> StatementKind
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
 
         StatementKind::DylibLoad(lib_path.into(), functions)
     }
 
     pub fn return_it<E>(expr: E) -> StatementKind
-        where E: Into<Expression>
+    where
+        E: Into<Expression>,
     {
         StatementKind::Return(expr.into())
     }
 
     pub fn list_append<S, E>(name: S, expr: E) -> StatementKind
-        where S: Into<String>,
-              E: Into<Expression>
+    where
+        S: Into<String>,
+        E: Into<Expression>,
     {
         StatementKind::ListAppend(name.into(), expr.into())
     }
 
     pub fn list_delete<S, E>(name: S, expr: E) -> StatementKind
-        where S: Into<String>,
-              E: Into<Expression>
+    where
+        S: Into<String>,
+        E: Into<Expression>,
     {
         StatementKind::ListDelete(name.into(), expr.into())
     }
 
-    pub fn if_block<E>(condition: E,
-                       if_body: Vec<Statement>,
-                       else_body: Option<Vec<Statement>>)
-                       -> StatementKind
-        where E: Into<Expression>
+    pub fn if_block<E>(
+        condition: E,
+        if_body: Vec<Statement>,
+        else_body: Option<Vec<Statement>>,
+    ) -> StatementKind
+    where
+        E: Into<Expression>,
     {
         StatementKind::If(condition.into(), if_body, else_body)
     }
 
     pub fn while_block<E>(condition: E, body: Vec<Statement>) -> StatementKind
-        where E: Into<Expression>
+    where
+        E: Into<Expression>,
     {
         StatementKind::While(condition.into(), body)
     }
 
     pub fn input<S>(name: S) -> StatementKind
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
         StatementKind::Input(name.into())
     }
@@ -93,27 +102,31 @@ impl StatementKind {
     }
 
     pub fn list_assign<S, E, R>(name: S, index: E, assign: R) -> StatementKind
-        where S: Into<String>,
-              E: Into<Expression>,
-              R: Into<Expression>
+    where
+        S: Into<String>,
+        E: Into<Expression>,
+        R: Into<Expression>,
     {
         StatementKind::ListAssign(name.into(), index.into(), assign.into())
     }
 
     pub fn delete<S>(name: S) -> StatementKind
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
         StatementKind::Delete(name.into())
     }
 
     pub fn print<E>(expr: E) -> StatementKind
-        where E: Into<Expression>
+    where
+        E: Into<Expression>,
     {
         StatementKind::Print(expr.into())
     }
 
     pub fn new_list<S>(name: S) -> StatementKind
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
         StatementKind::ListNew(name.into())
     }
@@ -146,7 +159,9 @@ impl Statement {
         assert!(source.is_char_boundary(self.start));
         assert!(source.is_char_boundary(self.end));
 
-        Ok(unsafe { source.slice_unchecked(self.start, self.end) }.to_string())
+        Ok(
+            unsafe { source.slice_unchecked(self.start, self.end) }.to_string(),
+        )
     }
 }
 

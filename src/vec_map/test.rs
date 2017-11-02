@@ -1,4 +1,4 @@
-use ::vec_map::VecMap;
+use vec_map::VecMap;
 
 #[test]
 fn should_store_1_and_4() {

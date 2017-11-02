@@ -10,18 +10,19 @@ pub type SwResult<T> = Result<T, ErrorKind>;
 pub type SwErResult<T> = Result<T, Error>;
 
 
-pub const QUOTES: [&str; 9] =
-    ["Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
-     "That's planning for failure Morty, even dumber than regular planning. -Rick",
-     "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty \
+pub const QUOTES: [&str; 9] = [
+    "Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
+    "That's planning for failure Morty, even dumber than regular planning. -Rick",
+    "\"Snuffles\" was my slave name. You shall now call me Snowball, because my fur is pretty \
       and white. -S̶n̶u̶f̶f̶l̶e̶s̶ Snowbal",
-     "Existence is pain to an interpreter. -Meeseeks",
-     "In bird culture this is considered a dick move -Bird Person",
-     "There is no god, gotta rip that band aid off now. You'll thank me later. -Rick",
-     "Your program is a piece of shit and I can proove it mathmatically. -Rick",
-     "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing \
+    "Existence is pain to an interpreter. -Meeseeks",
+    "In bird culture this is considered a dick move -Bird Person",
+    "There is no god, gotta rip that band aid off now. You'll thank me later. -Rick",
+    "Your program is a piece of shit and I can proove it mathmatically. -Rick",
+    "Interpreting Morty, it hits hard, then it slowly fades, leaving you stranded in a failing \
       program. -Rick",
-     "DISQUALIFIED. -Cromulon"];
+    "DISQUALIFIED. -Cromulon",
+];
 
 #[derive(Debug)]
 pub struct Error {
@@ -92,47 +93,63 @@ impl Error {
         match self.kind {
             UnknownVariable(ref name) => format!("There's no {} in this universe, Morty!", name),
             NoReturn(ref fn_name) => {
-                format!("Morty, your function has to return a value! {} just runs and dies like \
+                format!(
+                    "Morty, your function has to return a value! {} just runs and dies like \
                          an animal!",
-                        fn_name)
+                    fn_name
+                )
             }
             IndexUnindexable(ref value) => {
-                format!("I'll try and say this slowly Morty. You can't index that. It's a {}",
-                        value.type_str())
+                format!(
+                    "I'll try and say this slowly Morty. You can't index that. It's a {}",
+                    value.type_str()
+                )
             }
             SyntaxError(ref err) => {
-                format!("If you're going to start trying to construct sub-programs in your \
+                format!(
+                    "If you're going to start trying to construct sub-programs in your \
                         programs Morty, you'd better make sure you're careful! {:?}",
-                        err)
+                    err
+                )
             }
             IndexOutOfBounds(ref list, ref index) => {
-                format!("This isn't your mom's wine bottle Morty, you can't just keep asking for \
+                format!(
+                    "This isn't your mom's wine bottle Morty, you can't just keep asking for \
                          more, there's not that much here! You want {}, but your cob only has {} \
                          kernels on it!",
-                        index,
-                        list.len().unwrap())
+                    index,
+                    list.len().unwrap()
+                )
             }
             IOError(ref err) => {
-                format!("Looks like we're having a comm-burp-unications problem Morty: {:?}",
-                        err)
+                format!(
+                    "Looks like we're having a comm-burp-unications problem Morty: {:?}",
+                    err
+                )
             }
             UnexpectedType(ref expected, ref value) => {
-                format!("I asked for a {}, not a {} Morty.",
-                        expected,
-                        value.type_str())
+                format!(
+                    "I asked for a {}, not a {} Morty.",
+                    expected,
+                    value.type_str()
+                )
             }
             InvalidBinaryExpression(ref lhs, ref rhs, ref op) => {
-                format!("It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
-                        op,
-                        lhs.type_str(),
-                        rhs.type_str())
+                format!(
+                    "It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
+                    op,
+                    lhs.type_str(),
+                    rhs.type_str()
+                )
             }
             InvalidArguments(ref name, expected, actual) => {
-                format!("I'm confused Morty, a minute ago you said that {} takes {} paramaters, \
+                format!(
+                    "I'm confused Morty, a minute ago you said that {} takes {} paramaters, \
                          but you just tried to give it {}. WHICH IS IT MORTY?",
-                        name,
-                        expected,
-                        actual)
+                    name,
+                    expected,
+                    actual
+                )
             }
             NonFunctionCallInDylib(_) => {
                 "Is this a miniverse, or a microverse, or a teeny-verse? All I know is \
@@ -150,7 +167,8 @@ impl Error {
 
         let source_part = self.place.get_source(filename).unwrap();
 
-        format!(r#"
+        format!(
+            r#"
     You made a Rickdiculous mistake:
 
     {}
@@ -159,9 +177,10 @@ impl Error {
     {}
 
     "#,
-                source_part,
-                type_msg,
-                quote)
+            source_part,
+            type_msg,
+            quote
+        )
     }
 
     pub fn panic(&self, source: &str) {

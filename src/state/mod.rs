@@ -1,12 +1,12 @@
 use std::io;
 
-use ::expression::Expression;
-use ::value::Value;
-use ::error::{SwResult, SwErResult, Error, ErrorKind};
-use ::statement::{Statement, StatementKind};
-use ::lib;
-use ::value;
-use ::vec_map::VecMap;
+use expression::Expression;
+use value::Value;
+use error::{SwResult, SwErResult, Error, ErrorKind};
+use statement::{Statement, StatementKind};
+use lib;
+use value;
+use vec_map::VecMap;
 
 type Map<K, V> = VecMap<K, V>;
 
@@ -64,8 +64,10 @@ impl State {
                                 Err(ErrorKind::IndexOutOfBounds(symbol.clone(), index))
                             }
                         } else {
-                            Err(ErrorKind::UnexpectedType("int".to_string(),
-                                                          inner_expression_value.clone()))
+                            Err(ErrorKind::UnexpectedType(
+                                "int".to_string(),
+                                inner_expression_value.clone(),
+                            ))
                         }
                     }
                     Value::Str(ref s) => {
@@ -79,8 +81,10 @@ impl State {
                                 Err(ErrorKind::IndexOutOfBounds(inner_expression_value, index))
                             }
                         } else {
-                            Err(ErrorKind::UnexpectedType("int".to_string(),
-                                                          inner_expression_value.clone()))
+                            Err(ErrorKind::UnexpectedType(
+                                "int".to_string(),
+                                inner_expression_value.clone(),
+                            ))
                         }
                     }
                     _ => Err(ErrorKind::IndexUnindexable(symbol.clone())),
@@ -104,9 +108,11 @@ impl State {
         match self.get(name)?.clone() {
             Value::Function(ref params, ref body) => {
                 if args.len() != params.len() {
-                    return Err(ErrorKind::InvalidArguments(name.to_string(),
-                                                           args.len(),
-                                                           params.len()));
+                    return Err(ErrorKind::InvalidArguments(
+                        name.to_string(),
+                        args.len(),
+                        params.len(),
+                    ));
                 }
 
                 for (name, arg) in params.iter().zip(call_args) {
@@ -126,7 +132,10 @@ impl State {
                 self.last_return = None;
                 Ok(ret)
             }
-            val => Err(ErrorKind::UnexpectedType("function".to_string(), val.clone())),
+            val => Err(ErrorKind::UnexpectedType(
+                "function".to_string(),
+                val.clone(),
+            )),
         }
     }
 
@@ -210,11 +219,12 @@ impl State {
         }
     }
 
-    fn list_assign(&mut self,
-                   list_name: &str,
-                   index_exp: &Expression,
-                   assign_exp: &Expression)
-                   -> SwResult<()> {
+    fn list_assign(
+        &mut self,
+        list_name: &str,
+        index_exp: &Expression,
+        assign_exp: &Expression,
+    ) -> SwResult<()> {
         let to_assign = assign_exp.evaluate(self)?;
         let element = self.get_list_element(list_name, index_exp)?;
 
@@ -232,19 +242,23 @@ impl State {
                 list.remove(index);
                 Ok(())
             } else {
-                Err(ErrorKind::IndexOutOfBounds(Value::List(list.clone()), index))
+                Err(ErrorKind::IndexOutOfBounds(
+                    Value::List(list.clone()),
+                    index,
+                ))
             }
         } else {
             Err(ErrorKind::UnexpectedType("int".to_string(), index_value))
         }
     }
 
-    fn exec_if(&mut self,
-               statement: &Statement,
-               bool: &Expression,
-               if_body: &[Statement],
-               else_body: &Option<Vec<Statement>>)
-               -> SwErResult<()> {
+    fn exec_if(
+        &mut self,
+        statement: &Statement,
+        bool: &Expression,
+        if_body: &[Statement],
+        else_body: &Option<Vec<Statement>>,
+    ) -> SwErResult<()> {
         let x = match bool.evaluate(self) {
             Ok(b) => b,
             Err(e) => return error!(e, statement.clone()),
@@ -263,17 +277,20 @@ impl State {
                 Ok(())
             }
             _ => {
-                error!(ErrorKind::UnexpectedType("bool".to_string(), x.clone()),
-                       statement.clone())
+                error!(
+                    ErrorKind::UnexpectedType("bool".to_string(), x.clone()),
+                    statement.clone()
+                )
             }
         }
     }
 
-    fn exec_while(&mut self,
-                  statement: &Statement,
-                  bool: &Expression,
-                  body: &[Statement])
-                  -> SwErResult<()> {
+    fn exec_while(
+        &mut self,
+        statement: &Statement,
+        bool: &Expression,
+        body: &[Statement],
+    ) -> SwErResult<()> {
         let mut condition = try_error!(bool.try_bool(self), statement);
 
         while condition {
@@ -323,7 +340,10 @@ impl State {
             StatementKind::PrintNoNl(ref exp) => try_nop_error!(self.print_no_nl(exp), statement),
             StatementKind::Catch(ref try, ref catch) => self.catch(try, catch),
             StatementKind::Function(ref name, ref args, ref body) => {
-                self.symbols.insert(name.clone(), Value::Function(args.clone(), body.clone()));
+                self.symbols.insert(
+                    name.clone(),
+                    Value::Function(args.clone(), body.clone()),
+                );
                 Ok(())
             }
             StatementKind::Return(ref expr) => {
@@ -386,18 +406,18 @@ impl State {
         let mut value_args = Vec::new();
 
         for arg in args {
-            value_args.push(super::grammar::value(arg)
-                .unwrap_or_else(
-                    |_| Value::Str((*arg).into())
-                ));
+            value_args.push(super::grammar::value(arg).unwrap_or_else(
+                |_| Value::Str((*arg).into()),
+            ));
         }
 
         self.symbols.insert("argv".into(), value_args.into());
     }
 
     pub fn insert<S, V>(&mut self, name: S, value: V)
-        where S: Into<String>,
-              V: Into<Value>
+    where
+        S: Into<String>,
+        V: Into<Value>,
     {
         self.symbols.insert(name.into(), value.into());
     }

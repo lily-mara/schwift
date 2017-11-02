@@ -1,10 +1,10 @@
-use ::state::State;
-use ::statement::StatementKind as Kind;
-use ::statement::Statement;
-use ::value::Value;
-use ::expression::Expression as Exp;
-use ::error::ErrorKind as EKind;
-use ::grammar;
+use state::State;
+use statement::StatementKind as Kind;
+use statement::Statement;
+use value::Value;
+use expression::Expression as Exp;
+use error::ErrorKind as EKind;
+use grammar;
 
 #[test]
 fn test_assignment_adds_to_symbol_table() {
@@ -47,7 +47,8 @@ fn test_get_returns_error_if_not_present() {
 fn test_is_prime() {
     let mut state = State::new();
 
-    let code = grammar::file(r#"
+    let code = grammar::file(
+        r#"
     isPrime(x) :<
         i squanch 2
 
@@ -66,8 +67,8 @@ fn test_is_prime() {
     eighteen squanch isPrime(18)
     fourHundredFourty squanch isPrime(440)
     big squanch isPrime(524287)
-    "#)
-        .unwrap();
+    "#,
+    ).unwrap();
 
     state.run(&code).unwrap();
     assert_eq!(*state.get("ten").unwrap(), Value::new(false));
@@ -81,10 +82,11 @@ fn test_is_prime() {
 fn test_modulus() {
     let mut state = State::new();
 
-    let code = grammar::file(r#"
+    let code = grammar::file(
+        r#"
     x squanch (50 % 4)
-    "#)
-        .unwrap();
+    "#,
+    ).unwrap();
 
     state.run(&code).unwrap();
     assert_eq!(*state.get("x").unwrap(), Value::new(2));
@@ -94,7 +96,8 @@ fn test_modulus() {
 fn test_early_return_if() {
     let mut state = State::new();
 
-    let code = grammar::file(r#"
+    let code = grammar::file(
+        r#"
     small(x) :<
         if (x less 100) :<
             return rick
@@ -106,8 +109,8 @@ fn test_early_return_if() {
     z squanch small(10000)
     a squanch small(140)
     b squanch small(0)
-    "#)
-        .unwrap();
+    "#,
+    ).unwrap();
 
     state.run(&code).unwrap();
     assert_eq!(*state.get("y").unwrap(), Value::new(true));
@@ -120,7 +123,8 @@ fn test_early_return_if() {
 fn test_early_return_while() {
     let mut state = State::new();
 
-    let code = grammar::file(r#"
+    let code = grammar::file(
+        r#"
     small(x) :<
         i squanch 0
         while (i less 100) :<
@@ -136,8 +140,8 @@ fn test_early_return_while() {
     z squanch small(10000)
     a squanch small(140)
     b squanch small(0)
-    "#)
-        .unwrap();
+    "#,
+    ).unwrap();
 
     state.run(&code).unwrap();
     assert_eq!(*state.get("y").unwrap(), Value::new(true));

@@ -16,7 +16,8 @@ pub enum Expression {
 }
 
 impl<T> From<T> for Expression
-    where T: Into<Value>
+where
+    T: Into<Value>,
 {
     fn from(fr: T) -> Expression {
         Expression::Value(fr.into())
@@ -25,51 +26,59 @@ impl<T> From<T> for Expression
 
 impl Expression {
     pub fn new<T>(from: T) -> Expression
-        where T: Into<Expression>
+    where
+        T: Into<Expression>,
     {
         from.into()
     }
 
     pub fn variable<S>(name: S) -> Expression
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
         Expression::Variable(name.into())
     }
 
     pub fn list_length<S>(name: S) -> Expression
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
         Expression::ListLength(name.into())
     }
 
     pub fn operator<L, R>(left: L, op: Operator, right: R) -> Expression
-        where L: Into<Expression>,
-              R: Into<Expression>
+    where
+        L: Into<Expression>,
+        R: Into<Expression>,
     {
         Expression::OpExp(Box::new(left.into()), op, Box::new(right.into()))
     }
 
     pub fn not<E>(expr: E) -> Expression
-        where E: Into<Expression>
+    where
+        E: Into<Expression>,
     {
         Expression::Not(Box::new(expr.into()))
     }
 
     pub fn eval<E>(expr: E) -> Expression
-        where E: Into<Expression>
+    where
+        E: Into<Expression>,
     {
         Expression::Eval(Box::new(expr.into()))
     }
 
     pub fn list_index<S, E>(name: S, index: E) -> Expression
-        where S: Into<String>,
-              E: Into<Expression>
+    where
+        S: Into<String>,
+        E: Into<Expression>,
     {
         Expression::ListIndex(name.into(), Box::new(index.into()))
     }
 
     pub fn value<V>(val: V) -> Expression
-        where V: Into<Value>
+    where
+        V: Into<Value>,
     {
         Expression::Value(val.into())
     }

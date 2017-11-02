@@ -25,8 +25,8 @@ mod vec_map;
 use statement::*;
 use state::*;
 
-const BUILTINS_FILE: & str = "builtins.y";
-const BUILTINS: & str = include_str!("builtins.y");
+const BUILTINS_FILE: &str = "builtins.y";
+const BUILTINS: &str = include_str!("builtins.y");
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {

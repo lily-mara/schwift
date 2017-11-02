@@ -122,7 +122,8 @@ impl From<&'static str> for Value {
 }
 
 impl<T> From<Vec<T>> for Value
-    where T: Into<Value>
+where
+    T: Into<Value>,
 {
     fn from(from: Vec<T>) -> Value {
         let mut buf = vec![];
@@ -136,7 +137,8 @@ impl<T> From<Vec<T>> for Value
 
 impl Value {
     pub fn new<T>(val: T) -> Self
-        where T: Into<Value>
+    where
+        T: Into<Value>,
     {
         val.into()
     }
@@ -146,7 +148,10 @@ impl Value {
         match *self {
             Str(ref s) => Ok(s.chars().count()),
             List(ref l) => Ok(l.len()),
-            _ => Err(ErrorKind::UnexpectedType("string or list".to_string(), self.clone())),
+            _ => Err(ErrorKind::UnexpectedType(
+                "string or list".to_string(),
+                self.clone(),
+            )),
         }
     }
 
@@ -155,7 +160,10 @@ impl Value {
         match *self {
             Str(ref s) => Ok(s.is_empty()),
             List(ref l) => Ok(l.is_empty()),
-            _ => Err(ErrorKind::UnexpectedType("string or list".to_string(), self.clone())),
+            _ => Err(ErrorKind::UnexpectedType(
+                "string or list".to_string(),
+                self.clone(),
+            )),
         }
     }
 
@@ -264,7 +272,11 @@ impl Value {
                 Ok(Value::Str(new_buf))
             }
             _ => {
-                Err(ErrorKind::InvalidBinaryExpression(self.clone(), other.clone(), Operator::Add))
+                Err(ErrorKind::InvalidBinaryExpression(
+                    self.clone(),
+                    other.clone(),
+                    Operator::Add,
+                ))
             }
         }
     }
@@ -276,9 +288,11 @@ impl Value {
             (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f - i as FloatT)),
             (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT - f)),
             _ => {
-                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
-                                                       other.clone(),
-                                                       Operator::Subtract))
+                Err(ErrorKind::InvalidBinaryExpression(
+                    self.clone(),
+                    other.clone(),
+                    Operator::Subtract,
+                ))
             }
         }
     }
@@ -297,9 +311,11 @@ impl Value {
                 Ok(Value::Str(new_buf))
             }
             _ => {
-                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
-                                                       other.clone(),
-                                                       Operator::Multiply))
+                Err(ErrorKind::InvalidBinaryExpression(
+                    self.clone(),
+                    other.clone(),
+                    Operator::Multiply,
+                ))
             }
         }
     }
@@ -311,9 +327,11 @@ impl Value {
             (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f / i as FloatT)),
             (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT / f)),
             _ => {
-                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
-                                                       other.clone(),
-                                                       Operator::Divide))
+                Err(ErrorKind::InvalidBinaryExpression(
+                    self.clone(),
+                    other.clone(),
+                    Operator::Divide,
+                ))
             }
         }
     }
@@ -322,9 +340,11 @@ impl Value {
         match (self, other) {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 << i2)),
             _ => {
-                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
-                                                       other.clone(),
-                                                       Operator::ShiftLeft))
+                Err(ErrorKind::InvalidBinaryExpression(
+                    self.clone(),
+                    other.clone(),
+                    Operator::ShiftLeft,
+                ))
             }
         }
     }
@@ -333,9 +353,11 @@ impl Value {
         match (self, other) {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 >> i2)),
             _ => {
-                Err(ErrorKind::InvalidBinaryExpression(self.clone(),
-                                                       other.clone(),
-                                                       Operator::ShiftRight))
+                Err(ErrorKind::InvalidBinaryExpression(
+                    self.clone(),
+                    other.clone(),
+                    Operator::ShiftRight,
+                ))
             }
         }
     }
