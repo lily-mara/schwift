@@ -3,7 +3,7 @@ portal gun input
 
 show me what you got ""
 
-size squanch (input squanch - 1)
+size squanch (input squanch)
 count squanch 0
 
 memory on a cob

@@ -4,6 +4,7 @@ use super::error::{ErrorKind, SwResult};
 use super::statement::Statement;
 use super::util;
 use std::{fmt, clone};
+use ::regex::Regex;
 
 use std::f64 as FloatValueType;
 
@@ -404,4 +405,12 @@ impl PartialEq for Value {
             _ => false,
         }
     }
+}
+
+pub fn string_parse(string: &str) -> String {
+    lazy_static! {
+        static ref NEWLINE: Regex = Regex::new("[^\\\\]?\\\\n").unwrap();
+    }
+
+    NEWLINE.replace_all(string, "\n").into()
 }

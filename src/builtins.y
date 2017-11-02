@@ -1,4 +1,8 @@
 ascii (int) :<
+	if (int == 10) :<
+		return "\n"
+	>:
+
 	if (int == 32) :<
 		return " "
 	>:

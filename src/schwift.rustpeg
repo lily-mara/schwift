@@ -2,10 +2,10 @@ use super::{ Operator };
 use super::statement::Statement;
 use super::statement::StatementKind;
 use super::expression::Expression;
-use super::value::{ Value, FloatT, IntT };
+use super::value::{ Value, FloatT, IntT, string_parse };
 
 string_inquotes -> String
-    = s:$([^"]*) { s.to_string() }
+    = s:$([^"]*) { string_parse(s) }
 
 int -> IntT
     = n:$("-"? [0-9]+) { n.parse::<IntT>().unwrap() }

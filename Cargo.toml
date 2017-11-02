@@ -8,6 +8,8 @@ build = "build.rs"
 clap = "2.24"
 rand = "0.3"
 libloading = "0.4"
+regex = "0.2.2"
+lazy_static = "0.2.9"
 
 [build-dependencies]
 peg = { version = "0.5" }
