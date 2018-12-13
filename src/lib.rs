@@ -1,14 +1,15 @@
 #![allow(unknown_lints)]
 
-extern crate rand;
 extern crate libloading as lib;
+extern crate rand;
 extern crate regex;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
 use std::fs::File;
 use std::io::prelude::*;
 
-#[allow(clippy)]
+#[allow(clippy::all)]
 mod grammar {
     include!(concat!(env!("OUT_DIR"), "/schwift.rs"));
 }
@@ -16,16 +17,16 @@ mod grammar {
 #[cfg(test)]
 mod grammar_tests;
 
-pub mod statement;
-pub mod expression;
-pub mod value;
 pub mod error;
+pub mod expression;
 pub mod state;
+pub mod statement;
 mod util;
+pub mod value;
 mod vec_map;
 
-use statement::*;
 use state::*;
+use statement::*;
 
 const BUILTINS_FILE: &str = "builtins.y";
 const BUILTINS: &str = include_str!("builtins.y");
@@ -54,15 +55,13 @@ fn get_line<'a>(file: &'a str, err: &grammar::ParseError) -> &'a str {
 
     for i in 0..file.len() {
         if file.is_char_boundary(i) {
-            let symbol = unsafe { file.slice_unchecked(i, i + 1) };
+            let symbol = &file[i..=i];
 
             if symbol == "\n" {
                 count += 1;
 
                 if count == err.line {
-                    unsafe {
-                        return file.slice_unchecked(last_newline, i);
-                    }
+                    return &file[last_newline..i];
                 }
 
                 last_newline = i + 1;
@@ -111,7 +110,6 @@ fn parse_str(source: &str, filename: &str) -> Vec<Statement> {
                 place_carat(e)
             );
             std::process::exit(1);
-
         }
     }
 }

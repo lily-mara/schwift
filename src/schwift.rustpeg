@@ -87,7 +87,7 @@ statement_kind -> StatementKind
     / "if" WS e:expression WS s:block { StatementKind::If(e, s, Option::None) }
     / "while" WS e:expression WS b:block { StatementKind::While(e, b) }
     / "portal gun" WS i:identifier { StatementKind::Input(i) }
-    / "normal plan" ws try:block ws "plan for failure" ws catch:block { StatementKind::Catch(try, catch) }
+    / "normal plan" ws try_block:block ws "plan for failure" ws catch:block { StatementKind::Catch(try_block, catch) }
     / i:identifier a:args { StatementKind::FunctionCall(i, a) }
     / "return" WS e:expression { StatementKind::Return(e) }
     / "microverse" WS lib:string WS funcs:block { StatementKind::DylibLoad(lib, funcs) }

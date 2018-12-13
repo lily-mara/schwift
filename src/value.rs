@@ -1,10 +1,10 @@
-use super::Operator;
-use std::cmp::Ordering;
 use super::error::{ErrorKind, SwResult};
 use super::statement::Statement;
 use super::util;
-use std::{fmt, clone};
-use ::regex::Regex;
+use super::Operator;
+use regex::Regex;
+use std::cmp::Ordering;
+use std::{clone, fmt};
 
 use std::f64 as FloatValueType;
 
@@ -65,7 +65,7 @@ impl clone::Clone for Func {
 
 impl Func {
     pub fn new(f: _FuncSymbol) -> Self {
-        Func { f: f }
+        Func { f }
     }
 
     pub fn call(&self, args: &[Value]) -> SwResult<Value> {
@@ -265,20 +265,19 @@ impl Value {
         match (self, other) {
             (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 + f2)),
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 + i2)),
-            (&Value::Float(f), &Value::Int(i)) |
-            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT + f)),
+            (&Value::Float(f), &Value::Int(i)) | (&Value::Int(i), &Value::Float(f)) => {
+                Ok(Value::Float(i as FloatT + f))
+            }
             (&Value::Str(ref s1), &Value::Str(ref s2)) => {
                 let mut new_buf = s1.clone();
                 new_buf.push_str(s2);
                 Ok(Value::Str(new_buf))
             }
-            _ => {
-                Err(ErrorKind::InvalidBinaryExpression(
-                    self.clone(),
-                    other.clone(),
-                    Operator::Add,
-                ))
-            }
+            _ => Err(ErrorKind::InvalidBinaryExpression(
+                self.clone(),
+                other.clone(),
+                Operator::Add,
+            )),
         }
     }
 
@@ -288,13 +287,11 @@ impl Value {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 - i2)),
             (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f - i as FloatT)),
             (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT - f)),
-            _ => {
-                Err(ErrorKind::InvalidBinaryExpression(
-                    self.clone(),
-                    other.clone(),
-                    Operator::Subtract,
-                ))
-            }
+            _ => Err(ErrorKind::InvalidBinaryExpression(
+                self.clone(),
+                other.clone(),
+                Operator::Subtract,
+            )),
         }
     }
 
@@ -302,8 +299,9 @@ impl Value {
         match (self, other) {
             (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 * f2)),
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 * i2)),
-            (&Value::Float(f), &Value::Int(i)) |
-            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT * f)),
+            (&Value::Float(f), &Value::Int(i)) | (&Value::Int(i), &Value::Float(f)) => {
+                Ok(Value::Float(i as FloatT * f))
+            }
             (&Value::Str(ref s), &Value::Int(i)) => {
                 let mut new_buf = s.clone();
                 for _ in 0..(i - 1) {
@@ -311,13 +309,11 @@ impl Value {
                 }
                 Ok(Value::Str(new_buf))
             }
-            _ => {
-                Err(ErrorKind::InvalidBinaryExpression(
-                    self.clone(),
-                    other.clone(),
-                    Operator::Multiply,
-                ))
-            }
+            _ => Err(ErrorKind::InvalidBinaryExpression(
+                self.clone(),
+                other.clone(),
+                Operator::Multiply,
+            )),
         }
     }
 
@@ -327,39 +323,33 @@ impl Value {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 / i2)),
             (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f / i as FloatT)),
             (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT / f)),
-            _ => {
-                Err(ErrorKind::InvalidBinaryExpression(
-                    self.clone(),
-                    other.clone(),
-                    Operator::Divide,
-                ))
-            }
+            _ => Err(ErrorKind::InvalidBinaryExpression(
+                self.clone(),
+                other.clone(),
+                Operator::Divide,
+            )),
         }
     }
 
     pub fn shift_left(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 << i2)),
-            _ => {
-                Err(ErrorKind::InvalidBinaryExpression(
-                    self.clone(),
-                    other.clone(),
-                    Operator::ShiftLeft,
-                ))
-            }
+            _ => Err(ErrorKind::InvalidBinaryExpression(
+                self.clone(),
+                other.clone(),
+                Operator::ShiftLeft,
+            )),
         }
     }
 
     pub fn shift_right(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
             (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 >> i2)),
-            _ => {
-                Err(ErrorKind::InvalidBinaryExpression(
-                    self.clone(),
-                    other.clone(),
-                    Operator::ShiftRight,
-                ))
-            }
+            _ => Err(ErrorKind::InvalidBinaryExpression(
+                self.clone(),
+                other.clone(),
+                Operator::ShiftRight,
+            )),
         }
     }
 
@@ -399,8 +389,9 @@ impl PartialEq for Value {
             (&Value::Str(ref s1), &Value::Str(ref s2)) => s1 == s2,
             (&Value::List(ref l1), &Value::List(ref l2)) => l1 == l2,
             (&Value::Int(i1), &Value::Int(i2)) => i1 == i2,
-            (&Value::Int(i), &Value::Float(f)) |
-            (&Value::Float(f), &Value::Int(i)) => (i as FloatT - f).abs() < FloatValueType::EPSILON,
+            (&Value::Int(i), &Value::Float(f)) | (&Value::Float(f), &Value::Int(i)) => {
+                (i as FloatT - f).abs() < FloatValueType::EPSILON
+            }
             (&Value::Float(f1), &Value::Float(f2)) => (f1 - f2).abs() < FloatValueType::EPSILON,
             _ => false,
         }

@@ -1,8 +1,8 @@
 use super::expression::Expression;
 
-use std::io;
-use std::fs::File;
 use std::cmp;
+use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -46,7 +46,6 @@ impl StatementKind {
     where
         S: Into<String>,
     {
-
         StatementKind::DylibLoad(lib_path.into(), functions)
     }
 
@@ -111,8 +110,8 @@ impl StatementKind {
         StatementKind::Input(name.into())
     }
 
-    pub fn catch(try: Vec<Statement>, catch: Vec<Statement>) -> StatementKind {
-        StatementKind::Catch(try, catch)
+    pub fn catch(try_block: Vec<Statement>, catch: Vec<Statement>) -> StatementKind {
+        StatementKind::Catch(try_block, catch)
     }
 
     pub fn list_assign<S, E, R>(name: S, index: E, assign: R) -> StatementKind
@@ -148,17 +147,13 @@ impl StatementKind {
 
 impl Statement {
     pub fn new(kind: StatementKind, start: usize, end: usize) -> Statement {
-        Statement {
-            kind: kind,
-            start: start,
-            end: end,
-        }
+        Statement { kind, start, end }
     }
 
     #[cfg(test)]
     pub fn tnew(kind: StatementKind) -> Statement {
         Statement {
-            kind: kind,
+            kind,
             start: 0,
             end: 0,
         }
@@ -170,12 +165,8 @@ impl Statement {
         f.read_to_string(&mut source)?;
 
         assert!(self.start < self.end);
-        assert!(source.is_char_boundary(self.start));
-        assert!(source.is_char_boundary(self.end));
 
-        Ok(
-            unsafe { source.slice_unchecked(self.start, self.end) }.to_string(),
-        )
+        Ok(source[self.start..self.end].to_string())
     }
 }
 

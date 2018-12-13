@@ -1,11 +1,11 @@
 use std::io;
 
+use error::{Error, ErrorKind, SwErResult, SwResult};
 use expression::Expression;
-use value::Value;
-use error::{SwResult, SwErResult, Error, ErrorKind};
-use statement::{Statement, StatementKind};
 use lib;
+use statement::{Statement, StatementKind};
 use value;
+use value::Value;
 use vec_map::VecMap;
 
 type Map<K, V> = VecMap<K, V>;
@@ -20,76 +20,68 @@ pub struct State {
 }
 
 macro_rules! error {
-    ( $kind:expr, $place:expr ) => {
-        {
-            Err(Error::new($kind, $place))
-        }
-    };
+    ( $kind:expr, $place:expr ) => {{
+        Err(Error::new($kind, $place))
+    }};
 }
 
 macro_rules! try_error {
-    ( $error:expr, $statement:expr ) => {
-        {
-            match $error {
-                Ok(val) => val,
-                Err(err) => return Err(Error::new(err, $statement.clone())),
-            }
+    ( $error:expr, $statement:expr ) => {{
+        match $error {
+            Ok(val) => val,
+            Err(err) => return Err(Error::new(err, $statement.clone())),
         }
-    };
+    }};
 }
 
 macro_rules! try_nop_error {
-    ( $error:expr, $statement:expr ) => {
-        {
-            match $error {
-                Ok(_) => { Ok(()) },
-                Err(err) => return Err(Error::new(err, $statement.clone())),
-            }
+    ( $error:expr, $statement:expr ) => {{
+        match $error {
+            Ok(_) => Ok(()),
+            Err(err) => return Err(Error::new(err, $statement.clone())),
         }
-    };
+    }};
 }
 
 impl State {
     pub fn list_index(&mut self, list_name: &str, exp: &Expression) -> SwResult<Value> {
         let inner_expression_value = exp.evaluate(self)?;
         match self.symbols.get(list_name) {
-            Some(symbol) => {
-                match *symbol {
-                    Value::List(ref l) => {
-                        if let Value::Int(i) = inner_expression_value {
-                            let index = i as usize;
-                            if index < l.len() {
-                                Ok(l[index].clone())
-                            } else {
-                                Err(ErrorKind::IndexOutOfBounds(symbol.clone(), index))
-                            }
+            Some(symbol) => match *symbol {
+                Value::List(ref l) => {
+                    if let Value::Int(i) = inner_expression_value {
+                        let index = i as usize;
+                        if index < l.len() {
+                            Ok(l[index].clone())
                         } else {
-                            Err(ErrorKind::UnexpectedType(
-                                "int".to_string(),
-                                inner_expression_value.clone(),
-                            ))
+                            Err(ErrorKind::IndexOutOfBounds(symbol.clone(), index))
                         }
+                    } else {
+                        Err(ErrorKind::UnexpectedType(
+                            "int".to_string(),
+                            inner_expression_value.clone(),
+                        ))
                     }
-                    Value::Str(ref s) => {
-                        if let Value::Int(i) = inner_expression_value {
-                            let index = i as usize;
-                            let chars: Vec<char> = s.chars().collect();
-
-                            if index < chars.len() {
-                                Ok(Value::Str(chars[index].to_string()))
-                            } else {
-                                Err(ErrorKind::IndexOutOfBounds(inner_expression_value, index))
-                            }
-                        } else {
-                            Err(ErrorKind::UnexpectedType(
-                                "int".to_string(),
-                                inner_expression_value.clone(),
-                            ))
-                        }
-                    }
-                    _ => Err(ErrorKind::IndexUnindexable(symbol.clone())),
                 }
-            }
+                Value::Str(ref s) => {
+                    if let Value::Int(i) = inner_expression_value {
+                        let index = i as usize;
+                        let chars: Vec<char> = s.chars().collect();
+
+                        if index < chars.len() {
+                            Ok(Value::Str(chars[index].to_string()))
+                        } else {
+                            Err(ErrorKind::IndexOutOfBounds(inner_expression_value, index))
+                        }
+                    } else {
+                        Err(ErrorKind::UnexpectedType(
+                            "int".to_string(),
+                            inner_expression_value.clone(),
+                        ))
+                    }
+                }
+                _ => Err(ErrorKind::IndexUnindexable(symbol.clone())),
+            },
             None => Err(ErrorKind::UnknownVariable(list_name.to_string())),
         }
     }
@@ -276,12 +268,10 @@ impl State {
                 }
                 Ok(())
             }
-            _ => {
-                error!(
-                    ErrorKind::UnexpectedType("bool".to_string(), x.clone()),
-                    statement.clone()
-                )
-            }
+            _ => error!(
+                ErrorKind::UnexpectedType("bool".to_string(), x.clone()),
+                statement.clone()
+            ),
         }
     }
 
@@ -304,14 +294,13 @@ impl State {
         Ok(())
     }
 
-    fn catch(&mut self, try: &[Statement], catch: &[Statement]) -> SwErResult<()> {
-        match self.run(try) {
+    fn catch(&mut self, try_block: &[Statement], catch: &[Statement]) -> SwErResult<()> {
+        match self.run(try_block) {
             Ok(()) => Ok(()),
             Err(_) => self.run(catch),
         }
     }
 
-    #[allow(needless_return)]
     pub fn execute(&mut self, statement: &Statement) -> SwErResult<()> {
         match statement.kind {
             StatementKind::Input(ref s) => try_nop_error!(self.input(s.to_string()), statement),
@@ -338,12 +327,10 @@ impl State {
             StatementKind::Delete(ref name) => try_nop_error!(self.delete(name), statement),
             StatementKind::Print(ref exp) => try_nop_error!(self.print(exp), statement),
             StatementKind::PrintNoNl(ref exp) => try_nop_error!(self.print_no_nl(exp), statement),
-            StatementKind::Catch(ref try, ref catch) => self.catch(try, catch),
+            StatementKind::Catch(ref try_block, ref catch) => self.catch(try_block, catch),
             StatementKind::Function(ref name, ref args, ref body) => {
-                self.symbols.insert(
-                    name.clone(),
-                    Value::Function(args.clone(), body.clone()),
-                );
+                self.symbols
+                    .insert(name.clone(), Value::Function(args.clone(), body.clone()));
                 Ok(())
             }
             StatementKind::Return(ref expr) => {
@@ -406,9 +393,8 @@ impl State {
         let mut value_args = Vec::new();
 
         for arg in args {
-            value_args.push(super::grammar::value(arg).unwrap_or_else(
-                |_| Value::Str((*arg).into()),
-            ));
+            value_args
+                .push(super::grammar::value(arg).unwrap_or_else(|_| Value::Str((*arg).into())));
         }
 
         self.symbols.insert("argv".into(), value_args.into());
