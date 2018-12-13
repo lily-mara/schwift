@@ -1,12 +1,11 @@
+use crate::{
+    error::{Error, ErrorKind, SwErResult, SwResult},
+    expression::Expression,
+    statement::{Statement, StatementKind},
+    value::{self, Value},
+    vec_map::VecMap,
+};
 use std::io;
-
-use error::{Error, ErrorKind, SwErResult, SwResult};
-use expression::Expression;
-use lib;
-use statement::{Statement, StatementKind};
-use value;
-use value::Value;
-use vec_map::VecMap;
 
 type Map<K, V> = VecMap<K, V>;
 
@@ -16,12 +15,12 @@ mod test;
 pub struct State {
     symbols: Map<String, Value>,
     last_return: Option<Value>,
-    libraries: Vec<lib::Library>,
+    libraries: Vec<libloading::Library>,
 }
 
 macro_rules! error {
     ( $kind:expr, $place:expr ) => {{
-        Err(Error::new($kind, $place))
+        Err(crate::error::Error::new($kind, $place))
     }};
 }
 
@@ -29,7 +28,7 @@ macro_rules! try_error {
     ( $error:expr, $statement:expr ) => {{
         match $error {
             Ok(val) => val,
-            Err(err) => return Err(Error::new(err, $statement.clone())),
+            Err(err) => return Err(crate::error::Error::new(err, $statement.clone())),
         }
     }};
 }
@@ -38,7 +37,7 @@ macro_rules! try_nop_error {
     ( $error:expr, $statement:expr ) => {{
         match $error {
             Ok(_) => Ok(()),
-            Err(err) => return Err(Error::new(err, $statement.clone())),
+            Err(err) => return Err(crate::error::Error::new(err, $statement.clone())),
         }
     }};
 }
@@ -370,12 +369,13 @@ impl State {
     }
 
     fn dylib_load(&mut self, lib_path: &str, functions: &[Statement]) -> SwResult<()> {
-        let dylib = lib::Library::new(lib_path)?;
+        let dylib = libloading::Library::new(lib_path)?;
         for statement in functions {
             match statement.kind {
                 StatementKind::FunctionCall(ref name, _) => {
                     let func = unsafe {
-                        let wrapped_func: lib::Symbol<value::_Func> = dylib.get(name.as_bytes())?;
+                        let wrapped_func: libloading::Symbol<value::_Func> =
+                            dylib.get(name.as_bytes())?;
                         wrapped_func.into_raw()
                     };
                     self.insert(name.as_str(), value::Func::new(func));

@@ -1,21 +1,20 @@
-use super::error::{ErrorKind, SwResult};
-use super::statement::Statement;
-use super::util;
-use super::Operator;
+use crate::{
+    error::{ErrorKind, SwResult},
+    statement::Statement,
+    util, Operator,
+};
+use lazy_static::*;
 use regex::Regex;
-use std::cmp::Ordering;
-use std::{clone, fmt};
-
-use std::f64 as FloatValueType;
+use std::{clone, cmp::Ordering, f64 as FloatValueType, fmt};
 
 pub type FloatT = f64;
 pub type IntT = i64;
 
 #[cfg(unix)]
-use super::lib::os::unix::Symbol;
+use libloading::os::unix::Symbol;
 
 #[cfg(windows)]
-use super::lib::os::windows::Symbol;
+use libloading::os::windows::Symbol;
 
 pub type _Func = fn(&[Value]) -> SwResult<Value>;
 pub type _FuncSymbol = Symbol<_Func>;
@@ -263,12 +262,12 @@ impl Value {
 
     pub fn add(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 + f2)),
-            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 + i2)),
-            (&Value::Float(f), &Value::Int(i)) | (&Value::Int(i), &Value::Float(f)) => {
-                Ok(Value::Float(i as FloatT + f))
+            (Value::Float(f1), Value::Float(f2)) => Ok(Value::Float(f1 + f2)),
+            (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 + i2)),
+            (Value::Float(f), Value::Int(i)) | (Value::Int(i), Value::Float(f)) => {
+                Ok(Value::Float(*i as FloatT + f))
             }
-            (&Value::Str(ref s1), &Value::Str(ref s2)) => {
+            (Value::Str(ref s1), Value::Str(ref s2)) => {
                 let mut new_buf = s1.clone();
                 new_buf.push_str(s2);
                 Ok(Value::Str(new_buf))
@@ -283,10 +282,10 @@ impl Value {
 
     pub fn subtract(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 - f2)),
-            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 - i2)),
-            (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f - i as FloatT)),
-            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT - f)),
+            (Value::Float(f1), Value::Float(f2)) => Ok(Value::Float(f1 - f2)),
+            (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 - i2)),
+            (Value::Float(f), Value::Int(i)) => Ok(Value::Float(f - *i as FloatT)),
+            (Value::Int(i), Value::Float(f)) => Ok(Value::Float(*i as FloatT - f)),
             _ => Err(ErrorKind::InvalidBinaryExpression(
                 self.clone(),
                 other.clone(),
@@ -297,12 +296,12 @@ impl Value {
 
     pub fn multiply(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 * f2)),
-            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 * i2)),
-            (&Value::Float(f), &Value::Int(i)) | (&Value::Int(i), &Value::Float(f)) => {
-                Ok(Value::Float(i as FloatT * f))
+            (Value::Float(f1), Value::Float(f2)) => Ok(Value::Float(f1 * f2)),
+            (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 * i2)),
+            (Value::Float(f), Value::Int(i)) | (Value::Int(i), Value::Float(f)) => {
+                Ok(Value::Float(*i as FloatT * f))
             }
-            (&Value::Str(ref s), &Value::Int(i)) => {
+            (Value::Str(ref s), Value::Int(i)) => {
                 let mut new_buf = s.clone();
                 for _ in 0..(i - 1) {
                     new_buf.push_str(s);
@@ -319,10 +318,10 @@ impl Value {
 
     pub fn divide(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Float(f1), &Value::Float(f2)) => Ok(Value::Float(f1 / f2)),
-            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 / i2)),
-            (&Value::Float(f), &Value::Int(i)) => Ok(Value::Float(f / i as FloatT)),
-            (&Value::Int(i), &Value::Float(f)) => Ok(Value::Float(i as FloatT / f)),
+            (Value::Float(f1), Value::Float(f2)) => Ok(Value::Float(f1 / f2)),
+            (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 / i2)),
+            (Value::Float(f), Value::Int(i)) => Ok(Value::Float(f / *i as FloatT)),
+            (Value::Int(i), Value::Float(f)) => Ok(Value::Float(*i as FloatT / f)),
             _ => Err(ErrorKind::InvalidBinaryExpression(
                 self.clone(),
                 other.clone(),
@@ -333,7 +332,7 @@ impl Value {
 
     pub fn shift_left(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 << i2)),
+            (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 << i2)),
             _ => Err(ErrorKind::InvalidBinaryExpression(
                 self.clone(),
                 other.clone(),
@@ -344,7 +343,7 @@ impl Value {
 
     pub fn shift_right(&self, other: &Value) -> SwResult<Value> {
         match (self, other) {
-            (&Value::Int(i1), &Value::Int(i2)) => Ok(Value::Int(i1 >> i2)),
+            (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 >> i2)),
             _ => Err(ErrorKind::InvalidBinaryExpression(
                 self.clone(),
                 other.clone(),
@@ -372,8 +371,8 @@ impl PartialOrd for Value {
             Option::Some(Ordering::Equal)
         } else {
             let (s, o) = match (self, other) {
-                (&Value::Int(i), &Value::Float(f)) => (i as FloatT, f),
-                (&Value::Float(f), &Value::Int(i)) => (f, i as FloatT),
+                (Value::Int(i), Value::Float(f)) => (*i as FloatT, *f),
+                (Value::Float(f), Value::Int(i)) => (*f, *i as FloatT),
                 _ => return Option::None,
             };
 
@@ -385,14 +384,14 @@ impl PartialOrd for Value {
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
-            (&Value::Bool(b1), &Value::Bool(b2)) => b1 == b2,
-            (&Value::Str(ref s1), &Value::Str(ref s2)) => s1 == s2,
-            (&Value::List(ref l1), &Value::List(ref l2)) => l1 == l2,
-            (&Value::Int(i1), &Value::Int(i2)) => i1 == i2,
-            (&Value::Int(i), &Value::Float(f)) | (&Value::Float(f), &Value::Int(i)) => {
-                (i as FloatT - f).abs() < FloatValueType::EPSILON
+            (Value::Bool(b1), Value::Bool(b2)) => b1 == b2,
+            (Value::Str(ref s1), Value::Str(ref s2)) => s1 == s2,
+            (Value::List(ref l1), Value::List(ref l2)) => l1 == l2,
+            (Value::Int(i1), Value::Int(i2)) => i1 == i2,
+            (Value::Int(i), Value::Float(f)) | (Value::Float(f), Value::Int(i)) => {
+                (*i as FloatT - f).abs() < FloatValueType::EPSILON
             }
-            (&Value::Float(f1), &Value::Float(f2)) => (f1 - f2).abs() < FloatValueType::EPSILON,
+            (Value::Float(f1), Value::Float(f2)) => (f1 - f2).abs() < FloatValueType::EPSILON,
             _ => false,
         }
     }

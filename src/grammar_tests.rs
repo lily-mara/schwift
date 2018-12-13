@@ -1,11 +1,10 @@
-#[allow(unused_imports)]
-use super::statement;
-use super::grammar;
-use statement::StatementKind as Kind;
-use statement::Statement;
-use super::expression::Expression as Exp;
-use super::value::Value;
-use super::Operator as Op;
+use crate::{
+    expression::Expression as Exp,
+    grammar,
+    statement::{Statement, StatementKind as Kind},
+    value::Value,
+    Operator as Op,
+};
 
 fn statement(kind: Kind) -> Statement {
     Statement::tnew(kind)
@@ -45,7 +44,6 @@ fn test_list_instantiation_statement() {
 fn test_list_append_statement() {
     let l = grammar::statement_kind("foobar assimilate 10").unwrap();
     assert_eq!(l, Kind::list_append("foobar", 10));
-
 }
 
 #[test]
@@ -80,22 +78,20 @@ fn test_nested_while() {
  show me what you got 30
  >:
  >:"#,
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(
         l,
         Kind::while_block(
             Exp::variable("x"),
-            vec![
-                statement(Kind::while_block(
-                    Exp::variable("y"),
-                    vec![statement(Kind::print(30))],
-                )),
-            ],
+            vec![statement(Kind::while_block(
+                Exp::variable("y"),
+                vec![statement(Kind::print(30))],
+            )),],
         )
     );
 }
-
 
 #[test]
 fn test_while() {
@@ -103,13 +99,13 @@ fn test_while() {
         r#"while x :<
  show me what you got 30
  >:"#,
-    ).unwrap();
+    )
+    .unwrap();
     assert_eq!(
         l,
         Kind::while_block(Exp::variable("x"), vec![statement(Kind::print(30))])
     );
 }
-
 
 #[test]
 fn test_block() {
@@ -124,11 +120,11 @@ fn test_block() {
 
 
  >:"#,
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(l, vec![Kind::print(10), Kind::input("x")]);
 }
-
 
 #[test]
 fn test_block_starts_with_newline() {
@@ -137,7 +133,8 @@ fn test_block_starts_with_newline() {
 
 show me what you got 10
     >:"#,
-    ).unwrap();
+    )
+    .unwrap();
     assert_eq!(l, vec![Kind::print(10)]);
 }
 
@@ -174,7 +171,8 @@ fn test_while_compound_condition() {
         r#"while (x or y) :<
  show me what you got 30
  >:"#,
-    ).unwrap();
+    )
+    .unwrap();
 
     let thirty = Kind::print(30);
     let x = Exp::variable("x");
@@ -185,7 +183,6 @@ fn test_while_compound_condition() {
         Kind::While(Exp::operator(x, Op::Or, y), vec![statement(thirty)])
     );
 }
-
 
 #[test]
 fn test_or() {
@@ -232,7 +229,6 @@ fn test_expression_parenthesis() {
     let l = grammar::expression(r"(x)").unwrap();
     assert_eq!(l, Exp::variable("x"));
 }
-
 
 #[test]
 fn test_operator_expression_parenthesis_expression_parenthesis() {
@@ -297,7 +293,8 @@ fn test_catch() {
 
 
     >:"#,
-    ).unwrap();
+    )
+    .unwrap();
 
     let addition = Exp::operator("hello", Op::Add, 10);
     let x = statement(Kind::assignment("x", addition));
@@ -319,7 +316,8 @@ fn test_function_def() {
         r#"foo (x, y) :<
         show me what you got (x + y)
     >:"#,
-    ).unwrap();
+    )
+    .unwrap();
 
     let addition = Exp::operator(Exp::variable("x"), Op::Add, Exp::variable("y"));
     let print = vec![Statement::new(Kind::print(addition), 0, 1)];
@@ -335,7 +333,8 @@ fn test_function_no_space_in_name_and_params() {
         r#"foo(x, y) :<
         show me what you got (x + y)
     >:"#,
-    ).unwrap();
+    )
+    .unwrap();
 
     let addition = Exp::operator(Exp::variable("x"), Op::Add, Exp::variable("y"));
     let print = vec![Statement::new(Kind::print(addition), 0, 1)];
@@ -351,7 +350,8 @@ fn test_function_no_spaces_in_def() {
         r#"foo(x):<
         show me what you got x
     >:"#,
-    ).unwrap();
+    )
+    .unwrap();
 
     let print = vec![Statement::new(Kind::print(Exp::variable("x")), 0, 1)];
 
@@ -376,7 +376,8 @@ fn test_empty_after_block() {
 
 
     "#,
-    ).unwrap();
+    )
+    .unwrap();
     assert_eq!(
         l[0],
         Statement::tnew(Kind::if_block(

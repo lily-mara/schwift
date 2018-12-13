@@ -1,10 +1,11 @@
-use state::State;
-use statement::StatementKind as Kind;
-use statement::Statement;
-use value::Value;
-use expression::Expression as Exp;
-use error::ErrorKind as EKind;
-use grammar;
+use crate::{
+    error::ErrorKind as EKind,
+    expression::Expression as Exp,
+    grammar,
+    state::State,
+    statement::{Statement, StatementKind as Kind},
+    value::Value,
+};
 
 #[test]
 fn test_assignment_adds_to_symbol_table() {
@@ -68,7 +69,8 @@ fn test_is_prime() {
     fourHundredFourty squanch isPrime(440)
     big squanch isPrime(524287)
     "#,
-    ).unwrap();
+    )
+    .unwrap();
 
     state.run(&code).unwrap();
     assert_eq!(*state.get("ten").unwrap(), Value::new(false));
@@ -86,7 +88,8 @@ fn test_modulus() {
         r#"
     x squanch (50 % 4)
     "#,
-    ).unwrap();
+    )
+    .unwrap();
 
     state.run(&code).unwrap();
     assert_eq!(*state.get("x").unwrap(), Value::new(2));
@@ -110,7 +113,8 @@ fn test_early_return_if() {
     a squanch small(140)
     b squanch small(0)
     "#,
-    ).unwrap();
+    )
+    .unwrap();
 
     state.run(&code).unwrap();
     assert_eq!(*state.get("y").unwrap(), Value::new(true));
@@ -141,7 +145,8 @@ fn test_early_return_while() {
     a squanch small(140)
     b squanch small(0)
     "#,
-    ).unwrap();
+    )
+    .unwrap();
 
     state.run(&code).unwrap();
     assert_eq!(*state.get("y").unwrap(), Value::new(true));

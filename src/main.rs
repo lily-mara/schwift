@@ -1,7 +1,4 @@
-extern crate schwift;
-extern crate clap;
-
-use clap::{Arg, App, AppSettings};
+use clap::{App, AppSettings, Arg};
 
 fn main() {
     let matches = App::new("The Schwift interpreter")
@@ -10,7 +7,7 @@ fn main() {
         .author("Nate Mara <natemara@gmail.com>")
         .about(
             "The canonical interpreter for the schwift programming language. Use at your own \
-                risk.",
+             risk.",
         )
         .arg(
             Arg::with_name("SOURCE")
@@ -31,7 +28,6 @@ fn main() {
         Some(x) => x.collect(),
         None => Vec::new(),
     };
-
 
     schwift::run_program(matches.value_of("SOURCE").unwrap(), &args);
 }

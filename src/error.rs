@@ -54,22 +54,22 @@ impl PartialEq for ErrorKind {
         use self::ErrorKind::*;
 
         match (self, other) {
-            (&IndexUnindexable(ref s), &IndexUnindexable(ref o)) => s == o,
-            (&SyntaxError(ref s), &SyntaxError(ref o)) => s == o,
-            (&UnknownVariable(ref s), &UnknownVariable(ref o))
-            | (&NoReturn(ref s), &NoReturn(ref o)) => s == o,
-            (&InvalidArguments(ref sn, ss1, ss2), &InvalidArguments(ref on, os1, os2)) => {
+            (IndexUnindexable(ref s), IndexUnindexable(ref o)) => s == o,
+            (SyntaxError(ref s), SyntaxError(ref o)) => s == o,
+            (UnknownVariable(ref s), UnknownVariable(ref o))
+            | (NoReturn(ref s), NoReturn(ref o)) => s == o,
+            (InvalidArguments(ref sn, ss1, ss2), InvalidArguments(ref on, os1, os2)) => {
                 sn == on && ss1 == os1 && ss2 == os2
             }
-            (&IndexOutOfBounds(ref sv, si), &IndexOutOfBounds(ref ov, oi)) => sv == ov && si == oi,
-            (&NonFunctionCallInDylib(ref s), &NonFunctionCallInDylib(ref o)) => s == o,
-            (&IOError(_), &IOError(_)) => true,
-            (&UnexpectedType(ref ss, ref sv), &UnexpectedType(ref os, ref ov)) => {
+            (IndexOutOfBounds(ref sv, si), IndexOutOfBounds(ref ov, oi)) => sv == ov && si == oi,
+            (NonFunctionCallInDylib(ref s), NonFunctionCallInDylib(ref o)) => s == o,
+            (IOError(_), IOError(_)) => true,
+            (UnexpectedType(ref ss, ref sv), UnexpectedType(ref os, ref ov)) => {
                 ss == os && sv == ov
             }
             (
-                &InvalidBinaryExpression(ref sv1, ref sv2, ref so),
-                &InvalidBinaryExpression(ref ov1, ref ov2, ref oo),
+                InvalidBinaryExpression(ref sv1, ref sv2, ref so),
+                InvalidBinaryExpression(ref ov1, ref ov2, ref oo),
             ) => sv1 == ov1 && sv2 == ov2 && so == oo,
             _ => false,
         }

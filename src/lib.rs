@@ -1,13 +1,6 @@
 #![allow(unknown_lints)]
 
-extern crate libloading as lib;
-extern crate rand;
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
-
-use std::fs::File;
-use std::io::prelude::*;
+use std::{fs::File, io::prelude::*};
 
 #[allow(clippy::all)]
 mod grammar {
@@ -25,8 +18,7 @@ mod util;
 pub mod value;
 mod vec_map;
 
-use state::*;
-use statement::*;
+use crate::{state::*, statement::*};
 
 const BUILTINS_FILE: &str = "builtins.y";
 const BUILTINS: &str = include_str!("builtins.y");
