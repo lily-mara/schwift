@@ -1,8 +1,7 @@
-use super::{ Operator };
-use super::statement::Statement;
-use super::statement::StatementKind;
-use super::expression::Expression;
-use super::value::{ Value, FloatT, IntT, string_parse };
+use crate::{ Operator };
+use crate::statement::{Statement, StatementKind};
+use crate::expression::Expression;
+use crate::value::{ Value, FloatT, IntT, string_parse };
 
 string_inquotes -> String
     = s:$([^"]*) { string_parse(s) }

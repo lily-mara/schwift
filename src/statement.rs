@@ -1,9 +1,10 @@
-use super::expression::Expression;
+use crate::expression::Expression;
 
-use std::cmp;
-use std::fs::File;
-use std::io;
-use std::io::prelude::*;
+use std::{
+    cmp,
+    fs::File,
+    io::{self, prelude::*},
+};
 
 #[derive(Debug, Clone)]
 pub struct Statement {

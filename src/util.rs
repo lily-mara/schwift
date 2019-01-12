@@ -1,5 +1,5 @@
+use crate::value::Value;
 use std::fmt;
-use super::value::Value;
 
 pub fn slice_format<T>(x: &[T]) -> String
 where

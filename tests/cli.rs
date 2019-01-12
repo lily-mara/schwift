@@ -1,7 +1,4 @@
-extern crate assert_cli;
-
-use std::io::Read;
-use std::fs::File;
+use std::{fs::File, io::Read};
 
 #[test]
 fn test_hello_world() {

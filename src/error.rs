@@ -1,10 +1,6 @@
-use super::grammar;
-use super::statement::Statement;
-use super::value::Value;
-use super::Operator;
+use crate::{grammar, statement::Statement, value::Value, Operator};
 use rand::{thread_rng, Rng};
-use std::io;
-use std::process;
+use std::{io, process};
 
 pub type SwResult<T> = Result<T, ErrorKind>;
 pub type SwErResult<T> = Result<T, Error>;

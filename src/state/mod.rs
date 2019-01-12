@@ -1,6 +1,7 @@
 use crate::{
     error::{Error, ErrorKind, SwErResult, SwResult},
     expression::Expression,
+    grammar,
     statement::{Statement, StatementKind},
     value::{self, Value},
     vec_map::VecMap,
@@ -393,8 +394,7 @@ impl State {
         let mut value_args = Vec::new();
 
         for arg in args {
-            value_args
-                .push(super::grammar::value(arg).unwrap_or_else(|_| Value::Str((*arg).into())));
+            value_args.push(grammar::value(arg).unwrap_or_else(|_| Value::Str((*arg).into())));
         }
 
         self.symbols.insert("argv".into(), value_args.into());

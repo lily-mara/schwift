@@ -1,7 +1,4 @@
-extern crate schwift;
-
-use schwift::value::Value;
-use schwift::error::{SwResult, ErrorKind};
+use schwift::{value::Value error::{SwResult, ErrorKind}};
 
 #[no_mangle]
 pub fn matrix(args: &[Value]) -> SwResult<Value> {
