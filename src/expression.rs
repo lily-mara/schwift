@@ -71,7 +71,8 @@ impl Expression {
                     match grammar::expression(inner) {
                         Ok(inner_evaled) => inner_evaled
                             .evaluate(state)
-                            .map(|v| borrow::Cow::Owned(v.into_owned())),
+                            .map(borrow::Cow::into_owned)
+                            .map(borrow::Cow::Owned),
                         Err(s) => Err(ErrorKind::SyntaxError(s)),
                     }
                 } else {
