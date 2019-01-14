@@ -5,6 +5,7 @@ use crate::{
     value::{IntT, Value},
     Operator,
 };
+use std::borrow;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
@@ -28,13 +29,13 @@ where
 }
 
 impl Expression {
-    pub fn evaluate(&self, state: &mut State) -> SwResult<Value> {
+    pub fn evaluate<'a, 'b: 'a>(&'a self, state: &'b State) -> SwResult<borrow::Cow<'a, Value>> {
         match *self {
-            Expression::Variable(ref name) => state.get(name).map(|x| x.clone()),
+            Expression::Variable(ref name) => state.get(name).map(borrow::Cow::Borrowed),
             Expression::OpExp(ref left_exp, ref operator, ref right_exp) => {
                 let left = left_exp.evaluate(state)?;
                 let right = right_exp.evaluate(state)?;
-                match *operator {
+                let result = match *operator {
                     Operator::Add => left.add(&right),
                     Operator::Subtract => left.subtract(&right),
                     Operator::Multiply => left.multiply(&right),
@@ -49,49 +50,64 @@ impl Expression {
                     Operator::And => left.and(&right),
                     Operator::Or => left.or(&right),
                     Operator::Modulus => left.modulus(&right),
-                }
+                };
+
+                result.map(borrow::Cow::Owned)
             }
-            Expression::Value(ref v) => Ok(v.clone()),
+            Expression::Value(ref v) => Ok(borrow::Cow::Borrowed(v)),
             Expression::ListIndex(ref var_name, ref e) => state.list_index(var_name, e),
-            Expression::Not(ref e) => e.evaluate(state)?.not(),
+            Expression::Not(ref e) => e.evaluate(state)?.not().map(borrow::Cow::Owned),
             Expression::ListLength(ref var_name) => {
                 let value = state.get(var_name)?;
                 match *value {
-                    Value::List(ref list) => Ok(Value::Int(list.len() as IntT)),
-                    Value::Str(ref s) => Ok(Value::Int(s.len() as IntT)),
+                    Value::List(ref list) => Ok(borrow::Cow::Owned(Value::Int(list.len() as IntT))),
+                    Value::Str(ref s) => Ok(borrow::Cow::Owned(Value::Int(s.len() as IntT))),
                     _ => Err(ErrorKind::IndexUnindexable(value.clone())),
                 }
             }
             Expression::Eval(ref exp) => {
                 let inner_val = exp.evaluate(state)?;
-                if let Value::Str(ref inner) = inner_val {
+                if let Value::Str(ref inner) = *inner_val {
                     match grammar::expression(inner) {
-                        Ok(inner_evaled) => inner_evaled.evaluate(state),
+                        Ok(inner_evaled) => inner_evaled
+                            .evaluate(state)
+                            .map(|v| borrow::Cow::Owned(v.into_owned())),
                         Err(s) => Err(ErrorKind::SyntaxError(s)),
                     }
                 } else {
-                    Err(ErrorKind::UnexpectedType("string".to_string(), inner_val))
+                    Err(ErrorKind::UnexpectedType(
+                        "string".to_string(),
+                        inner_val.into_owned(),
+                    ))
                 }
             }
-            Expression::FunctionCall(ref name, ref args) => state.call_function(name, args),
+            Expression::FunctionCall(ref name, ref args) => {
+                state.call_function(name, args).map(borrow::Cow::Owned)
+            }
         }
     }
 
     pub fn try_bool(&self, state: &mut State) -> SwResult<bool> {
         let value = self.evaluate(state)?;
-        if let Value::Bool(x) = value {
+        if let Value::Bool(x) = *value {
             Ok(x)
         } else {
-            Err(ErrorKind::UnexpectedType("bool".to_string(), value))
+            Err(ErrorKind::UnexpectedType(
+                "bool".to_string(),
+                value.into_owned(),
+            ))
         }
     }
 
     pub fn try_int(&self, state: &mut State) -> SwResult<IntT> {
         let value = self.evaluate(state)?;
-        if let Value::Int(x) = value {
+        if let Value::Int(x) = *value {
             Ok(x)
         } else {
-            Err(ErrorKind::UnexpectedType("int".to_string(), value))
+            Err(ErrorKind::UnexpectedType(
+                "int".to_string(),
+                value.into_owned(),
+            ))
         }
     }
 }

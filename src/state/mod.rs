@@ -6,7 +6,7 @@ use crate::{
     value::{self, Value},
     vec_map::VecMap,
 };
-use std::io;
+use std::{borrow, io, mem};
 
 type Map<K, V> = VecMap<K, V>;
 
@@ -44,22 +44,26 @@ macro_rules! try_nop_error {
 }
 
 impl State {
-    pub fn list_index(&mut self, list_name: &str, exp: &Expression) -> SwResult<Value> {
-        let inner_expression_value = exp.evaluate(self)?;
+    pub fn list_index<'a>(
+        &'a self,
+        list_name: &str,
+        exp: &Expression,
+    ) -> SwResult<borrow::Cow<'a, Value>> {
+        let inner_expression_value = exp.evaluate(self)?.into_owned();
         match self.symbols.get(list_name) {
             Some(symbol) => match *symbol {
                 Value::List(ref l) => {
                     if let Value::Int(i) = inner_expression_value {
                         let index = i as usize;
                         if index < l.len() {
-                            Ok(l[index].clone())
+                            Ok(borrow::Cow::Borrowed(&l[index]))
                         } else {
                             Err(ErrorKind::IndexOutOfBounds(symbol.clone(), index))
                         }
                     } else {
                         Err(ErrorKind::UnexpectedType(
                             "int".to_string(),
-                            inner_expression_value.clone(),
+                            inner_expression_value,
                         ))
                     }
                 }
@@ -69,14 +73,14 @@ impl State {
                         let chars: Vec<char> = s.chars().collect();
 
                         if index < chars.len() {
-                            Ok(Value::Str(chars[index].to_string()))
+                            Ok(borrow::Cow::Owned(Value::Str(chars[index].to_string())))
                         } else {
                             Err(ErrorKind::IndexOutOfBounds(inner_expression_value, index))
                         }
                     } else {
                         Err(ErrorKind::UnexpectedType(
                             "int".to_string(),
-                            inner_expression_value.clone(),
+                            inner_expression_value,
                         ))
                     }
                 }
@@ -86,18 +90,18 @@ impl State {
         }
     }
 
-    pub fn call_function(&mut self, name: &str, args: &[Expression]) -> SwResult<Value> {
+    pub fn call_function(&self, name: &str, args: &[Expression]) -> SwResult<Value> {
         let mut call_args = Vec::new();
 
         for x in args {
-            call_args.push(x.evaluate(self)?);
+            call_args.push(x.evaluate(self)?.into_owned());
         }
 
         if let Value::NativeFunction(ref funk) = *self.get(name)? {
             return funk.call(&call_args);
         }
 
-        match self.get(name)?.clone() {
+        match self.get(name)? {
             Value::Function(ref params, ref body) => {
                 if args.len() != params.len() {
                     return Err(ErrorKind::InvalidArguments(
@@ -107,22 +111,23 @@ impl State {
                     ));
                 }
 
+                let mut child_state = State::default();
+
                 for (name, arg) in params.iter().zip(call_args) {
-                    self.symbols.insert(name.to_string(), arg);
+                    child_state.symbols.insert(name.to_string(), arg);
                 }
 
-                match self.run(body) {
+                match child_state.run(body) {
                     Ok(()) => {}
                     Err(e) => return Err(e.kind),
                 }
 
-                let ret = match self.last_return {
-                    Some(ref val) => val.clone(),
-                    None => return Err(ErrorKind::NoReturn(name.to_string())),
-                };
+                let last_ret = mem::replace(&mut child_state.last_return, None);
 
-                self.last_return = None;
-                Ok(ret)
+                match last_ret {
+                    Some(val) => Ok(val),
+                    None => Err(ErrorKind::NoReturn(name.to_string())),
+                }
             }
             val => Err(ErrorKind::UnexpectedType(
                 "function".to_string(),
@@ -139,7 +144,7 @@ impl State {
     }
 
     pub fn assign(&mut self, str: String, exp: &Expression) -> SwResult<()> {
-        let v = exp.evaluate(self)?;
+        let v = exp.evaluate(self)?.into_owned();
         self.symbols.insert(str, v);
         Ok(())
     }
@@ -178,14 +183,14 @@ impl State {
     }
 
     fn list_append(&mut self, list_name: &str, append_exp: &Expression) -> SwResult<()> {
-        let to_append = append_exp.evaluate(self)?;
+        let to_append = append_exp.evaluate(self)?.into_owned();
         let list = self.get_list(list_name)?;
 
         list.push(to_append);
         Ok(())
     }
 
-    fn get_value(&mut self, name: &str) -> SwResult<&mut Value> {
+    fn get_mut(&mut self, name: &str) -> SwResult<&mut Value> {
         match self.symbols.get_mut(name) {
             Some(value) => Ok(value),
             None => Err(ErrorKind::UnknownVariable(name.to_string())),
@@ -193,7 +198,7 @@ impl State {
     }
 
     fn get_list(&mut self, name: &str) -> SwResult<&mut Vec<Value>> {
-        let value = self.get_value(name)?;
+        let value = self.get_mut(name)?;
         match *value {
             Value::List(ref mut l) => Ok(l),
             _ => Err(ErrorKind::IndexUnindexable(value.clone())),
@@ -202,7 +207,7 @@ impl State {
 
     fn get_list_element(&mut self, name: &str, index_exp: &Expression) -> SwResult<&mut Value> {
         let index = index_exp.try_int(self)? as usize;
-        let value = self.get_value(name)?;
+        let value = self.get_mut(name)?;
 
         match *value {
             Value::List(ref mut list) if index < list.len() => Ok(&mut list[index]),
@@ -217,7 +222,7 @@ impl State {
         index_exp: &Expression,
         assign_exp: &Expression,
     ) -> SwResult<()> {
-        let to_assign = assign_exp.evaluate(self)?;
+        let to_assign = assign_exp.evaluate(self)?.into_owned();
         let element = self.get_list_element(list_name, index_exp)?;
 
         *element = to_assign;
@@ -226,10 +231,11 @@ impl State {
 
     fn list_delete(&mut self, list_name: &str, index_exp: &Expression) -> SwResult<()> {
         let index_value = index_exp.evaluate(self)?;
-        let list = self.get_list(list_name)?;
 
-        if let Value::Int(i) = index_value {
+        if let Value::Int(i) = *index_value {
             let index = i as usize;
+            let list = self.get_list(list_name)?;
+
             if index < list.len() {
                 list.remove(index);
                 Ok(())
@@ -240,7 +246,10 @@ impl State {
                 ))
             }
         } else {
-            Err(ErrorKind::UnexpectedType("int".to_string(), index_value))
+            Err(ErrorKind::UnexpectedType(
+                "int".to_string(),
+                index_value.into_owned(),
+            ))
         }
     }
 
@@ -256,7 +265,7 @@ impl State {
             Err(e) => return error!(e, statement.clone()),
         };
 
-        match x {
+        match *x {
             Value::Bool(b) => {
                 if b {
                     self.run(if_body)?;
@@ -269,7 +278,7 @@ impl State {
                 Ok(())
             }
             _ => error!(
-                ErrorKind::UnexpectedType("bool".to_string(), x.clone()),
+                ErrorKind::UnexpectedType("bool".to_string(), x.into_owned()),
                 statement.clone()
             ),
         }
@@ -335,7 +344,7 @@ impl State {
             }
             StatementKind::Return(ref expr) => {
                 let val = try_error!(expr.evaluate(self), statement);
-                self.last_return = Some(val);
+                self.last_return = Some(val.into_owned());
 
                 Ok(())
             }

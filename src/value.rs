@@ -197,7 +197,7 @@ impl Value {
         }
     }
 
-    pub fn not(&mut self) -> SwResult<Value> {
+    pub fn not(&self) -> SwResult<Value> {
         match *self {
             Value::Bool(b) => Ok(Value::Bool(!b)),
             _ => Err(ErrorKind::UnexpectedType("bool".to_string(), self.clone())),
