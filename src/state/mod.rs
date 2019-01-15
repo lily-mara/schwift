@@ -111,7 +111,7 @@ impl State {
                     ));
                 }
 
-                let mut child_state = State::default();
+                let mut child_state = Self::default();
 
                 for (name, arg) in params.iter().zip(call_args) {
                     child_state.symbols.insert(name.to_string(), arg);
@@ -418,13 +418,13 @@ impl State {
     }
 
     pub fn new() -> Self {
-        State::default()
+        Self::default()
     }
 }
 
 impl Default for State {
     fn default() -> Self {
-        State {
+        Self {
             symbols: Map::new(),
             last_return: None,
             libraries: Vec::new(),

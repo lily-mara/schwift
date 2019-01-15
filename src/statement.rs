@@ -35,7 +35,7 @@ pub enum StatementKind {
 
 #[cfg(test)]
 impl StatementKind {
-    pub fn assignment<S, E>(name: S, expr: E) -> StatementKind
+    pub fn assignment<S, E>(name: S, expr: E) -> Self
     where
         S: Into<String>,
         E: Into<Expression>,
@@ -43,21 +43,21 @@ impl StatementKind {
         StatementKind::Assignment(name.into(), expr.into())
     }
 
-    pub fn dylib_load<S, E>(lib_path: S, functions: Vec<Statement>) -> StatementKind
+    pub fn dylib_load<S, E>(lib_path: S, functions: Vec<Statement>) -> Self
     where
         S: Into<String>,
     {
         StatementKind::DylibLoad(lib_path.into(), functions)
     }
 
-    pub fn return_it<E>(expr: E) -> StatementKind
+    pub fn return_it<E>(expr: E) -> Self
     where
         E: Into<Expression>,
     {
         StatementKind::Return(expr.into())
     }
 
-    pub fn list_append<S, E>(name: S, expr: E) -> StatementKind
+    pub fn list_append<S, E>(name: S, expr: E) -> Self
     where
         S: Into<String>,
         E: Into<Expression>,
@@ -65,7 +65,7 @@ impl StatementKind {
         StatementKind::ListAppend(name.into(), expr.into())
     }
 
-    pub fn list_delete<S, E>(name: S, expr: E) -> StatementKind
+    pub fn list_delete<S, E>(name: S, expr: E) -> Self
     where
         S: Into<String>,
         E: Into<Expression>,
@@ -77,21 +77,21 @@ impl StatementKind {
         condition: E,
         if_body: Vec<Statement>,
         else_body: Option<Vec<Statement>>,
-    ) -> StatementKind
+    ) -> Self
     where
         E: Into<Expression>,
     {
         StatementKind::If(condition.into(), if_body, else_body)
     }
 
-    pub fn while_block<E>(condition: E, body: Vec<Statement>) -> StatementKind
+    pub fn while_block<E>(condition: E, body: Vec<Statement>) -> Self
     where
         E: Into<Expression>,
     {
         StatementKind::While(condition.into(), body)
     }
 
-    pub fn function<Name, Args, Body>(name: Name, args: Vec<Args>, body: Vec<Body>) -> StatementKind
+    pub fn function<Name, Args, Body>(name: Name, args: Vec<Args>, body: Vec<Body>) -> Self
     where
         Name: Into<String>,
         Args: Into<String>,
@@ -104,18 +104,18 @@ impl StatementKind {
         )
     }
 
-    pub fn input<S>(name: S) -> StatementKind
+    pub fn input<S>(name: S) -> Self
     where
         S: Into<String>,
     {
         StatementKind::Input(name.into())
     }
 
-    pub fn catch(try_block: Vec<Statement>, catch: Vec<Statement>) -> StatementKind {
+    pub fn catch(try_block: Vec<Statement>, catch: Vec<Statement>) -> Self {
         StatementKind::Catch(try_block, catch)
     }
 
-    pub fn list_assign<S, E, R>(name: S, index: E, assign: R) -> StatementKind
+    pub fn list_assign<S, E, R>(name: S, index: E, assign: R) -> Self
     where
         S: Into<String>,
         E: Into<Expression>,
@@ -124,21 +124,21 @@ impl StatementKind {
         StatementKind::ListAssign(name.into(), index.into(), assign.into())
     }
 
-    pub fn delete<S>(name: S) -> StatementKind
+    pub fn delete<S>(name: S) -> Self
     where
         S: Into<String>,
     {
         StatementKind::Delete(name.into())
     }
 
-    pub fn print<E>(expr: E) -> StatementKind
+    pub fn print<E>(expr: E) -> Self
     where
         E: Into<Expression>,
     {
         StatementKind::Print(expr.into())
     }
 
-    pub fn new_list<S>(name: S) -> StatementKind
+    pub fn new_list<S>(name: S) -> Self
     where
         S: Into<String>,
     {
@@ -147,13 +147,13 @@ impl StatementKind {
 }
 
 impl Statement {
-    pub fn new(kind: StatementKind, start: usize, end: usize) -> Statement {
-        Statement { kind, start, end }
+    pub fn new(kind: StatementKind, start: usize, end: usize) -> Self {
+        Self { kind, start, end }
     }
 
     #[cfg(test)]
-    pub fn tnew(kind: StatementKind) -> Statement {
-        Statement {
+    pub fn tnew(kind: StatementKind) -> Self {
+        Self {
             kind,
             start: 0,
             end: 0,
@@ -180,12 +180,12 @@ impl cmp::PartialEq<StatementKind> for Statement {
 
 impl cmp::PartialEq<Statement> for Statement {
     #[cfg(test)]
-    fn eq(&self, other: &Statement) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.kind == other.kind
     }
 
     #[cfg(not(test))]
-    fn eq(&self, other: &Statement) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.kind == other.kind && self.start == other.start && self.end == other.end
     }
 }

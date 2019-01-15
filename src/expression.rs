@@ -23,7 +23,7 @@ impl<T> From<T> for Expression
 where
     T: Into<Value>,
 {
-    fn from(fr: T) -> Expression {
+    fn from(fr: T) -> Self {
         Expression::Value(fr.into())
     }
 }

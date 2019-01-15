@@ -64,7 +64,7 @@ impl clone::Clone for Func {
 
 impl Func {
     pub fn new(f: _FuncSymbol) -> Self {
-        Func { f }
+        Self { f }
     }
 
     pub fn call(&self, args: &[Value]) -> SwResult<Value> {
@@ -74,58 +74,58 @@ impl Func {
 }
 
 impl From<_FuncSymbol> for Value {
-    fn from(from: _FuncSymbol) -> Value {
+    fn from(from: _FuncSymbol) -> Self {
         Value::NativeFunction(Func { f: from })
     }
 }
 
 impl From<_FuncSymbol> for Func {
-    fn from(from: _FuncSymbol) -> Func {
-        Func { f: from }
+    fn from(from: _FuncSymbol) -> Self {
+        Self { f: from }
     }
 }
 
 impl From<Func> for Value {
-    fn from(from: Func) -> Value {
+    fn from(from: Func) -> Self {
         Value::NativeFunction(from)
     }
 }
 
 impl From<IntT> for Value {
-    fn from(from: IntT) -> Value {
+    fn from(from: IntT) -> Self {
         Value::Int(from)
     }
 }
 
 impl From<FloatT> for Value {
-    fn from(from: FloatT) -> Value {
+    fn from(from: FloatT) -> Self {
         Value::Float(from)
     }
 }
 
 impl From<bool> for Value {
-    fn from(from: bool) -> Value {
+    fn from(from: bool) -> Self {
         Value::Bool(from)
     }
 }
 
 impl From<String> for Value {
-    fn from(from: String) -> Value {
+    fn from(from: String) -> Self {
         Value::Str(from)
     }
 }
 
 impl From<&'static str> for Value {
-    fn from(from: &'static str) -> Value {
+    fn from(from: &'static str) -> Self {
         Value::Str(from.into())
     }
 }
 
 impl<T> From<Vec<T>> for Value
 where
-    T: Into<Value>,
+    T: Into<Self>,
 {
-    fn from(from: Vec<T>) -> Value {
+    fn from(from: Vec<T>) -> Self {
         let mut buf = vec![];
         for i in from {
             buf.push(i.into());
@@ -138,7 +138,7 @@ where
 impl Value {
     pub fn new<T>(val: T) -> Self
     where
-        T: Into<Value>,
+        T: Into<Self>,
     {
         val.into()
     }
@@ -197,14 +197,14 @@ impl Value {
         }
     }
 
-    pub fn not(&self) -> SwResult<Value> {
+    pub fn not(&self) -> SwResult<Self> {
         match *self {
             Value::Bool(b) => Ok(Value::Bool(!b)),
             _ => Err(ErrorKind::UnexpectedType("bool".to_string(), self.clone())),
         }
     }
 
-    pub fn less_than(&self, other: &Value) -> SwResult<Value> {
+    pub fn less_than(&self, other: &Self) -> SwResult<Self> {
         if let (&Value::Int(i1), &Value::Int(i2)) = (self, other) {
             Ok(Value::Bool(i1 < i2))
         } else {
@@ -212,7 +212,7 @@ impl Value {
         }
     }
 
-    pub fn greater_than(&self, other: &Value) -> SwResult<Value> {
+    pub fn greater_than(&self, other: &Self) -> SwResult<Self> {
         if let (&Value::Int(i1), &Value::Int(i2)) = (self, other) {
             Ok(Value::Bool(i1 > i2))
         } else {
@@ -220,7 +220,7 @@ impl Value {
         }
     }
 
-    pub fn greater_than_equal(&self, other: &Value) -> SwResult<Value> {
+    pub fn greater_than_equal(&self, other: &Self) -> SwResult<Self> {
         if let (&Value::Int(i1), &Value::Int(i2)) = (self, other) {
             Ok(Value::Bool(i1 >= i2))
         } else {
@@ -228,7 +228,7 @@ impl Value {
         }
     }
 
-    pub fn less_than_equal(&self, other: &Value) -> SwResult<Value> {
+    pub fn less_than_equal(&self, other: &Self) -> SwResult<Self> {
         if let (&Value::Int(i1), &Value::Int(i2)) = (self, other) {
             Ok(Value::Bool(i1 <= i2))
         } else {
@@ -236,19 +236,19 @@ impl Value {
         }
     }
 
-    pub fn and(&self, other: &Value) -> SwResult<Value> {
+    pub fn and(&self, other: &Self) -> SwResult<Self> {
         Ok(Value::Bool(self.assert_bool()? && other.assert_bool()?))
     }
 
-    pub fn or(&self, other: &Value) -> SwResult<Value> {
+    pub fn or(&self, other: &Self) -> SwResult<Self> {
         Ok(Value::Bool(self.assert_bool()? || other.assert_bool()?))
     }
 
-    pub fn equals(&self, other: &Value) -> Value {
+    pub fn equals(&self, other: &Self) -> Self {
         Value::Bool(self.eq(other))
     }
 
-    pub fn modulus(&self, other: &Value) -> SwResult<Value> {
+    pub fn modulus(&self, other: &Self) -> SwResult<Self> {
         if let Value::Int(i1) = *self {
             if let Value::Int(i2) = *other {
                 Ok((i1 % i2).into())
@@ -260,7 +260,7 @@ impl Value {
         }
     }
 
-    pub fn add(&self, other: &Value) -> SwResult<Value> {
+    pub fn add(&self, other: &Self) -> SwResult<Self> {
         match (self, other) {
             (Value::Float(f1), Value::Float(f2)) => Ok(Value::Float(f1 + f2)),
             (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 + i2)),
@@ -280,7 +280,7 @@ impl Value {
         }
     }
 
-    pub fn subtract(&self, other: &Value) -> SwResult<Value> {
+    pub fn subtract(&self, other: &Self) -> SwResult<Self> {
         match (self, other) {
             (Value::Float(f1), Value::Float(f2)) => Ok(Value::Float(f1 - f2)),
             (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 - i2)),
@@ -294,7 +294,7 @@ impl Value {
         }
     }
 
-    pub fn multiply(&self, other: &Value) -> SwResult<Value> {
+    pub fn multiply(&self, other: &Self) -> SwResult<Self> {
         match (self, other) {
             (Value::Float(f1), Value::Float(f2)) => Ok(Value::Float(f1 * f2)),
             (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 * i2)),
@@ -316,7 +316,7 @@ impl Value {
         }
     }
 
-    pub fn divide(&self, other: &Value) -> SwResult<Value> {
+    pub fn divide(&self, other: &Self) -> SwResult<Self> {
         match (self, other) {
             (Value::Float(f1), Value::Float(f2)) => Ok(Value::Float(f1 / f2)),
             (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 / i2)),
@@ -330,7 +330,7 @@ impl Value {
         }
     }
 
-    pub fn shift_left(&self, other: &Value) -> SwResult<Value> {
+    pub fn shift_left(&self, other: &Self) -> SwResult<Self> {
         match (self, other) {
             (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 << i2)),
             _ => Err(ErrorKind::InvalidBinaryExpression(
@@ -341,7 +341,7 @@ impl Value {
         }
     }
 
-    pub fn shift_right(&self, other: &Value) -> SwResult<Value> {
+    pub fn shift_right(&self, other: &Self) -> SwResult<Self> {
         match (self, other) {
             (Value::Int(i1), Value::Int(i2)) => Ok(Value::Int(i1 >> i2)),
             _ => Err(ErrorKind::InvalidBinaryExpression(
@@ -366,7 +366,7 @@ impl Value {
 }
 
 impl PartialOrd for Value {
-    fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self == other {
             Option::Some(Ordering::Equal)
         } else {
@@ -382,7 +382,7 @@ impl PartialOrd for Value {
 }
 
 impl PartialEq for Value {
-    fn eq(&self, other: &Value) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Value::Bool(b1), Value::Bool(b2)) => b1 == b2,
             (Value::Str(ref s1), Value::Str(ref s2)) => s1 == s2,

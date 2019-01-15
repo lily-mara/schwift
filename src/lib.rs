@@ -1,5 +1,3 @@
-#![allow(unknown_lints)]
-
 use std::{fs::File, io::prelude::*};
 
 #[allow(clippy::all)]

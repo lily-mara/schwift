@@ -46,7 +46,7 @@ impl From<io::Error> for ErrorKind {
 }
 
 impl PartialEq for ErrorKind {
-    fn eq(&self, other: &ErrorKind) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         use self::ErrorKind::*;
 
         match (self, other) {
@@ -74,7 +74,7 @@ impl PartialEq for ErrorKind {
 
 impl Error {
     pub fn new(kind: ErrorKind, place: Statement) -> Self {
-        Error { kind, place }
+        Self { kind, place }
     }
 
     pub fn panic_message(&self) -> String {
