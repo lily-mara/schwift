@@ -1,5 +1,5 @@
-use crate::{grammar, statement::Statement, value::Value, Operator};
-use rand::{thread_rng, Rng};
+use crate::{grammar, statement::Statement, value, Operator};
+use rand::{seq::SliceRandom, thread_rng};
 use std::{io, process};
 
 pub type SwResult<T> = Result<T, ErrorKind>;
@@ -28,12 +28,18 @@ pub struct Error {
 #[derive(Debug)]
 pub enum ErrorKind {
     UnknownVariable(String),
-    IndexUnindexable(Value),
+    IndexUnindexable(value::Type),
     SyntaxError(grammar::ParseError),
-    IndexOutOfBounds(Value, usize),
+    IndexOutOfBounds {
+        len: usize,
+        index: usize,
+    },
     IOError(io::Error),
-    UnexpectedType(String, Value),
-    InvalidBinaryExpression(Value, Value, Operator),
+    UnexpectedType {
+        actual: value::Type,
+        expected: value::Type,
+    },
+    InvalidBinaryExpression(value::Type, value::Type, Operator),
     InvalidArguments(String, usize, usize),
     NoReturn(String),
     NonFunctionCallInDylib(Statement),
@@ -57,12 +63,28 @@ impl PartialEq for ErrorKind {
             (InvalidArguments(ref sn, ss1, ss2), InvalidArguments(ref on, os1, os2)) => {
                 sn == on && ss1 == os1 && ss2 == os2
             }
-            (IndexOutOfBounds(ref sv, si), IndexOutOfBounds(ref ov, oi)) => sv == ov && si == oi,
+            (
+                IndexOutOfBounds {
+                    len: slen,
+                    index: sindex,
+                },
+                IndexOutOfBounds {
+                    len: olen,
+                    index: oindex,
+                },
+            ) => slen == olen && sindex == oindex,
             (NonFunctionCallInDylib(ref s), NonFunctionCallInDylib(ref o)) => s == o,
             (IOError(_), IOError(_)) => true,
-            (UnexpectedType(ref ss, ref sv), UnexpectedType(ref os, ref ov)) => {
-                ss == os && sv == ov
-            }
+            (
+                UnexpectedType {
+                    actual: ref sactual,
+                    expected: ref sexpected,
+                },
+                UnexpectedType {
+                    actual: ref oactual,
+                    expected: ref oexpected,
+                },
+            ) => sactual == oactual && sexpected == oexpected,
             (
                 InvalidBinaryExpression(ref sv1, ref sv2, ref so),
                 InvalidBinaryExpression(ref ov1, ref ov2, ref oo),
@@ -89,34 +111,30 @@ impl Error {
             ),
             IndexUnindexable(ref value) => format!(
                 "I'll try and say this slowly Morty. You can't index that. It's a {}",
-                value.type_str()
+                value
             ),
             SyntaxError(ref err) => format!(
                 "If you're going to start trying to construct sub-programs in your \
                  programs Morty, you'd better make sure you're careful! {:?}",
                 err
             ),
-            IndexOutOfBounds(ref list, ref index) => format!(
+            IndexOutOfBounds { len, index } => format!(
                 "This isn't your mom's wine bottle Morty, you can't just keep asking for \
                  more, there's not that much here! You want {}, but your cob only has {} \
                  kernels on it!",
-                index,
-                list.len().unwrap()
+                index, len
             ),
             IOError(ref err) => format!(
                 "Looks like we're having a comm-burp-unications problem Morty: {:?}",
                 err
             ),
-            UnexpectedType(ref expected, ref value) => format!(
-                "I asked for a {}, not a {} Morty.",
-                expected,
-                value.type_str()
-            ),
+            UnexpectedType {
+                ref expected,
+                ref actual,
+            } => format!("I asked for a {}, not a {} Morty.", expected, actual,),
             InvalidBinaryExpression(ref lhs, ref rhs, ref op) => format!(
                 "It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
-                op,
-                lhs.type_str(),
-                rhs.type_str()
+                op, lhs, rhs,
             ),
             InvalidArguments(ref name, expected, actual) => format!(
                 "I'm confused Morty, a minute ago you said that {} takes {} paramaters, \
@@ -161,5 +179,5 @@ impl Error {
 
 fn random_quote() -> &'static str {
     let mut rng = thread_rng();
-    rng.choose(&QUOTES).unwrap()
+    QUOTES.choose(&mut rng).unwrap()
 }

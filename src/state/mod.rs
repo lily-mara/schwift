@@ -58,13 +58,16 @@ impl State {
                         if index < l.len() {
                             Ok(borrow::Cow::Borrowed(&l[index]))
                         } else {
-                            Err(ErrorKind::IndexOutOfBounds(symbol.clone(), index))
+                            Err(ErrorKind::IndexOutOfBounds {
+                                len: l.len(),
+                                index,
+                            })
                         }
                     } else {
-                        Err(ErrorKind::UnexpectedType(
-                            "int".to_string(),
-                            inner_expression_value,
-                        ))
+                        Err(ErrorKind::UnexpectedType {
+                            expected: value::Type::Int,
+                            actual: inner_expression_value.get_type(),
+                        })
                     }
                 }
                 Value::Str(ref s) => {
@@ -75,16 +78,19 @@ impl State {
                         if index < chars.len() {
                             Ok(borrow::Cow::Owned(Value::Str(chars[index].to_string())))
                         } else {
-                            Err(ErrorKind::IndexOutOfBounds(inner_expression_value, index))
+                            Err(ErrorKind::IndexOutOfBounds {
+                                len: chars.len(),
+                                index,
+                            })
                         }
                     } else {
-                        Err(ErrorKind::UnexpectedType(
-                            "int".to_string(),
-                            inner_expression_value,
-                        ))
+                        Err(ErrorKind::UnexpectedType {
+                            expected: value::Type::Int,
+                            actual: inner_expression_value.get_type(),
+                        })
                     }
                 }
-                _ => Err(ErrorKind::IndexUnindexable(symbol.clone())),
+                _ => Err(ErrorKind::IndexUnindexable(symbol.get_type())),
             },
             None => Err(ErrorKind::UnknownVariable(list_name.to_string())),
         }
@@ -129,10 +135,10 @@ impl State {
                     None => Err(ErrorKind::NoReturn(name.to_string())),
                 }
             }
-            val => Err(ErrorKind::UnexpectedType(
-                "function".to_string(),
-                val.clone(),
-            )),
+            val => Err(ErrorKind::UnexpectedType {
+                expected: value::Type::Function,
+                actual: val.get_type(),
+            }),
         }
     }
 
@@ -201,7 +207,7 @@ impl State {
         let value = self.get_mut(name)?;
         match *value {
             Value::List(ref mut l) => Ok(l),
-            _ => Err(ErrorKind::IndexUnindexable(value.clone())),
+            _ => Err(ErrorKind::IndexUnindexable(value.get_type())),
         }
     }
 
@@ -210,9 +216,15 @@ impl State {
         let value = self.get_mut(name)?;
 
         match *value {
-            Value::List(ref mut list) if index < list.len() => Ok(&mut list[index]),
-            Value::List(_) => Err(ErrorKind::IndexOutOfBounds(value.clone(), index)),
-            _ => Err(ErrorKind::IndexUnindexable(value.clone())),
+            Value::List(ref mut list) => {
+                let len = list.len();
+                if index < len {
+                    Ok(&mut list[index])
+                } else {
+                    Err(ErrorKind::IndexOutOfBounds { len, index })
+                }
+            }
+            ref val => Err(ErrorKind::IndexUnindexable(val.get_type())),
         }
     }
 
@@ -240,16 +252,16 @@ impl State {
                 list.remove(index);
                 Ok(())
             } else {
-                Err(ErrorKind::IndexOutOfBounds(
-                    Value::List(list.clone()),
+                Err(ErrorKind::IndexOutOfBounds {
+                    len: list.len(),
                     index,
-                ))
+                })
             }
         } else {
-            Err(ErrorKind::UnexpectedType(
-                "int".to_string(),
-                index_value.into_owned(),
-            ))
+            Err(ErrorKind::UnexpectedType {
+                expected: value::Type::Int,
+                actual: index_value.get_type(),
+            })
         }
     }
 
@@ -278,7 +290,10 @@ impl State {
                 Ok(())
             }
             _ => error!(
-                ErrorKind::UnexpectedType("bool".to_string(), x.into_owned()),
+                ErrorKind::UnexpectedType {
+                    expected: value::Type::Bool,
+                    actual: x.get_type()
+                },
                 statement.clone()
             ),
         }

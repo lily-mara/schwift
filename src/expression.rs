@@ -2,7 +2,7 @@ use crate::{
     error::{ErrorKind, SwResult},
     grammar,
     state::State,
-    value::{IntT, Value},
+    value::{self, IntT, Value},
     Operator,
 };
 use std::borrow;
@@ -62,7 +62,7 @@ impl Expression {
                 match *value {
                     Value::List(ref list) => Ok(borrow::Cow::Owned(Value::Int(list.len() as IntT))),
                     Value::Str(ref s) => Ok(borrow::Cow::Owned(Value::Int(s.len() as IntT))),
-                    _ => Err(ErrorKind::IndexUnindexable(value.clone())),
+                    _ => Err(ErrorKind::IndexUnindexable(value.get_type())),
                 }
             }
             Expression::Eval(ref exp) => {
@@ -76,10 +76,10 @@ impl Expression {
                         Err(s) => Err(ErrorKind::SyntaxError(s)),
                     }
                 } else {
-                    Err(ErrorKind::UnexpectedType(
-                        "string".to_string(),
-                        inner_val.into_owned(),
-                    ))
+                    Err(ErrorKind::UnexpectedType {
+                        expected: value::Type::Str,
+                        actual: inner_val.get_type(),
+                    })
                 }
             }
             Expression::FunctionCall(ref name, ref args) => {
@@ -93,10 +93,10 @@ impl Expression {
         if let Value::Bool(x) = *value {
             Ok(x)
         } else {
-            Err(ErrorKind::UnexpectedType(
-                "bool".to_string(),
-                value.into_owned(),
-            ))
+            Err(ErrorKind::UnexpectedType {
+                expected: value::Type::Bool,
+                actual: value.get_type(),
+            })
         }
     }
 
@@ -105,10 +105,10 @@ impl Expression {
         if let Value::Int(x) = *value {
             Ok(x)
         } else {
-            Err(ErrorKind::UnexpectedType(
-                "int".to_string(),
-                value.into_owned(),
-            ))
+            Err(ErrorKind::UnexpectedType {
+                expected: value::Type::Int,
+                actual: value.get_type(),
+            })
         }
     }
 }
