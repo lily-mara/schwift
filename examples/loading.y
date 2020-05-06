@@ -1,4 +1,4 @@
-microverse "./link_test/target/release/libfoo.dylib" :<
+microverse "./link_test/target/release/libfoo.so" :<
 	matrix()
 >:
 

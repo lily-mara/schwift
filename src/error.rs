@@ -1,6 +1,6 @@
 use crate::{grammar, statement::Statement, value, Operator};
 use rand::{seq::SliceRandom, thread_rng};
-use std::{io, process};
+use std::{error, fmt, io, process};
 
 pub type SwResult<T> = Result<T, ErrorKind>;
 pub type SwErResult<T> = Result<T, Error>;
@@ -43,6 +43,11 @@ pub enum ErrorKind {
     InvalidArguments(String, usize, usize),
     NoReturn(String),
     NonFunctionCallInDylib(Statement),
+    MissingAbiCompat {
+        library: String,
+    },
+    IncompatibleAbi(u32),
+    DylibReturnedNil,
 }
 
 impl From<io::Error> for ErrorKind {
@@ -89,68 +94,97 @@ impl PartialEq for ErrorKind {
                 InvalidBinaryExpression(ref sv1, ref sv2, ref so),
                 InvalidBinaryExpression(ref ov1, ref ov2, ref oo),
             ) => sv1 == ov1 && sv2 == ov2 && so == oo,
+            (MissingAbiCompat { library: lib1 }, MissingAbiCompat { library: lib2 }) => {
+                lib1 == lib2
+            }
+            (IncompatibleAbi(ver1), IncompatibleAbi(ver2)) => ver1 == ver2,
+            (DylibReturnedNil , DylibReturnedNil) => true,
             _ => false,
         }
     }
 }
 
-impl Error {
-    pub fn new(kind: ErrorKind, place: Statement) -> Self {
-        Self { kind, place }
-    }
-
-    pub fn panic_message(&self) -> String {
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
 
-        match self.kind {
-            UnknownVariable(ref name) => format!("There's no {} in this universe, Morty!", name),
-            NoReturn(ref fn_name) => format!(
+        match &self.kind {
+            UnknownVariable(ref name) => write!(f, "There's no {} in this universe, Morty!", name),
+            NoReturn(ref fn_name) => write!(
+                f,
                 "Morty, your function has to return a value! {} just runs and dies like \
                  an animal!",
                 fn_name
             ),
-            IndexUnindexable(ref value) => format!(
+            IndexUnindexable(ref value) => write!(
+                f,
                 "I'll try and say this slowly Morty. You can't index that. It's a {}",
                 value
             ),
-            SyntaxError(ref err) => format!(
+            SyntaxError(ref err) => write!(
+                f,
                 "If you're going to start trying to construct sub-programs in your \
                  programs Morty, you'd better make sure you're careful! {:?}",
                 err
             ),
-            IndexOutOfBounds { len, index } => format!(
+            IndexOutOfBounds { len, index } => write!(
+                f,
                 "This isn't your mom's wine bottle Morty, you can't just keep asking for \
                  more, there's not that much here! You want {}, but your cob only has {} \
                  kernels on it!",
                 index, len
             ),
-            IOError(ref err) => format!(
+            IOError(ref err) => write!(
+                f,
                 "Looks like we're having a comm-burp-unications problem Morty: {:?}",
                 err
             ),
             UnexpectedType {
                 ref expected,
                 ref actual,
-            } => format!("I asked for a {}, not a {} Morty.", expected, actual,),
-            InvalidBinaryExpression(ref lhs, ref rhs, ref op) => format!(
+            } => write!(f, "I asked for a {}, not a {} Morty.", expected, actual,),
+            InvalidBinaryExpression(ref lhs, ref rhs, ref op) => write!(
+                f,
                 "It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
                 op, lhs, rhs,
             ),
-            InvalidArguments(ref name, expected, actual) => format!(
+            InvalidArguments(ref name, expected, actual) => write!(
+                f,
                 "I'm confused Morty, a minute ago you said that {} takes {} paramaters, \
                  but you just tried to give it {}. WHICH IS IT MORTY?",
                 name, expected, actual
             ),
-            NonFunctionCallInDylib(_) => {
+            NonFunctionCallInDylib(_) => f.write_str(
                 "Is this a miniverse, or a microverse, or a teeny-verse? All I know is \
-                 you fucked up."
-                    .into()
-            }
+                 you fucked up.",
+            ),
+            IncompatibleAbi(compat) => write!(
+                f,
+                "That's an older code, Morty and it does not check out. \
+                 That microverse can only be run by schwift {}, but this is {}",
+                compat,
+                crate::LIBSCHWIFT_ABI_COMPAT,
+            ),
+            MissingAbiCompat { library } => write!(
+                f,
+                "Wait, wait, I'm confused. Just a second ago, you said that {} was \
+                 a microverse, but when I looked there, I didn't know what \
+                 I was looking at.",
+                library
+            ),
+            DylibReturnedNil => f.write_str("I told you how a Microverse works Morty. At what point exactly did you stop listening?"),
         }
+    }
+}
+
+impl error::Error for Error {}
+
+impl Error {
+    pub fn new(kind: ErrorKind, place: Statement) -> Self {
+        Self { kind, place }
     }
 
     pub fn full_panic_message(&self, filename: &str) -> String {
-        let type_msg = self.panic_message();
         let quote = random_quote();
 
         println!("{}", filename);
@@ -167,7 +201,7 @@ impl Error {
     {}
 
     "#,
-            source_part, type_msg, quote
+            source_part, self, quote
         )
     }
 

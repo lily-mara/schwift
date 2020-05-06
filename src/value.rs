@@ -16,7 +16,7 @@ use libloading::os::unix::Symbol;
 #[cfg(windows)]
 use libloading::os::windows::Symbol;
 
-pub type _Func = fn(&[Value]) -> SwResult<Value>;
+pub type _Func = unsafe extern "C" fn(*mut Vec<Value>) -> *mut SwResult<Value>;
 pub type _FuncSymbol = Symbol<_Func>;
 
 pub struct Func {
@@ -94,9 +94,18 @@ impl Func {
         Self { f }
     }
 
-    pub fn call(&self, args: &[Value]) -> SwResult<Value> {
+    pub fn call(&self, args: &mut Vec<Value>) -> SwResult<Value> {
         let f = &self.f;
-        f(args)
+        let val = unsafe {
+            let result = f(args as *mut Vec<Value>);
+            if result.is_null() {
+                return Err(ErrorKind::DylibReturnedNil);
+            }
+
+            Box::from_raw(result)
+        };
+
+        *val
     }
 }
 

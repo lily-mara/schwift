@@ -104,7 +104,7 @@ impl State {
         }
 
         if let Value::NativeFunction(ref funk) = *self.get(name)? {
-            return funk.call(&call_args);
+            return funk.call(&mut call_args);
         }
 
         match self.get(name)? {
@@ -395,6 +395,20 @@ impl State {
 
     fn dylib_load(&mut self, lib_path: &str, functions: &[Statement]) -> SwResult<()> {
         let dylib = libloading::Library::new(lib_path)?;
+
+        unsafe {
+            let compat: libloading::Symbol<&u32> =
+                dylib
+                    .get(b"LIBSCHWIFT_ABI_COMPAT")
+                    .map_err(|_| ErrorKind::MissingAbiCompat {
+                        library: lib_path.into(),
+                    })?;
+
+            if **compat != crate::LIBSCHWIFT_ABI_COMPAT {
+                return Err(ErrorKind::IncompatibleAbi(**compat));
+            }
+        }
+
         for statement in functions {
             match statement.kind {
                 StatementKind::FunctionCall(ref name, _) => {

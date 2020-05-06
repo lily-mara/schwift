@@ -2,6 +2,7 @@
 name = "link_test"
 version = "0.1.0"
 authors = ["Nate Mara <nathan.mara@kroger.com>"]
+edition = "2018"
 
 [dependencies.schwift]
 path = ".."

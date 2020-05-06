@@ -1,7 +1,12 @@
-use schwift::{value::Value error::{SwResult, ErrorKind}};
+use schwift::{
+    error::{ErrorKind, SwResult},
+    plugin_fn,
+    value::{Type, Value},
+};
 
-#[no_mangle]
-pub fn matrix(args: &[Value]) -> SwResult<Value> {
+plugin_fn!(matrix_internal, matrix);
+
+fn matrix_internal(args: &mut Vec<Value>) -> SwResult<Value> {
     if let Value::Int(x) = args[0] {
         if let Value::Int(y) = args[1] {
             let mut mat = Vec::with_capacity(x as usize);
@@ -17,5 +22,8 @@ pub fn matrix(args: &[Value]) -> SwResult<Value> {
         }
     }
 
-    Err(ErrorKind::UnexpectedType("Int, Int".into(), args[0].clone()))
+    Err(ErrorKind::UnexpectedType {
+        expected: Type::List,
+        actual: args[0].get_type(),
+    })
 }

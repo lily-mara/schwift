@@ -55,16 +55,21 @@ extern crate schwift;
 
 use schwift::value::Value;
 use schwift::error::{SwResult, ErrorKind};
+use schwift::plugin_fn;
 
-#[no_mangle]
-pub fn multiply(args: &[Value]) -> SwResult<Value> {
+plugin_fn!(multiply_internal, multiply);
+
+fn multiply_internal(args: &mut Vec<Value>) -> SwResult<Value> {
     if let Value::Int(x) = args[0] {
         if let Value::Int(y) = args[1] {
             return Ok(Value::new(x * y));
         }
     }
 
-    Err(ErrorKind::UnexpectedType("Int, Int".into(), args[0].clone()))
+    Err(ErrorKind::UnexpectedType {
+        expected: Type::List,
+        actual: args[0].get_type(),
+    })
 }
 ```
 

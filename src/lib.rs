@@ -1,9 +1,6 @@
 use std::{fs::File, io::prelude::*};
 
-#[allow(clippy::all)]
-mod grammar {
-    include!(concat!(env!("OUT_DIR"), "/schwift.rs"));
-}
+mod grammar;
 
 #[cfg(test)]
 mod grammar_tests;
@@ -20,6 +17,25 @@ use crate::{state::*, statement::*};
 
 const BUILTINS_FILE: &str = "builtins.y";
 const BUILTINS: &str = include_str!("builtins.y");
+
+#[macro_export]
+macro_rules! plugin_fn {
+    ($internal_name:ident, $external_name:ident) => {
+        #[no_mangle]
+        pub unsafe extern "C" fn $external_name(args: *mut Vec<Value>) -> *mut SwResult<Value> {
+            let args_ref: &mut Vec<Value> = args
+                .as_mut()
+                .expect("args given to schwift extern fn should never be null");
+
+            let result: SwResult<Value> = $internal_name(args_ref);
+
+            Box::into_raw(Box::new(result))
+        }
+    };
+}
+
+#[no_mangle]
+pub static LIBSCHWIFT_ABI_COMPAT: u32 = 1;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
@@ -40,7 +56,7 @@ pub enum Operator {
 }
 
 fn get_line<'a>(file: &'a str, err: &grammar::ParseError) -> &'a str {
-    let mut count = 0usize;
+    let mut count = 0;
     let mut last_newline = 0usize;
 
     for i in 0..file.len() {
@@ -50,7 +66,7 @@ fn get_line<'a>(file: &'a str, err: &grammar::ParseError) -> &'a str {
             if symbol == "\n" {
                 count += 1;
 
-                if count == err.line {
+                if count == err.location.line {
                     return &file[last_newline..i];
                 }
 
@@ -59,13 +75,16 @@ fn get_line<'a>(file: &'a str, err: &grammar::ParseError) -> &'a str {
         }
     }
 
-    panic!("Got grammar error with invalid line number {}", err.line);
+    panic!(
+        "Got grammar error with invalid line number {}",
+        err.location.line
+    );
 }
 
 fn place_carat(err: &grammar::ParseError) -> String {
     let mut s = String::new();
 
-    for _ in 0..err.column - 1 {
+    for _ in 0..err.location.column - 1 {
         s.push(' ');
     }
 
@@ -95,7 +114,7 @@ fn parse_str(source: &str, filename: &str) -> Vec<Statement> {
             println!(
                 "SYNTAX ERROR: {}:{}\n{}\n{}",
                 filename,
-                e.line,
+                e.location.line,
                 get_line(source, e),
                 place_carat(e)
             );
