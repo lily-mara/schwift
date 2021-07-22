@@ -62,7 +62,7 @@ impl Expression {
                 match *value {
                     Value::List(ref list) => Ok(borrow::Cow::Owned(Value::Int(list.len() as IntT))),
                     Value::Str(ref s) => Ok(borrow::Cow::Owned(Value::Int(s.len() as IntT))),
-                    _ => Err(ErrorKind::IndexUnindexable(value.get_type())),
+                    _ => Err(ErrorKind::IndexUnindexable(value.get_type()).into()),
                 }
             }
             Expression::Eval(ref exp) => {
@@ -73,13 +73,14 @@ impl Expression {
                             .evaluate(state)
                             .map(borrow::Cow::into_owned)
                             .map(borrow::Cow::Owned),
-                        Err(s) => Err(ErrorKind::SyntaxError(s)),
+                        Err(s) => Err(ErrorKind::SyntaxError(s).into()),
                     }
                 } else {
                     Err(ErrorKind::UnexpectedType {
                         expected: value::Type::Str,
                         actual: inner_val.get_type(),
-                    })
+                    }
+                    .into())
                 }
             }
             Expression::FunctionCall(ref name, ref args) => {
@@ -96,7 +97,8 @@ impl Expression {
             Err(ErrorKind::UnexpectedType {
                 expected: value::Type::Bool,
                 actual: value.get_type(),
-            })
+            }
+            .into())
         }
     }
 
@@ -108,7 +110,8 @@ impl Expression {
             Err(ErrorKind::UnexpectedType {
                 expected: value::Type::Int,
                 actual: value.get_type(),
-            })
+            }
+            .into())
         }
     }
 }

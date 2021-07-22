@@ -35,7 +35,7 @@ macro_rules! plugin_fn {
 }
 
 #[no_mangle]
-pub static LIBSCHWIFT_ABI_COMPAT: u32 = 1;
+pub static LIBSCHWIFT_ABI_COMPAT: u32 = 2;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {

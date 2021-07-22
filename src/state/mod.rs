@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, ErrorKind, SwErResult, SwResult},
+    error::{ErrorKind, ErrorKindExt, ErrorWithContext, SwResult},
     expression::Expression,
     grammar,
     statement::{Statement, StatementKind},
@@ -19,29 +19,29 @@ pub struct State {
     libraries: Vec<libloading::Library>,
 }
 
-macro_rules! error {
-    ( $kind:expr, $place:expr ) => {{
-        Err(crate::error::Error::new($kind, $place))
-    }};
-}
+// macro_rules! error {
+//     ( $kind:expr, $place:expr ) => {{
+//         Err(crate::error::Error::new($kind, $place))
+//     }};
+// }
 
-macro_rules! try_error {
-    ( $error:expr, $statement:expr ) => {{
-        match $error {
-            Ok(val) => val,
-            Err(err) => return Err(crate::error::Error::new(err, $statement.clone())),
-        }
-    }};
-}
+// macro_rules! try_error {
+//     ( $error:expr, $statement:expr ) => {{
+//         match $error {
+//             Ok(val) => val,
+//             Err(err) => return Err(crate::error::Error::new(err, $statement.clone())),
+//         }
+//     }};
+// }
 
-macro_rules! try_nop_error {
-    ( $error:expr, $statement:expr ) => {{
-        match $error {
-            Ok(_) => Ok(()),
-            Err(err) => return Err(crate::error::Error::new(err, $statement.clone())),
-        }
-    }};
-}
+// macro_rules! try_nop_error {
+//     ( $error:expr, $statement:expr ) => {{
+//         match $error {
+//             Ok(_) => Ok(()),
+//             Err(err) => return Err(crate::error::Error::new(err, $statement.clone())),
+//         }
+//     }};
+// }
 
 impl State {
     pub fn list_index<'a>(
@@ -61,13 +61,15 @@ impl State {
                             Err(ErrorKind::IndexOutOfBounds {
                                 len: l.len(),
                                 index,
-                            })
+                            }
+                            .into())
                         }
                     } else {
                         Err(ErrorKind::UnexpectedType {
                             expected: value::Type::Int,
                             actual: inner_expression_value.get_type(),
-                        })
+                        }
+                        .into())
                     }
                 }
                 Value::Str(ref s) => {
@@ -81,18 +83,20 @@ impl State {
                             Err(ErrorKind::IndexOutOfBounds {
                                 len: chars.len(),
                                 index,
-                            })
+                            }
+                            .into())
                         }
                     } else {
                         Err(ErrorKind::UnexpectedType {
                             expected: value::Type::Int,
                             actual: inner_expression_value.get_type(),
-                        })
+                        }
+                        .into())
                     }
                 }
-                _ => Err(ErrorKind::IndexUnindexable(symbol.get_type())),
+                _ => Err(ErrorKind::IndexUnindexable(symbol.get_type()).into()),
             },
-            None => Err(ErrorKind::UnknownVariable(list_name.to_string())),
+            None => Err(ErrorKind::UnknownVariable(list_name.to_string()).into()),
         }
     }
 
@@ -114,7 +118,8 @@ impl State {
                         name.to_string(),
                         args.len(),
                         params.len(),
-                    ));
+                    )
+                    .into());
                 }
 
                 let mut child_state = Self::default();
@@ -123,29 +128,27 @@ impl State {
                     child_state.symbols.insert(name.to_string(), arg);
                 }
 
-                match child_state.run(body) {
-                    Ok(()) => {}
-                    Err(e) => return Err(e.kind),
-                }
+                child_state.run(body)?;
 
                 let last_ret = mem::replace(&mut child_state.last_return, None);
 
                 match last_ret {
                     Some(val) => Ok(val),
-                    None => Err(ErrorKind::NoReturn(name.to_string())),
+                    None => Err(ErrorKind::NoReturn(name.to_string()).into()),
                 }
             }
             val => Err(ErrorKind::UnexpectedType {
                 expected: value::Type::Function,
                 actual: val.get_type(),
-            }),
+            }
+            .into()),
         }
     }
 
     pub fn get(&self, name: &str) -> SwResult<&Value> {
         match self.symbols.get(name) {
             Some(val) => Ok(val),
-            None => Err(ErrorKind::UnknownVariable(name.to_string())),
+            None => Err(ErrorKind::UnknownVariable(name.to_string()).into()),
         }
     }
 
@@ -158,7 +161,7 @@ impl State {
     fn delete(&mut self, name: &str) -> SwResult<()> {
         match self.symbols.remove(name) {
             Some(_) => Ok(()),
-            None => Err(ErrorKind::UnknownVariable(name.to_string())),
+            None => Err(ErrorKind::UnknownVariable(name.to_string()).into()),
         }
     }
 
@@ -177,10 +180,7 @@ impl State {
     fn input(&mut self, name: String) -> SwResult<()> {
         let mut input = String::new();
 
-        match io::stdin().read_line(&mut input) {
-            Ok(_) => {}
-            Err(e) => return Err(ErrorKind::IOError(e)),
-        }
+        io::stdin().read_line(&mut input)?;
 
         input = input.trim().to_string();
         self.symbols.insert(name, Value::Str(input));
@@ -199,7 +199,7 @@ impl State {
     fn get_mut(&mut self, name: &str) -> SwResult<&mut Value> {
         match self.symbols.get_mut(name) {
             Some(value) => Ok(value),
-            None => Err(ErrorKind::UnknownVariable(name.to_string())),
+            None => Err(ErrorKind::UnknownVariable(name.to_string()).into()),
         }
     }
 
@@ -207,7 +207,7 @@ impl State {
         let value = self.get_mut(name)?;
         match *value {
             Value::List(ref mut l) => Ok(l),
-            _ => Err(ErrorKind::IndexUnindexable(value.get_type())),
+            _ => Err(ErrorKind::IndexUnindexable(value.get_type()).into()),
         }
     }
 
@@ -221,10 +221,10 @@ impl State {
                 if index < len {
                     Ok(&mut list[index])
                 } else {
-                    Err(ErrorKind::IndexOutOfBounds { len, index })
+                    Err(ErrorKind::IndexOutOfBounds { len, index }.into())
                 }
             }
-            ref val => Err(ErrorKind::IndexUnindexable(val.get_type())),
+            ref val => Err(ErrorKind::IndexUnindexable(val.get_type()).into()),
         }
     }
 
@@ -255,27 +255,25 @@ impl State {
                 Err(ErrorKind::IndexOutOfBounds {
                     len: list.len(),
                     index,
-                })
+                }
+                .into())
             }
         } else {
             Err(ErrorKind::UnexpectedType {
                 expected: value::Type::Int,
                 actual: index_value.get_type(),
-            })
+            }
+            .into())
         }
     }
 
     fn exec_if(
         &mut self,
-        statement: &Statement,
         bool: &Expression,
         if_body: &[Statement],
         else_body: &Option<Vec<Statement>>,
-    ) -> SwErResult<()> {
-        let x = match bool.evaluate(self) {
-            Ok(b) => b,
-            Err(e) => return error!(e, statement.clone()),
-        };
+    ) -> SwResult<()> {
+        let x = bool.evaluate(self)?;
 
         match *x {
             Value::Bool(b) => {
@@ -287,16 +285,17 @@ impl State {
                         Option::None => {}
                     }
                 }
-                Ok(())
             }
-            _ => error!(
-                ErrorKind::UnexpectedType {
+            _ => {
+                return Err(ErrorKind::UnexpectedType {
                     expected: value::Type::Bool,
-                    actual: x.get_type()
-                },
-                statement.clone()
-            ),
+                    actual: x.get_type(),
+                }
+                .into())
+            }
         }
+
+        Ok(())
     }
 
     fn exec_while(
@@ -304,53 +303,50 @@ impl State {
         statement: &Statement,
         bool: &Expression,
         body: &[Statement],
-    ) -> SwErResult<()> {
-        let mut condition = try_error!(bool.try_bool(self), statement);
+    ) -> SwResult<()> {
+        let mut condition = bool.try_bool(self)?;
 
         while condition {
             self.run(body)?;
             if self.last_return.is_some() {
                 return Ok(());
             }
-            condition = try_error!(bool.try_bool(self), statement);
+            condition = bool.try_bool(self).with_error_ctx(statement)?;
         }
 
         Ok(())
     }
 
-    fn catch(&mut self, try_block: &[Statement], catch: &[Statement]) -> SwErResult<()> {
+    fn catch(&mut self, try_block: &[Statement], catch: &[Statement]) -> SwResult<()> {
         match self.run(try_block) {
-            Ok(()) => Ok(()),
-            Err(_) => self.run(catch),
+            Err(_) => self.run(catch)?,
+            _ => {}
         }
+
+        Ok(())
     }
 
-    pub fn execute(&mut self, statement: &Statement) -> SwErResult<()> {
+    pub fn execute(&mut self, statement: &Statement) -> Result<(), ErrorWithContext> {
         match statement.kind {
-            StatementKind::Input(ref s) => try_nop_error!(self.input(s.to_string()), statement),
+            StatementKind::Input(ref s) => self.input(s.to_string()),
             StatementKind::ListAssign(ref s, ref index_exp, ref assign_exp) => {
-                try_nop_error!(self.list_assign(s, index_exp, assign_exp), statement)
+                self.list_assign(s, index_exp, assign_exp)
             }
-            StatementKind::ListAppend(ref s, ref append_exp) => {
-                try_nop_error!(self.list_append(s, append_exp), statement)
-            }
-            StatementKind::ListDelete(ref name, ref idx) => {
-                try_nop_error!(self.list_delete(name, idx), statement)
-            }
+            StatementKind::ListAppend(ref s, ref append_exp) => self.list_append(s, append_exp),
+            StatementKind::ListDelete(ref name, ref idx) => self.list_delete(name, idx),
             StatementKind::ListNew(ref s) => {
                 self.symbols.insert(s.clone(), Value::List(Vec::new()));
+
                 Ok(())
             }
             StatementKind::If(ref bool, ref if_body, ref else_body) => {
-                self.exec_if(statement, bool, if_body, else_body)
+                self.exec_if(bool, if_body, else_body)
             }
             StatementKind::While(ref bool, ref body) => self.exec_while(statement, bool, body),
-            StatementKind::Assignment(ref name, ref value) => {
-                try_nop_error!(self.assign(name.clone(), value), statement)
-            }
-            StatementKind::Delete(ref name) => try_nop_error!(self.delete(name), statement),
-            StatementKind::Print(ref exp) => try_nop_error!(self.print(exp), statement),
-            StatementKind::PrintNoNl(ref exp) => try_nop_error!(self.print_no_nl(exp), statement),
+            StatementKind::Assignment(ref name, ref value) => self.assign(name.clone(), value),
+            StatementKind::Delete(ref name) => self.delete(name),
+            StatementKind::Print(ref exp) => self.print(exp),
+            StatementKind::PrintNoNl(ref exp) => self.print_no_nl(exp),
             StatementKind::Catch(ref try_block, ref catch) => self.catch(try_block, catch),
             StatementKind::Function(ref name, ref args, ref body) => {
                 self.symbols
@@ -358,25 +354,23 @@ impl State {
                 Ok(())
             }
             StatementKind::Return(ref expr) => {
-                let val = try_error!(expr.evaluate(self), statement);
+                let val = expr.evaluate(self).with_error_ctx(statement)?;
                 self.last_return = Some(val.into_owned());
 
                 Ok(())
             }
 
             StatementKind::FunctionCall(ref name, ref args) => {
-                match self.call_function(name, args) {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(Error::new(e, statement.clone())),
-                }
+                self.call_function(name, args).map(|_| ())
             }
             StatementKind::DylibLoad(ref lib_path, ref functions) => {
-                try_nop_error!(self.dylib_load(lib_path, functions), statement)
+                self.dylib_load(lib_path, functions)
             }
         }
+        .with_error_ctx(statement)
     }
 
-    pub fn run(&mut self, statements: &[Statement]) -> SwErResult<()> {
+    pub fn run(&mut self, statements: &[Statement]) -> Result<(), ErrorWithContext> {
         for statement in statements {
             match self.execute(statement) {
                 Err(e) => return Err(e),
@@ -394,36 +388,36 @@ impl State {
     }
 
     fn dylib_load(&mut self, lib_path: &str, functions: &[Statement]) -> SwResult<()> {
-        let dylib = libloading::Library::new(lib_path)?;
-
         unsafe {
+            let dylib = libloading::Library::new(lib_path)?;
+
             let compat: libloading::Symbol<&u32> =
-                dylib
-                    .get(b"LIBSCHWIFT_ABI_COMPAT")
-                    .map_err(|_| ErrorKind::MissingAbiCompat {
+                dylib.get(b"LIBSCHWIFT_ABI_COMPAT").map_err(|error| {
+                    ErrorKind::MissingAbiCompat {
+                        error,
                         library: lib_path.into(),
-                    })?;
+                    }
+                })?;
 
             if **compat != crate::LIBSCHWIFT_ABI_COMPAT {
-                return Err(ErrorKind::IncompatibleAbi(**compat));
+                return Err(ErrorKind::IncompatibleAbi(**compat).into());
             }
-        }
 
-        for statement in functions {
-            match statement.kind {
-                StatementKind::FunctionCall(ref name, _) => {
-                    let func = unsafe {
+            for statement in functions {
+                match statement.kind {
+                    StatementKind::FunctionCall(ref name, _) => {
                         let wrapped_func: libloading::Symbol<value::_Func> =
                             dylib.get(name.as_bytes())?;
-                        wrapped_func.into_raw()
-                    };
-                    self.insert(name.as_str(), value::Func::new(func));
-                }
-                _ => return Err(ErrorKind::NonFunctionCallInDylib(statement.clone())),
-            }
-        }
 
-        self.libraries.push(dylib);
+                        let func = wrapped_func.into_raw();
+                        self.insert(name.as_str(), value::Func::new(func));
+                    }
+                    _ => return Err(ErrorKind::NonFunctionCallInDylib(statement.clone()).into()),
+                }
+            }
+
+            self.libraries.push(dylib);
+        }
 
         Ok(())
     }

@@ -22,7 +22,7 @@ fn test_brainfuck() {
 
     assert_cli::Assert::main_binary()
         .with_args(&["examples/brainfuck.y"])
-        .stdin(&s)
+        .stdin(s.as_bytes())
         .stdout()
         .contains("Hello World!")
         .unwrap();

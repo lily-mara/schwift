@@ -1,9 +1,8 @@
 use crate::{grammar, statement::Statement, value, Operator};
 use rand::{seq::SliceRandom, thread_rng};
-use std::{error, fmt, io, process};
+use std::{fmt::Write, io, process};
 
-pub type SwResult<T> = Result<T, ErrorKind>;
-pub type SwErResult<T> = Result<T, Error>;
+pub type SwResult<T> = Result<T, EitherError>;
 
 pub const QUOTES: [&str; 9] = [
     "Nobody exists on purpose, nobody belongs anywhere, we're all going to die. -Morty",
@@ -19,40 +18,111 @@ pub const QUOTES: [&str; 9] = [
     "DISQUALIFIED. -Cromulon",
 ];
 
-#[derive(Debug)]
-pub struct Error {
-    pub place: Statement,
-    pub kind: ErrorKind,
+#[derive(Debug, thiserror::Error, PartialEq)]
+#[error("An error ocurred")]
+pub struct ErrorWithContext {
+    place: Statement,
+
+    kind: ErrorKind,
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error, PartialEq)]
+pub enum EitherError {
+    #[error("An error with statement context")]
+    WithContext(#[from] ErrorWithContext),
+
+    #[error("An error with no statment context")]
+    NoContext(#[source] ErrorKind),
+}
+
+#[derive(Debug, thiserror::Error)]
 pub enum ErrorKind {
+    #[error("There's no {0} in this universe, Morty!")]
     UnknownVariable(String),
+
+    #[error("I'll try and say this slowly Morty. You can't index that. It's a {0}")]
     IndexUnindexable(value::Type),
+
+    #[error("If you're going to start trying to construct sub-programs in your programs Morty, you'd better make sure you're careful!")]
     SyntaxError(grammar::ParseError),
-    IndexOutOfBounds {
-        len: usize,
-        index: usize,
-    },
-    IOError(io::Error),
+
+    #[error("Y-you can't just keep asking for more, Morty! You want {index}, but your cob only has {len} kernels on it!")]
+    IndexOutOfBounds { len: usize, index: usize },
+
+    #[error("Looks like we're having a comm-burp-unications problem Morty")]
+    IOError(#[from] io::Error),
+
+    #[error("I asked for a {expected}, not a {actual} Morty.")]
     UnexpectedType {
         actual: value::Type,
         expected: value::Type,
     },
+
+    // TODO
+    #[error("load error")]
+    LoadError(#[from] libloading::Error),
+
+    #[error("It's like apples and space worms Morty! You can't {2:?} a {0} and a {1}!")]
     InvalidBinaryExpression(value::Type, value::Type, Operator),
+
+    #[error("I'm confused Morty, a minute ago you said that {0} takes {1} paramaters, but you just tried to give it {2}. WHICH IS IT MORTY?")]
     InvalidArguments(String, usize, usize),
+
+    #[error("Morty, your function has to return a value! {0} just runs and dies like an animal!")]
     NoReturn(String),
+
+    #[error(
+        "Is this a miniverse, or a microverse, or a teeny-verse? All I know is you fucked up."
+    )]
     NonFunctionCallInDylib(Statement),
+
+    #[error("Wait, wait, I'm confused. Just a second ago, you said that {library} was a microverse, but when I looked there, I didn't know what I was looking at.")]
     MissingAbiCompat {
+        #[source]
+        error: libloading::Error,
         library: String,
     },
+
+    #[error("That's an older code, Morty and it does not check out. That microverse can only be run by schwift {0}, but this is {}", crate::LIBSCHWIFT_ABI_COMPAT)]
     IncompatibleAbi(u32),
+
+    #[error(
+        "I told you how a Microverse works Morty. At what point exactly did you stop listening?"
+    )]
     DylibReturnedNil,
 }
 
-impl From<io::Error> for ErrorKind {
-    fn from(err: io::Error) -> Self {
-        ErrorKind::IOError(err)
+impl<T> From<T> for EitherError
+where
+    ErrorKind: From<T>,
+{
+    fn from(x: T) -> EitherError {
+        EitherError::NoContext(ErrorKind::from(x))
+    }
+}
+
+pub trait ErrorKindExt<T> {
+    fn with_error_ctx(self, stmt: &Statement) -> Result<T, ErrorWithContext>;
+}
+
+impl<T> ErrorKindExt<T> for std::result::Result<T, ErrorKind> {
+    fn with_error_ctx(self, stmt: &Statement) -> Result<T, ErrorWithContext> {
+        self.map_err(|e| ErrorWithContext::new(e, stmt.clone()))
+    }
+}
+
+impl<T> ErrorKindExt<T> for std::result::Result<T, ErrorWithContext> {
+    fn with_error_ctx(self, _stmt: &Statement) -> Result<T, ErrorWithContext> {
+        self
+    }
+}
+
+impl<T> ErrorKindExt<T> for std::result::Result<T, EitherError> {
+    fn with_error_ctx(self, stmt: &Statement) -> Result<T, ErrorWithContext> {
+        self.map_err(|e| match e {
+            EitherError::NoContext(e) => ErrorWithContext::new(e, stmt.clone()),
+            EitherError::WithContext(e) => e,
+        })
     }
 }
 
@@ -94,104 +164,43 @@ impl PartialEq for ErrorKind {
                 InvalidBinaryExpression(ref sv1, ref sv2, ref so),
                 InvalidBinaryExpression(ref ov1, ref ov2, ref oo),
             ) => sv1 == ov1 && sv2 == ov2 && so == oo,
-            (MissingAbiCompat { library: lib1 }, MissingAbiCompat { library: lib2 }) => {
-                lib1 == lib2
-            }
+            (
+                MissingAbiCompat {
+                    library: lib1,
+                    error: _,
+                },
+                MissingAbiCompat {
+                    library: lib2,
+                    error: _,
+                },
+            ) => lib1 == lib2,
             (IncompatibleAbi(ver1), IncompatibleAbi(ver2)) => ver1 == ver2,
-            (DylibReturnedNil , DylibReturnedNil) => true,
+            (DylibReturnedNil, DylibReturnedNil) => true,
             _ => false,
         }
     }
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ErrorKind::*;
-
-        match &self.kind {
-            UnknownVariable(ref name) => write!(f, "There's no {} in this universe, Morty!", name),
-            NoReturn(ref fn_name) => write!(
-                f,
-                "Morty, your function has to return a value! {} just runs and dies like \
-                 an animal!",
-                fn_name
-            ),
-            IndexUnindexable(ref value) => write!(
-                f,
-                "I'll try and say this slowly Morty. You can't index that. It's a {}",
-                value
-            ),
-            SyntaxError(ref err) => write!(
-                f,
-                "If you're going to start trying to construct sub-programs in your \
-                 programs Morty, you'd better make sure you're careful! {:?}",
-                err
-            ),
-            IndexOutOfBounds { len, index } => write!(
-                f,
-                "This isn't your mom's wine bottle Morty, you can't just keep asking for \
-                 more, there's not that much here! You want {}, but your cob only has {} \
-                 kernels on it!",
-                index, len
-            ),
-            IOError(ref err) => write!(
-                f,
-                "Looks like we're having a comm-burp-unications problem Morty: {:?}",
-                err
-            ),
-            UnexpectedType {
-                ref expected,
-                ref actual,
-            } => write!(f, "I asked for a {}, not a {} Morty.", expected, actual,),
-            InvalidBinaryExpression(ref lhs, ref rhs, ref op) => write!(
-                f,
-                "It's like apples and space worms Morty! You can't {:?} a {} and a {}!",
-                op, lhs, rhs,
-            ),
-            InvalidArguments(ref name, expected, actual) => write!(
-                f,
-                "I'm confused Morty, a minute ago you said that {} takes {} paramaters, \
-                 but you just tried to give it {}. WHICH IS IT MORTY?",
-                name, expected, actual
-            ),
-            NonFunctionCallInDylib(_) => f.write_str(
-                "Is this a miniverse, or a microverse, or a teeny-verse? All I know is \
-                 you fucked up.",
-            ),
-            IncompatibleAbi(compat) => write!(
-                f,
-                "That's an older code, Morty and it does not check out. \
-                 That microverse can only be run by schwift {}, but this is {}",
-                compat,
-                crate::LIBSCHWIFT_ABI_COMPAT,
-            ),
-            MissingAbiCompat { library } => write!(
-                f,
-                "Wait, wait, I'm confused. Just a second ago, you said that {} was \
-                 a microverse, but when I looked there, I didn't know what \
-                 I was looking at.",
-                library
-            ),
-            DylibReturnedNil => f.write_str("I told you how a Microverse works Morty. At what point exactly did you stop listening?"),
-        }
-    }
-}
-
-impl error::Error for Error {}
-
-impl Error {
+impl ErrorWithContext {
     pub fn new(kind: ErrorKind, place: Statement) -> Self {
         Self { kind, place }
     }
 
     pub fn full_panic_message(&self, filename: &str) -> String {
+        let mut f = String::new();
+
         let quote = random_quote();
 
-        println!("{}", filename);
+        writeln!(f, "{}", filename).unwrap();
 
-        let source_part = self.place.get_source(filename).unwrap();
+        let source_part = self.place.get_source(&filename).unwrap();
 
-        format!(
+        for c in anyhow::Chain::new(&self.kind) {
+            writeln!(f, "{}", c).unwrap();
+        }
+
+        writeln!(
+            f,
             r#"
     You made a Rickdiculous mistake:
 
@@ -203,6 +212,9 @@ impl Error {
     "#,
             source_part, self, quote
         )
+        .unwrap();
+
+        f
     }
 
     pub fn panic(&self, source: &str) {

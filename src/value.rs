@@ -99,7 +99,7 @@ impl Func {
         let val = unsafe {
             let result = f(args as *mut Vec<Value>);
             if result.is_null() {
-                return Err(ErrorKind::DylibReturnedNil);
+                return Err(ErrorKind::DylibReturnedNil.into());
             }
 
             Box::from_raw(result)
@@ -200,7 +200,8 @@ impl Value {
             _ => Err(ErrorKind::UnexpectedType {
                 expected: Type::Union(Box::new(Type::Str), Box::new(Type::List)),
                 actual: self.get_type(),
-            }),
+            }
+            .into()),
         }
     }
 
@@ -212,7 +213,8 @@ impl Value {
             _ => Err(ErrorKind::UnexpectedType {
                 expected: Type::Union(Box::new(Type::Str), Box::new(Type::List)),
                 actual: self.get_type(),
-            }),
+            }
+            .into()),
         }
     }
 
@@ -238,7 +240,8 @@ impl Value {
             _ => Err(ErrorKind::UnexpectedType {
                 expected: Type::Float,
                 actual: self.get_type(),
-            }),
+            }
+            .into()),
         }
     }
 
@@ -248,7 +251,8 @@ impl Value {
             _ => Err(ErrorKind::UnexpectedType {
                 expected: Type::Float,
                 actual: self.get_type(),
-            }),
+            }
+            .into()),
         }
     }
 
@@ -258,7 +262,8 @@ impl Value {
             _ => Err(ErrorKind::UnexpectedType {
                 expected: Type::Bool,
                 actual: self.get_type(),
-            }),
+            }
+            .into()),
         }
     }
 
@@ -314,13 +319,15 @@ impl Value {
                 Err(ErrorKind::UnexpectedType {
                     expected: Type::Int,
                     actual: other.get_type(),
-                })
+                }
+                .into())
             }
         } else {
             Err(ErrorKind::UnexpectedType {
                 expected: Type::Int,
                 actual: self.get_type(),
-            })
+            }
+            .into())
         }
     }
 
@@ -340,7 +347,8 @@ impl Value {
                 self.get_type(),
                 other.get_type(),
                 Operator::Add,
-            )),
+            )
+            .into()),
         }
     }
 
@@ -354,7 +362,8 @@ impl Value {
                 self.get_type(),
                 other.get_type(),
                 Operator::Subtract,
-            )),
+            )
+            .into()),
         }
     }
 
@@ -376,7 +385,8 @@ impl Value {
                 self.get_type(),
                 other.get_type(),
                 Operator::Multiply,
-            )),
+            )
+            .into()),
         }
     }
 
@@ -390,7 +400,8 @@ impl Value {
                 self.get_type(),
                 other.get_type(),
                 Operator::Divide,
-            )),
+            )
+            .into()),
         }
     }
 
@@ -401,7 +412,8 @@ impl Value {
                 self.get_type(),
                 other.get_type(),
                 Operator::ShiftLeft,
-            )),
+            )
+            .into()),
         }
     }
 
@@ -412,7 +424,8 @@ impl Value {
                 self.get_type(),
                 other.get_type(),
                 Operator::ShiftRight,
-            )),
+            )
+            .into()),
         }
     }
 }

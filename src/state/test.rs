@@ -41,7 +41,10 @@ fn test_get_returns_value_if_present() {
 fn test_get_returns_error_if_not_present() {
     let state = State::new();
 
-    assert_eq!(state.get("x"), Err(EKind::UnknownVariable("x".to_string())));
+    assert_eq!(
+        state.get("x"),
+        Err(EKind::UnknownVariable("x".to_string()).into())
+    );
 }
 
 #[test]

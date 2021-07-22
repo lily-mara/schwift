@@ -1,20 +1,22 @@
 [package]
-authors = ["natemara <natemara@gmail.com>"]
+authors = ["Lily Mara <lilymara@fastmail.com>"]
 name = "schwift"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
 clap = "2"
-rand = "0.7"
-libloading = "0.5"
+rand = "0.8"
+libloading = "0.7"
 regex = "1"
 lazy_static = "1"
-peg = "0.6"
-peg-runtime = "0.6"
+peg = "0.7"
+peg-runtime = "0.7"
+thiserror = "1"
+anyhow = "1"
 
 [dev-dependencies]
-assert_cli = "0.5"
+assert_cli = "0.6"
 
 [features]
 debug_printing = []
